@@ -14,6 +14,7 @@ add_library(orderbook_core
     src/matching_engine/MatchingEngine.cpp
     src/matching_engine/EngineEventPrinter.cpp
     src/metrics/LatencyTracker.cpp
+    src/benchmarks/WorkloadGenerator.cpp
     src/protocol/BinaryProtocol.cpp
     src/protocol/BinaryCommandReader.cpp
 )
@@ -43,10 +44,17 @@ add_executable(orderbook_tests
     tests/test_matching_engine.cpp
     tests/test_order_command_parser.cpp
     tests/test_market_and_modify_orders.cpp
+    tests/test_workload_generator.cpp
     tests/test_binary_command_reader.cpp
     tests/test_cli_binary_engine.cpp
     tests/test_binary_protocol.cpp
 )
+
+add_executable(matching_engine_benchmark benchmarks/benchmark_matching_engine.cpp)
+target_link_libraries(matching_engine_benchmark PRIVATE orderbook_core)
+
+add_executable(binary_protocol_benchmark benchmarks/benchmark_binary_protocol.cpp)
+target_link_libraries(binary_protocol_benchmark PRIVATE orderbook_core)
 
 target_link_libraries(orderbook_tests
     PRIVATE
