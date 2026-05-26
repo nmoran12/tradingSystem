@@ -1,0 +1,28 @@
+# Build outputs
+build/
+build-release/
+
+# Local tooling and caches
+.cursor/
+.cache/
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Compiled binaries and objects
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+cpp-low-latency-orderbook
+matching_engine_benchmark
+binary_protocol_benchmark
+orderbook_tests
+
+# Temporary benchmark artifacts
+*.obk
+/tmp/

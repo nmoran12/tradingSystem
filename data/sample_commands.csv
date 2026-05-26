@@ -1,0 +1,5 @@
+type,order_id,side,order_type,price,quantity
+NEW,1,SELL,LIMIT,10055,100
+NEW,2,BUY,LIMIT,10060,150
+NEW,3,SELL,LIMIT,10070,50
+NEW,4,BUY,MARKET,0,25
