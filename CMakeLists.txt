@@ -14,6 +14,8 @@ add_library(orderbook_core
     src/matching_engine/MatchingEngine.cpp
     src/matching_engine/EngineEventPrinter.cpp
     src/metrics/LatencyTracker.cpp
+    src/protocol/BinaryProtocol.cpp
+    src/protocol/BinaryCommandReader.cpp
 )
 
 target_include_directories(orderbook_core
@@ -41,6 +43,9 @@ add_executable(orderbook_tests
     tests/test_matching_engine.cpp
     tests/test_order_command_parser.cpp
     tests/test_market_and_modify_orders.cpp
+    tests/test_binary_command_reader.cpp
+    tests/test_cli_binary_engine.cpp
+    tests/test_binary_protocol.cpp
 )
 
 target_link_libraries(orderbook_tests

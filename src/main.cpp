@@ -4,6 +4,7 @@
 #include "matching_engine/MatchingEngine.hpp"
 #include "metrics/LatencyTracker.hpp"
 #include "order_book/OrderBook.hpp"
+#include "protocol/BinaryCommandReader.hpp"
 
 #include <chrono>
 #include <exception>
@@ -18,7 +19,8 @@ namespace {
 void print_usage(const char* program) {
     std::cerr << "Usage:\n"
               << "  " << program << " --replay <market-events.csv>\n"
-              << "  " << program << " --engine <order-commands.csv>\n";
+              << "  " << program << " --engine <order-commands.csv>\n"
+              << "  " << program << " --binary-engine <order-commands.obk>\n";
 }
 
 void print_optional_price(const char* label, const std::optional<int64_t>& price) {
@@ -113,13 +115,23 @@ int run_engine(const std::string& csv_path) {
     return run_engine_commands(market_data::OrderCommandParser::parse_file(csv_path));
 }
 
+int run_binary_engine(const std::string& binary_path) {
+    const auto decoded_commands = protocol::read_order_commands_binary(binary_path);
+    std::vector<matching_engine::OrderCommand> commands;
+    commands.reserve(decoded_commands.size());
+    for (const auto& decoded : decoded_commands) {
+        commands.push_back(decoded.command);
+    }
+    return run_engine_commands(commands);
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
     try {
         if (argc == 2) {
             const std::string_view mode = argv[1];
-            if (mode == "--replay" || mode == "--engine") {
+            if (mode == "--replay" || mode == "--engine" || mode == "--binary-engine") {
                 print_usage(argv[0]);
                 return 1;
             }
@@ -133,6 +145,9 @@ int main(int argc, char* argv[]) {
             }
             if (mode == "--engine") {
                 return run_engine(path);
+            }
+            if (mode == "--binary-engine") {
+                return run_binary_engine(path);
             }
         }
 
