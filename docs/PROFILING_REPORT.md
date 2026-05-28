@@ -110,6 +110,14 @@ perf report
 
 Build Release targets first, then profile the same binaries under `build-release/` that `benchmark_release.sh` uses.
 
+## 6E profiling checkpoint (no optimisation yet)
+
+- **profiling tool used**: macOS `sample` (attempted)
+- **benchmark profiled**: `matching_engine_benchmark`
+- **finding**: the capture was dominated by `benchmarks::WorkloadGenerator::generate()` (workload generation), not the `MatchingEngine`/`OrderBook` hot path
+- **decision**: no C++ optimisation yet (profiling did not justify a change to engine/book hot code)
+- **next step**: profile the **engine-only hot loop** after command generation completes (e.g., start profiling once inside the `for (const auto& command : commands)` loop, or restructure the benchmark run/profiling window so generation is excluded)
+
 ## Next optimisation candidates
 
 Ordered roughly by risk and dependency (design before pools, measure before rewriting the book):
