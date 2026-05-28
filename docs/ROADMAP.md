@@ -126,6 +126,55 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
+### Milestone 7A: Replay Visualiser UI
+
+**Goal:** Build an optional replay visualiser that helps users understand and debug order book behaviour without contaminating the performance-critical C++ core.
+
+**Recommended architecture:**
+
+- The C++ engine remains headless and performance-focused.
+- Replay paths export deterministic, visualisation-friendly output (JSON or NDJSON).
+- A separate frontend app reads those outputs (implementation detail intentionally flexible; e.g. React + Vite).
+- UI is optional and kept out of benchmark and Release measurement workflows.
+
+**Scope (first prototype):**
+
+- Export visualisation-friendly replay data:
+  - order book snapshots (or top-of-book / limited depth)
+  - trades
+  - best bid / best ask
+  - spread
+  - command sequence number or timestamp
+  - basic replay metrics (counts, totals)
+- UI prototype views:
+  - order book ladder
+  - trade tape
+  - best bid/ask + spread display
+  - replay controls (step, play, pause, reset)
+  - load replay output from file initially
+- Keep UI separate from core:
+  - no UI code inside `MatchingEngine` or `OrderBook`
+  - no frontend dependency in benchmark or Release paths
+  - no added instrumentation in hot paths unless explicitly gated
+
+**Acceptance criteria:**
+
+- Clear docs for generating replay visualisation output and running the UI
+- Visualiser reads a recorded replay output file and renders the basic views
+- Core correctness tests and benchmarks remain unchanged
+
+**Out of scope:**
+
+- React/Vite implementation details until the milestone starts
+- WebSocket/HTTP servers
+- GUI frameworks in C++ (Qt, Dear ImGui, etc.)
+- Live trading simulation or real exchange connectivity
+- Changes to matching logic or replay semantics
+
+**Plan:** [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
+
+---
+
 ### Milestone 7: TCP order gateway
 
 **Goal:** Accept remote commands over TCP and return events/acks.
