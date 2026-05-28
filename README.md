@@ -19,6 +19,7 @@ Run all commands from this directory (`cpp-low-latency-orderbook/`), not the par
 | [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Benchmark harness and sample results |
 | [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) | Release-mode baseline methodology |
 | [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md) | Profiling tools and benchmark stability |
+| [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | File-based replay visualiser UI (spike) |
 | [docs/MILESTONE_5_PLAN.md](docs/MILESTONE_5_PLAN.md) | Binary protocol milestone plan |
 | [docs/MILESTONE_6_PLAN.md](docs/MILESTONE_6_PLAN.md) | Performance and SPSC milestone plan |
 
