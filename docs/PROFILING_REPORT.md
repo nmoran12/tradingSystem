@@ -56,6 +56,12 @@ A single Release run can look **10–30%+ better or worse** than the next run wi
    ./scripts/benchmark_repeat.sh 5 100000 42
    ```
 
+   Or, to save timestamped logs and a lightweight summary:
+
+   ```bash
+   ./scripts/repeated-benchmark.sh 5 100000 42
+   ```
+
 5. **Compare typical results** — eyeball median or central tendency for each phase; ignore one outlier fast run.
 6. **Run verify first** — `./scripts/verify.sh` ensures correctness before trusting performance numbers.
 7. **Do not mix Debug and Release** — Debug is for debugging; Release is for throughput claims.

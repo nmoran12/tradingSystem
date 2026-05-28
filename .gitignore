@@ -26,3 +26,6 @@ orderbook_tests
 # Temporary benchmark artifacts
 *.obk
 /tmp/
+
+# Repeated benchmark outputs
+benchmark-results/

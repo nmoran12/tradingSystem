@@ -191,6 +191,18 @@ Single Release runs can vary with CPU scaling, background load, and disk cache. 
 
 The script invokes `./scripts/benchmark_release.sh` once per repetition with clear run headings. It does not compute statistics automatically — review the printed phase metrics and pick median or typical values yourself.
 
+If you want the same repeated runs saved to disk (timestamped logs) with a lightweight min/max/avg summary, use:
+
+```bash
+./scripts/repeated-benchmark.sh              # saves logs under benchmark-results/
+./scripts/repeated-benchmark.sh 5 100000 42
+```
+
+Outputs are written under `benchmark-results/` as:
+
+- `benchmark-results/<timestamp>-runs_<N>-count_<C>-seed_<S>/run_<i>.log`
+- `benchmark-results/<timestamp>-runs_<N>-count_<C>-seed_<S>/summary.txt`
+
 **Why repeated runs matter:** A one-off fast run can overstate gains; a one-off slow run can suggest a regression that does not reproduce. Milestone 6C baseline tables used single before/after runs — treat them as directional only until repeated runs confirm the trend.
 
 **Debug vs Release:** Never compare Debug build output to Release output when claiming throughput improvements. Always use `./scripts/benchmark_release.sh` or `benchmark_repeat.sh` for performance statements.
