@@ -22,8 +22,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 5 | 6A | Performance Baseline and Release Benchmark Workflow | Done |
 | 6 | 6B | Streaming Binary Replay Path | Done |
 | 7 | 6C | Allocation and Copy Reduction Pass | Done |
-| 8 | **6D** | Benchmark Stability and Profiling Report | **CURRENT** |
-| 9 | 6E | Targeted Hot-Path Optimisation | Queued |
+| 8 | 6D | Benchmark Stability and Profiling Report | Done |
+| 9 | **6E** | Targeted Hot-Path Optimisation | **CURRENT** |
 | 10 | 6F | Memory Pool / Object Pool | Queued |
 | 11 | 6G | Order Book Data-Structure Optimisation | Queued |
 | 12 | 6H | Optional SPSC Queue | Queued |
@@ -87,7 +87,7 @@ Low-risk allocation/copy reductions in hot and benchmarked paths; baseline befor
 
 ---
 
-### 6D — Benchmark Stability and Profiling Report (CURRENT)
+### 6D — Benchmark Stability and Profiling Report
 
 Repeated benchmark script, profiling methodology doc, and guidance before further optimisation.
 
