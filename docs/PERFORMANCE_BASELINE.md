@@ -180,3 +180,20 @@ Latency ns:
   p99: 500
   max: 72834
 ```
+
+## 6E Targeted Hot-Path Optimisation
+
+**Local, machine-dependent numbers only.** Do not treat these as portable throughput claims.
+
+**Profiler:** macOS `sample` on `matching_engine_benchmark` with `--profile-engine-only` (benchmark harness only; production paths unchanged). The first full-run capture was generation-dominated; engine-only mode profiles the apply loop after workload generation.
+
+**Code change:** `MatchingEngine::process_cancel` calls `OrderBook::cancel_order` once instead of `contains_order` then `cancel_order`. Unknown cancels still reject with `"unknown order id"`; semantics unchanged.
+
+**Release benchmark comparison** (`./scripts/benchmark_repeat.sh 5 100000 42`, seed 42, Release):
+
+| When | Matching engine throughput (5 runs) | Notes |
+|------|--------------------------------------|--------|
+| Before 6E cancel change (same branch session) | ~6.29–6.72M commands/sec; median ~6.38M | Overlaps post-6C single-run ~6.34M |
+| After 6E cancel change (finalise session) | ~5.11–6.65M commands/sec; median ~6.46M | One outlier ~5.11M; spread typical of laptop noise |
+
+**Conclusion:** Repeated before/after runs were **noisy** and did **not** show a clear throughput improvement attributable to the cancel-path change. The optimisation was justified by engine-only profiling (duplicate cancel lookup), not by a proven benchmark uplift. Further hash-table, allocation, and order-book structure work stays in milestones 6F/6G.

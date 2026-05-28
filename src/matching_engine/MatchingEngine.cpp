@@ -121,11 +121,8 @@ std::vector<EngineEvent> MatchingEngine::execute_new_order(uint64_t order_id,
 }
 
 std::vector<EngineEvent> MatchingEngine::process_cancel(const OrderCommand& command) {
-    if (!book_.contains_order(command.order_id)) {
-        return reject(command.order_id, "unknown order id");
-    }
     if (!book_.cancel_order(command.order_id)) {
-        return reject(command.order_id, "cancel failed");
+        return reject(command.order_id, "unknown order id");
     }
     return {{EngineEventType::OrderCancelled, command.order_id, std::nullopt, {}}};
 }

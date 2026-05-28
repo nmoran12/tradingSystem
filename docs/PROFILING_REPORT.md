@@ -110,19 +110,34 @@ perf report
 
 Build Release targets first, then profile the same binaries under `build-release/` that `benchmark_release.sh` uses.
 
-## 6E profiling checkpoint (no optimisation yet)
+## 6E profiling summary
 
-- **profiling tool used**: macOS `sample` (attempted)
-- **benchmark profiled**: `matching_engine_benchmark`
-- **finding**: the capture was dominated by `benchmarks::WorkloadGenerator::generate()` (workload generation), not the `MatchingEngine`/`OrderBook` hot path
-- **decision**: no C++ optimisation yet (profiling did not justify a change to engine/book hot code)
-- **next step**: profile the **engine-only hot loop** after command generation completes (e.g., start profiling once inside the `for (const auto& command : commands)` loop, or restructure the benchmark run/profiling window so generation is excluded)
+| Step | Result |
+|------|--------|
+| Initial `sample` on normal benchmark | Dominated by `WorkloadGenerator::generate()` — not engine/book |
+| Engine-only mode added | `--profile-engine-only` generates commands, pauses, then runs the apply loop only |
+| Engine-only `sample` | `MatchingEngine` / `OrderBook` frames visible (`contains_order`, hash insert/rehash, `add_order_to_side`, `execute_order`, allocations) |
+| Single optimisation | `process_cancel`: one `cancel_order()` instead of `contains_order` + `cancel_order` |
+| Post-change engine-only `sample` | Harness still captures engine loop; cancel stacks show `cancel_order` (pre-change cancel path showed `contains_order`); `contains_order` remains hot on new-order paths — unchanged in 6E |
+| Benchmark repeat after change | Noisy; no clear throughput win — see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §6E |
+
+Engine-only profiling (benchmark harness only):
+
+```bash
+./build-release/matching_engine_benchmark 1000000 42 --profile-engine-only
+# In another terminal during countdown:
+sample <pid> 10 -file profiling/6e/matching_engine_engine_only_sample.txt
+```
+
+Does not change production behaviour, matching/book/protocol semantics, or the normal benchmark path.
+
+**Deferred to later milestones:** memory pools / object reuse (6F), order-book data-structure changes (6G), queues and threading (6H+). Do not rewrite the book or add pools under 6E without new profiling justification.
 
 ## Next optimisation candidates
 
 Ordered roughly by risk and dependency (design before pools, measure before rewriting the book):
 
-1. **Targeted MatchingEngine hot-path profiling** — confirm match loop and event emission cost with Instruments or perf
+1. **Further engine/book hot-path work** — 6E profiled the apply loop and removed one cancel lookup; next wins likely need 6F/6G (allocations, maps, price levels), not more ad-hoc 6E tweaks
 2. **Trade/event buffer reuse** — reduce per-command vector allocations if profiling shows them
 3. **Order storage allocation reduction** — reserve maps, reduce rehashing, avoid redundant lookups (without changing semantics)
 4. **Symbol representation improvements** — fixed buffers or interned symbols if string work shows up hot
