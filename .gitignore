@@ -29,3 +29,7 @@ orderbook_tests
 
 # Repeated benchmark outputs
 benchmark-results/
+
+# UI spike build artifacts
+ui/replay-visualiser/node_modules/
+ui/replay-visualiser/dist/
