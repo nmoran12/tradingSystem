@@ -113,10 +113,12 @@ int main(int argc, char* argv[]) {
 
         matching_engine::MatchingEngine buffered_engine;
         uint64_t buffered_trades = 0;
+        std::vector<matching_engine::EngineEvent> buffered_event_scratch;
+        buffered_event_scratch.reserve(4);
         const auto buffered_engine_apply_timing = time_phase([&] {
             for (const auto& decoded : decoded_from_file) {
-                const auto events = buffered_engine.process(decoded.command);
-                buffered_trades += count_trades(events);
+                buffered_engine.process_into(decoded.command, buffered_event_scratch);
+                buffered_trades += count_trades(buffered_event_scratch);
             }
         });
 
@@ -129,11 +131,13 @@ int main(int argc, char* argv[]) {
         matching_engine::MatchingEngine streaming_engine;
         uint64_t streaming_trades = 0;
         std::size_t streaming_commands = 0;
+        std::vector<matching_engine::EngineEvent> streaming_event_scratch;
+        streaming_event_scratch.reserve(4);
         const auto streaming_timing = time_phase([&] {
             streaming_commands = protocol::stream_order_commands_binary(
                 path, [&](const protocol::DecodedOrderCommand& decoded) {
-                    const auto events = streaming_engine.process(decoded.command);
-                    streaming_trades += count_trades(events);
+                    streaming_engine.process_into(decoded.command, streaming_event_scratch);
+                    streaming_trades += count_trades(streaming_event_scratch);
                 });
         });
 

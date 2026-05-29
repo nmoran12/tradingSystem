@@ -200,16 +200,18 @@ int run_engine_commands(const std::vector<matching_engine::OrderCommand>& comman
     metrics::LatencyTracker tracker;
     size_t trade_count = 0;
 
+    std::vector<matching_engine::EngineEvent> event_scratch;
+    event_scratch.reserve(4);
     for (const auto& command : commands) {
         const auto start = std::chrono::steady_clock::now();
-        const auto events = engine.process(command);
+        engine.process_into(command, event_scratch);
         const auto end = std::chrono::steady_clock::now();
         const auto duration_ns = static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
         tracker.record(duration_ns);
 
-        matching_engine::print_engine_events(std::cout, events);
-        for (const auto& event : events) {
+        matching_engine::print_engine_events(std::cout, event_scratch);
+        for (const auto& event : event_scratch) {
             if (event.type == matching_engine::EngineEventType::Trade) {
                 ++trade_count;
             }
@@ -265,24 +267,26 @@ int run_binary_engine(const std::string& binary_path,
     metrics::LatencyTracker tracker;
     size_t trade_count = 0;
 
+    std::vector<matching_engine::EngineEvent> event_scratch;
+    event_scratch.reserve(4);
     for (std::size_t i = 0; i < commands.size(); ++i) {
         const auto& command = commands[i];
         const auto start = std::chrono::steady_clock::now();
-        const auto events = engine.process(command);
+        engine.process_into(command, event_scratch);
         const auto end = std::chrono::steady_clock::now();
         const auto duration_ns = static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start)
                 .count());
         tracker.record(duration_ns);
 
-        matching_engine::print_engine_events(std::cout, events);
-        for (const auto& event : events) {
+        matching_engine::print_engine_events(std::cout, event_scratch);
+        for (const auto& event : event_scratch) {
             if (event.type == matching_engine::EngineEventType::Trade) {
                 ++trade_count;
             }
         }
 
-        write_visualisation_step(out, i, command, events, engine.book());
+        write_visualisation_step(out, i, command, event_scratch, engine.book());
     }
 
     const auto& book = engine.book();

@@ -131,14 +131,26 @@ sample <pid> 10 -file profiling/6e/matching_engine_engine_only_sample.txt
 
 Does not change production behaviour, matching/book/protocol semantics, or the normal benchmark path.
 
-**Deferred to later milestones:** memory pools / object reuse (6F), order-book data-structure changes (6G), queues and threading (6H+). Do not rewrite the book or add pools under 6E without new profiling justification.
+**Deferred to later milestones (at time of 6E):** order-book data-structure changes (6G), queues and threading (6H+).
+
+## 6F event output buffer reuse
+
+| Decision | Detail |
+|----------|--------|
+| **Profiler target** | Engine-only `sample` showed `operator new` under `execute_new_order` and `std::vector<EngineEvent>::__init_with_size` on cancel returns — per-command output vector heap churn |
+| **Rejected approach** | Engine-owned `event_buffer_` with `return std::move(buffer)` — move-return transfers the heap block to the caller; when callers discard the vector each iteration (benchmark/CLI), the engine must re-allocate and can do **more** work than today |
+| **Implemented approach** | `MatchingEngine::process_into(command, events)` — `events.clear()` at entry (retains capacity); hot loops reuse one caller-owned `std::vector<EngineEvent>` |
+| **Compatibility** | `process()` remains; allocates a local vector and delegates to `process_into` |
+| **Hot paths updated** | `matching_engine_benchmark`, `binary_protocol_benchmark` engine apply phases, `main.cpp` engine loops |
+
+`process()` callers still pay per-call vector allocation; reuse benefit requires adopting `process_into` at the call site.
 
 ## Next optimisation candidates
 
 Ordered roughly by risk and dependency (design before pools, measure before rewriting the book):
 
-1. **Further engine/book hot-path work** — 6E profiled the apply loop and removed one cancel lookup; next wins likely need 6F/6G (allocations, maps, price levels), not more ad-hoc 6E tweaks
-2. **Trade/event buffer reuse** — reduce per-command vector allocations if profiling shows them
+1. **Further engine/book hot-path work** — book-side `add_order_to_side` / hash rehash remains heavy in engine-only profiles; likely **6G**
+2. **Trade/event buffer reuse** — **6F (done)** for call sites using `process_into`; no further vector reuse unless new API
 3. **Order storage allocation reduction** — reserve maps, reduce rehashing, avoid redundant lookups (without changing semantics)
 4. **Symbol representation improvements** — fixed buffers or interned symbols if string work shows up hot
 5. **Memory pool / object pool** — only after hot allocations are identified; higher complexity

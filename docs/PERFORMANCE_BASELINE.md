@@ -197,3 +197,19 @@ Latency ns:
 | After 6E cancel change (finalise session) | ~5.11–6.65M commands/sec; median ~6.46M | One outlier ~5.11M; spread typical of laptop noise |
 
 **Conclusion:** Repeated before/after runs were **noisy** and did **not** show a clear throughput improvement attributable to the cancel-path change. The optimisation was justified by engine-only profiling (duplicate cancel lookup), not by a proven benchmark uplift. Further hash-table, allocation, and order-book structure work stays in milestones 6F/6G.
+
+## 6F Caller-Owned Event Buffer Reuse
+
+**Local, machine-dependent numbers only.**
+
+**Code change:** `MatchingEngine::process_into` reuses a loop-scoped `std::vector<EngineEvent>` in matching-engine and binary-protocol engine apply benchmarks and CLI engine loops. `process()` unchanged for tests and compatibility (still allocates per call).
+
+**Release benchmark comparison** (`./scripts/benchmark_repeat.sh 5 100000 42`, seed 42, Release):
+
+| Phase | Before 6F (post-6E baseline, 5 runs) | After 6F (5 runs, same script) | Notes |
+|-------|----------------------------------------|--------------------------------|--------|
+| Matching engine synthetic | ~5.11–6.65M commands/sec; **median ~6.46M** | ~8.03–9.76M commands/sec; **median ~9.25M** | Hot loop uses `process_into`; one run ~8.03M |
+| Buffered engine apply | *(6E session not re-run here)* | ~5.30–11.04M commands/sec; **median ~9.74M** | One outlier ~5.30M on run 3 |
+| Streaming engine apply | *(6E session not re-run here)* | ~5.22–7.76M commands/sec; **median ~7.51M** | Same trade/invariant counts all runs |
+
+**Conclusion:** On this machine/session, matching-engine median throughput rose versus the documented post-6E baseline (~6.46M → ~9.25M), consistent with removing per-command output-vector allocation in the benchmark hot loop. Runs were still noisy (spread ~8.0–9.8M on matching engine). Treat as **directional local evidence**, not a portable guarantee — no before/after binary-protocol phases were captured on the identical pre-6F commit in the same session. Correctness unchanged (56086 trades, 10070 active orders, 5039585 resting quantity on every run).

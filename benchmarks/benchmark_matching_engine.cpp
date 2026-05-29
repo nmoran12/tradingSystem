@@ -55,9 +55,11 @@ int run_engine_only_profile_mode(const benchmarks::WorkloadConfig& config) {
     }
 
     matching_engine::MatchingEngine engine;
+    std::vector<matching_engine::EngineEvent> event_scratch;
+    event_scratch.reserve(4);
     const auto runtime_start = std::chrono::steady_clock::now();
     for (const auto& command : commands) {
-        engine.process(command);
+        engine.process_into(command, event_scratch);
     }
     const auto runtime_end = std::chrono::steady_clock::now();
 
@@ -100,15 +102,17 @@ int main(int argc, char* argv[]) {
     matching_engine::MatchingEngine engine;
     metrics::LatencyTracker tracker;
     uint64_t total_trades = 0;
+    std::vector<matching_engine::EngineEvent> event_scratch;
+    event_scratch.reserve(4);
 
     const auto runtime_start = std::chrono::steady_clock::now();
     for (const auto& command : commands) {
         const auto start = std::chrono::steady_clock::now();
-        const auto events = engine.process(command);
+        engine.process_into(command, event_scratch);
         const auto end = std::chrono::steady_clock::now();
         tracker.record(static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count()));
-        total_trades += count_trades(events);
+        total_trades += count_trades(event_scratch);
     }
     const auto runtime_end = std::chrono::steady_clock::now();
 

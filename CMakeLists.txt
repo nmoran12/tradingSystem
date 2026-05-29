@@ -42,6 +42,7 @@ add_executable(orderbook_tests
     tests/test_order_book.cpp
     tests/test_latency_tracker.cpp
     tests/test_matching_engine.cpp
+    tests/test_matching_engine_process_into.cpp
     tests/test_order_command_parser.cpp
     tests/test_market_and_modify_orders.cpp
     tests/test_workload_generator.cpp

@@ -17,73 +17,90 @@ bool is_valid_side(market_data::Side side) {
 
 MatchingEngine::MatchingEngine(std::string symbol) : symbol_(std::move(symbol)) {}
 
-std::vector<EngineEvent> MatchingEngine::process(const OrderCommand& command) {
+void MatchingEngine::process_into(const OrderCommand& command, std::vector<EngineEvent>& events) {
+    events.clear();
     switch (command.type) {
         case OrderCommandType::NewOrder:
-            return process_new_order(command);
+            process_new_order(command, events);
+            return;
         case OrderCommandType::CancelOrder:
-            return process_cancel(command);
+            process_cancel(command, events);
+            return;
         case OrderCommandType::ModifyOrder:
-            return process_modify(command);
+            process_modify(command, events);
+            return;
     }
-    return reject(command.order_id, "unknown command type");
+    reject_into(events, command.order_id, "unknown command type");
 }
 
-std::vector<EngineEvent> MatchingEngine::process_new_order(const OrderCommand& command) {
+std::vector<EngineEvent> MatchingEngine::process(const OrderCommand& command) {
+    std::vector<EngineEvent> events;
+    process_into(command, events);
+    return events;
+}
+
+void MatchingEngine::process_new_order(const OrderCommand& command,
+                                       std::vector<EngineEvent>& events) {
     if (!is_valid_side(command.side)) {
-        return reject(command.order_id, "invalid side");
+        reject_into(events, command.order_id, "invalid side");
+        return;
     }
     if (command.quantity == 0 || command.quantity > kMaxOrderQuantity) {
-        return reject(command.order_id, "invalid quantity");
+        reject_into(events, command.order_id, "invalid quantity");
+        return;
     }
     if (book_.contains_order(command.order_id)) {
-        return reject(command.order_id, "duplicate order id");
+        reject_into(events, command.order_id, "duplicate order id");
+        return;
     }
     if (command.order_type == OrderType::Limit && command.price <= 0) {
-        return reject(command.order_id, "invalid limit price");
+        reject_into(events, command.order_id, "invalid limit price");
+        return;
     }
 
-    return execute_new_order(command.order_id, command.side, command.order_type, command.price,
-                             command.quantity);
+    execute_new_order(command.order_id, command.side, command.order_type, command.price,
+                      command.quantity, events);
 }
 
-std::vector<EngineEvent> MatchingEngine::process_modify(const OrderCommand& command) {
+void MatchingEngine::process_modify(const OrderCommand& command, std::vector<EngineEvent>& events) {
     const auto existing = book_.get_order(command.order_id);
     if (!existing) {
-        return reject(command.order_id, "unknown order id");
+        reject_into(events, command.order_id, "unknown order id");
+        return;
     }
 
     if (is_valid_side(command.side) && command.side != existing->side) {
-        return reject(command.order_id, "side change not allowed");
+        reject_into(events, command.order_id, "side change not allowed");
+        return;
     }
 
-    const int64_t new_price =
-        command.price > 0 ? command.price : existing->price;
+    const int64_t new_price = command.price > 0 ? command.price : existing->price;
     const uint64_t new_quantity =
         command.quantity > 0 ? command.quantity : existing->quantity;
 
     if (new_quantity == 0 || new_quantity > kMaxOrderQuantity) {
-        return reject(command.order_id, "invalid quantity");
+        reject_into(events, command.order_id, "invalid quantity");
+        return;
     }
 
     const OrderType new_type = command.order_type;
     if (new_type == OrderType::Limit && new_price <= 0) {
-        return reject(command.order_id, "invalid limit price");
+        reject_into(events, command.order_id, "invalid limit price");
+        return;
     }
 
     // Cancel-and-reinsert: modification always loses queue position.
     if (!book_.cancel_order(command.order_id)) {
-        return reject(command.order_id, "modify cancel failed");
+        reject_into(events, command.order_id, "modify cancel failed");
+        return;
     }
 
-    return execute_new_order(command.order_id, existing->side, new_type, new_price, new_quantity);
+    execute_new_order(command.order_id, existing->side, new_type, new_price, new_quantity, events);
 }
 
-std::vector<EngineEvent> MatchingEngine::execute_new_order(uint64_t order_id,
-                                                           market_data::Side side,
-                                                           OrderType order_type, int64_t price,
-                                                           uint64_t quantity) {
-    std::vector<EngineEvent> events;
+void MatchingEngine::execute_new_order(uint64_t order_id, market_data::Side side,
+                                       OrderType order_type, int64_t price, uint64_t quantity,
+                                       std::vector<EngineEvent>& events) {
     events.reserve(4);
     events.push_back({EngineEventType::OrderAccepted, order_id, std::nullopt, {}});
 
@@ -105,26 +122,26 @@ std::vector<EngineEvent> MatchingEngine::execute_new_order(uint64_t order_id,
 
     if (order_type == OrderType::Market) {
         append_market_remainder_cancel(events, order_id, remaining);
-        return events;
+        return;
     }
 
     if (remaining > 0) {
         const auto resting =
             make_resting_order(order_id, side, price, static_cast<uint32_t>(remaining));
         if (!book_.add_order(resting)) {
-            return reject(order_id, "failed to rest order");
+            reject_into(events, order_id, "failed to rest order");
+            return;
         }
         events.push_back(make_book_update(order_id));
     }
-
-    return events;
 }
 
-std::vector<EngineEvent> MatchingEngine::process_cancel(const OrderCommand& command) {
+void MatchingEngine::process_cancel(const OrderCommand& command, std::vector<EngineEvent>& events) {
     if (!book_.cancel_order(command.order_id)) {
-        return reject(command.order_id, "unknown order id");
+        reject_into(events, command.order_id, "unknown order id");
+        return;
     }
-    return {{EngineEventType::OrderCancelled, command.order_id, std::nullopt, {}}};
+    events.push_back({EngineEventType::OrderCancelled, command.order_id, std::nullopt, {}});
 }
 
 void MatchingEngine::match_buy_limit(uint64_t order_id, int64_t price, uint64_t quantity,
@@ -260,8 +277,10 @@ order_book::Order MatchingEngine::make_resting_order(uint64_t order_id, market_d
     return order;
 }
 
-std::vector<EngineEvent> MatchingEngine::reject(uint64_t order_id, std::string reason) {
-    return {{EngineEventType::OrderRejected, order_id, std::nullopt, std::move(reason)}};
+void MatchingEngine::reject_into(std::vector<EngineEvent>& events, uint64_t order_id,
+                                 std::string reason) {
+    events.clear();
+    events.push_back({EngineEventType::OrderRejected, order_id, std::nullopt, std::move(reason)});
 }
 
 EngineEvent MatchingEngine::make_trade_event(const MatchTrade& trade) {
