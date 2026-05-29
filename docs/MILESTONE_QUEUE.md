@@ -23,8 +23,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 6 | 6B | Streaming Binary Replay Path | Done |
 | 7 | 6C | Allocation and Copy Reduction Pass | Done |
 | 8 | 6D | Benchmark Stability and Profiling Report | Done |
-| 9 | **6E** | Targeted Hot-Path Optimisation | **CURRENT** |
-| 10 | 6F | Memory Pool / Object Pool | Queued |
+| 9 | 6E | Targeted Hot-Path Optimisation | Done |
+| 10 | **6F** | Memory Pool / Object Pool | **CURRENT** |
 | 11 | 6G | Order Book Data-Structure Optimisation | Queued |
 | 12 | 6H | Optional SPSC Queue | Queued |
 | 13 | 7A | Replay Visualiser UI | Queued |
@@ -97,13 +97,13 @@ Repeated benchmark script, profiling methodology doc, and guidance before furthe
 
 ### 6E — Targeted Hot-Path Optimisation
 
-Profiler-guided changes in confirmed hot paths only; behaviour unchanged.
+Profiler-guided changes in confirmed hot paths only; behaviour unchanged. Engine-only benchmark profiling mode; single cancel-path lookup removal; baseline and profiling docs updated (no claimed throughput win).
 
 ---
 
 ### 6F — Memory Pool / Object Pool
 
-Optional object pooling for identified hot allocations (scoped, documented).
+Optional object pooling for identified hot allocations (scoped, documented). See [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
 ---
 
