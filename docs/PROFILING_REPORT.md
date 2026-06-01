@@ -154,6 +154,27 @@ Does not change production behaviour, matching/book/protocol semantics, or the n
 | Containers unchanged | `std::list`, `std::map`, `OrderLocation`, matching semantics unchanged |
 | Benchmark repeat | No clear median throughput win vs post-6F session; see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §6G |
 
+## 6G post-reserve engine-only profile (slice 1 review)
+
+Captured locally: `profiling/6g/post_reserve_engine_only_sample.txt` (not in git). Harness: `./build-release/matching_engine_benchmark 1000000 42 --profile-engine-only` with `reserve_book_capacity(command_count / 10)` already enabled.
+
+```bash
+sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
+```
+
+| Signal | Pre-reserve sample (no lookup reserve) | Post-reserve sample |
+|--------|----------------------------------------|---------------------|
+| `add_order_to_side` (collapsed ≥5) | 5 | **13** |
+| `remove_order_at_location` (collapsed ≥5) | 10 | **11** |
+| `__do_rehash` on `order_lookup_` | Multiple stacks under emplace | **~1** stack (residual growth edge cases) |
+| `emplace` + `operator new` on lookup insert | Common | Still present (6 emplace samples) |
+| `std::__tree_balance_after_insert` / `__tree_remove` under add/remove | Present | Present on add/remove paths |
+| `operator new` at list `push_back` offsets | Present | Present (5+ samples on add path) |
+
+**Interpretation:** Lookup **rehash** pressure is much lower after `reserve_active_orders`, consistent with slice 1 intent. Remaining cost on the apply loop is **mixed**: resting adds still allocate (list nodes, map price-level nodes, occasional hash bucket growth) and match/cancel paths spend time in `remove_order_at_location` (list erase + map level cleanup + hash erase).
+
+**Recommendation:** Do **not** start a `std::list` or `std::map` container swap from this sample alone. Treat 6G slice 1 as complete; use heap allocation attribution (Instruments Allocations / heaptrack) before any slice 2, or stop 6G book structure work and advance the queue when human review agrees.
+
 ## Future optimisation work
 
 Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
