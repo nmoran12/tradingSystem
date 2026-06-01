@@ -273,18 +273,18 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 9B — One Measured Hot-Path Optimisation (Conditional)
 
-**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Status:** **CURRENT** — **slice 1 done; slice 2 not implemented** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**Goal:** At most **one** measured optimisation from [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §7 — **slice 1 measurement required** before book changes.
-
-| Slice | Work |
-|-------|------|
-| 1 | Instruments Allocations or `heaptrack` on engine-only apply (1M–2M cmds, seed 42) |
-| 2 | List-node pool/arena in `add_order_to_side` **if** slice 1 confirms dominance; else benchmark throughput mode or **stop** |
+| Outcome | Detail |
+|---------|--------|
+| **Slice 1** | `sample` on engine-only **2M** cmds, seed 42 — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1 |
+| **Finding** | **Mixed** alloc on adds: hash emplace ≈ list `push_back` > map; **no** byte-ranked Instruments/`heaptrack` on this host |
+| **Slice 2** | **Not done** — list node pool **not justified** |
+| **Code** | None |
 
 **Out of scope:** Container family swap; persistence/TCP/publisher; protocol changes; unmeasured throughput claims.
 
-**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5 · [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
+**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5 · [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §10.
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 

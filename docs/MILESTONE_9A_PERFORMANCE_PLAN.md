@@ -199,7 +199,20 @@ A follow-up sample during a 500k apply window **missed** the process (loop finis
 
 ---
 
-## 10. Commands run (9A)
+## 10. 9B slice 1 outcome (2026-06-01)
+
+| Question | Answer |
+|----------|--------|
+| List nodes dominate bytes? | **No** — byte counts unavailable; time-samples show **hash emplace ≥ list `push_back`** at 2M commands |
+| Slice 2 justified? | **No** — stop per §8 (“no change warranted”) |
+| Event vector churn? | **Low** signal in apply-window sample |
+| Raw traces | `profiling/9b/` (gitignored) |
+
+See [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1.
+
+---
+
+## 11. Commands run (9A)
 
 ```bash
 git push origin feature/6f-memory-pool   # succeeded f2822d1 (prior session)

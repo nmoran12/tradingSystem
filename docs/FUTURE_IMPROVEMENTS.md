@@ -61,7 +61,7 @@ Also **avoid** unless profiler evidence justifies it:
 
 **8A:** README refresh, architecture-at-a-glance, and [DEMO_GUIDE.md](DEMO_GUIDE.md) are **done**; screenshot/GIF **checklist** is in the demo guide (binary assets still optional).
 
-**9A (done):** [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) (`191ddab`). **9B (CURRENT):** conditional measured optimisation — alloc profile first, then list-node work only if justified.
+**9A (done):** [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) (`191ddab`). **9B (CURRENT):** slice 1 alloc profile done — **mixed** hash/list/map; list-node pool **not** implemented; review before `/advance-milestone`.
 
 ### README / overview refresh
 

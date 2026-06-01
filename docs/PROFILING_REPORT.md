@@ -222,11 +222,49 @@ sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
 
 **9B profiling prerequisite:** Byte-ranked allocation profile (Instruments Allocations or `heaptrack`) on engine-only 1M–2M command apply loop before any list-node pool implementation. Details: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
 
+## 9B slice 1 — allocation profile (2026-06-01)
+
+**Scope:** Measurement only — **no** engine/book code changes. **Git:** `9dc5298` + docs commit pending.
+
+**Harness:** `./build-release/matching_engine_benchmark 2000000 42 --profile-engine-only` with `reserve_book_capacity(command_count / 10)`. Apply loop ~0.25s; 195 873 peak active orders.
+
+**Tools used (macOS 26.5, ARM64):**
+
+| Tool | Result |
+|------|--------|
+| `heaptrack` | Not installed |
+| `xctrace record --template Allocations` | Recording ended with errors; `profiling/9b/allocations.trace` saved locally, not parsed |
+| `malloc_history -callTree` | Lite MSL only; no useful call tree before process exit |
+| **`sample` during apply** | **Primary evidence** — `profiling/9b/apply_loop_sample.txt` (15s window from countdown `1…`; includes some post-loop validation) |
+| `MallocStackLogging=1` | Enabled for sample run; adds overhead; not byte-ranked |
+
+**`atos` map (`add_order_to_side`):** `+128` map `operator[]`, `+204` `list::push_back`, `+408` map tree insert, `+544` / `+644` `order_lookup_` hash `emplace`.
+
+**`operator new` time-samples under resting adds (apply window, directional):**
+
+| Site | Approx. samples | Category |
+|------|-----------------|----------|
+| Hash emplace `+644` | ~58 | `order_lookup_` |
+| Hash emplace `+544` | ~51 | `order_lookup_` |
+| List `push_back` `+204` | ~46 | `std::list<Order>` node |
+| Map tree `+408` | ~36 | Price-level `std::map` node |
+| Map path `+128` | ~29 | Price-level lookup/insert |
+| `process_into` / event vector | ~11 collapsed | **Low** — 6F reuse holds |
+| Harness command vector | Outside apply loop | Dominates lifetime heap (~128 MiB for 2M cmds) |
+
+**Compared to 6G (1M commands):** 6G slice 2 ranked **list `+204` strongest** on a shorter apply window. At **2M** commands, **hash emplace samples meet or exceed list** in this session — still **mixed**, not list-only.
+
+**Confidence:** **Medium** for “alloc pressure is mixed on adds”; **low** for byte-level ranking (no Instruments/`heaptrack` bytes).
+
+**Slice 2 decision:** **Not justified.** List nodes do **not** clearly dominate; hash and map allocations remain material. **Do not** implement a list node pool/arena from this evidence. Optional follow-ups (future milestones / Linux `heaptrack`): workload-shaped hash tuning, benchmark throughput mode, or byte-ranked Instruments on a repeated apply loop.
+
+Local summary (not in git): `profiling/9b/allocation_summary.txt`.
+
 ## Future optimisation work
 
 Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
 
-**Recently completed:** order lookup pre-reserve (**6G slice 1**); allocation attribution review (**6G slice 2**); **9A** baseline + optimisation plan (no code). **Next implementation milestone:** **9B** — conditional list-node allocation work after byte-ranked profile; see [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
+**Recently completed:** **9B slice 1** allocation profile (mixed list/hash/map; **no** slice 2 implementation). **9A** baseline + plan. **Next:** human review; consider advancing queue without list-node pool, or a future measurement-only / hash-tuning milestone — not a container swap.
 
 ## Related documentation
 

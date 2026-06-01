@@ -4,7 +4,7 @@ Profiler-backed **future optimisation candidates** for this project. Nothing her
 
 **Context after Milestone 6F:** `MatchingEngine::process_into(command, events)` lets hot loops reuse a caller-owned `std::vector<EngineEvent>` instead of constructing a fresh vector per command. That reduced event-output allocation pressure while `process()` remains a compatibility wrapper. The internal `OrderBook` storage model was **not** changed.
 
-**Active milestone queue:** **9B CURRENT** — byte-ranked alloc profile (slice 1), then **conditional** list-node allocation reduction in `add_order_to_side` if justified. Plan: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md). **6G** book-structure work is closed (no container swap without new byte evidence).
+**Active milestone queue:** **9B CURRENT** — slice 1 complete (mixed alloc; **no** list pool). Plan: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §10. **Do not** start list-node pool without byte-ranked proof that list dominates. **6G** container swap remains closed.
 
 See also: [PROFILING_REPORT.md](PROFILING_REPORT.md), [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md), [BENCHMARKING.md](BENCHMARKING.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
@@ -134,8 +134,8 @@ Updated after **9A** (2026-06-01). See [MILESTONE_9A_PERFORMANCE_PLAN.md](MILEST
 
 | Priority | Candidate area | Typical risk | Notes |
 |----------|----------------|--------------|--------|
-| 1 | **Byte-ranked alloc profile** (9B slice 1) | Low | Instruments / `heaptrack` on engine-only apply — **required before list pool** |
-| 2 | **List node allocation** in `add_order_to_side` | Medium | **9B slice 2** if slice 1 confirms dominance; not a `std::list`→`deque` swap without proof |
+| 1 | **Byte-ranked alloc profile** (9B slice 1) | Low | **Done (mixed)** — see [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B; Linux `heaptrack` optional follow-up |
+| 2 | **List node allocation** in `add_order_to_side` | Medium | **Deferred** — 9B slice 1 did **not** justify; needs byte proof or dominant list signal |
 | 3 | `order_lookup_` / map further tuning | Low–medium | Only if slice 1 ranks above list |
 | 4 | `std::map` / `std::list` container family swap | High | **Rejected** until byte-ranked evidence (6G + 9A) |
 | 5 | PMR / pools (other sites) | High | After ranked profile |

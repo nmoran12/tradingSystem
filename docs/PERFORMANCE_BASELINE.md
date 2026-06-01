@@ -277,6 +277,12 @@ Full analysis: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.
 
 **Cost takeaway:** Engine apply is slower than binary decode on the same workload; optimising the matching/book path matters more than decode for replay throughput. No portable performance claims.
 
+## 9B slice 1 — allocation profile (no code change)
+
+**Date:** 2026-06-01. **Harness:** `./build-release/matching_engine_benchmark 2000000 42 --profile-engine-only` — apply loop ~0.25s, ~8.0M cmd/s (MSL-instrumented run; not a throughput claim).
+
+**Outcome:** Mixed allocation signals on `add_order_to_side` (hash emplace, list nodes, map nodes). **List-node pool not implemented.** No before/after benchmark table (no optimisation). Details: [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1.
+
 Raw `benchmark_release.sh` excerpt:
 
 ```text
