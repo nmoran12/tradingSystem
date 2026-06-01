@@ -24,8 +24,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 7 | 6C | Allocation and Copy Reduction Pass | Done |
 | 8 | 6D | Benchmark Stability and Profiling Report | Done |
 | 9 | 6E | Targeted Hot-Path Optimisation | Done |
-| 10 | **6F** | Memory Pool / Object Pool | **CURRENT** |
-| 11 | 6G | Order Book Data-Structure Optimisation | Queued |
+| 10 | 6F | Memory Pool / Object Pool | Done |
+| 11 | **6G** | Order Book Data-Structure Optimisation | **CURRENT** |
 | 12 | 6H | Optional SPSC Queue | Queued |
 | 13 | 7A | Replay Visualiser UI | Queued |
 | 14 | 7B | Live Replay Streaming Interface | Queued |
@@ -103,7 +103,7 @@ Profiler-guided changes in confirmed hot paths only; behaviour unchanged. Engine
 
 ### 6F — Memory Pool / Object Pool
 
-Optional object pooling for identified hot allocations (scoped, documented). See [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
+Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std::vector<EngineEvent>`); `process()` kept as a compatibility wrapper. Hot benchmark/CLI loops reuse one scratch vector. Engine-owned move-return buffer was evaluated and rejected (ownership transfers to caller). Profiler-justified, 127 tests passing, local benchmark deltas documented as machine-dependent.
 
 ---
 
