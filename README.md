@@ -7,7 +7,7 @@ This is an **educational / portfolio** project: no live markets, no brokerage co
 | | |
 |--|--|
 | **Tests** | **164/164** via `./scripts/verify.sh` |
-| **Queue** | **8C** decision done → **9A** performance deep dive recommended ([MILESTONE_8C_DECISION.md](docs/MILESTONE_8C_DECISION.md)) · **8A–8B** done |
+| **Queue** | **9A** performance deep dive **CURRENT** · **8C** done ([MILESTONE_8C_DECISION.md](docs/MILESTONE_8C_DECISION.md)) · **8A–8B** done |
 | **CI** | GitHub Actions — build + **164** tests + UI build ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) |
 
 Run all commands from **`cpp-low-latency-orderbook/`** (this directory), not the parent workspace folder.

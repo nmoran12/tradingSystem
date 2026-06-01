@@ -32,7 +32,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 15 | 7C | UI Metrics and Benchmark Overlay | Done |
 | 16 | 8A | Documentation and Demo Packaging | Done |
 | 17 | 8B | CI and Correctness Hardening | Done |
-| 18 | **8C** | **Next Systems Extension Decision** | **CURRENT** |
+| 18 | 8C | Next Systems Extension Decision | Done |
+| 19 | **9A** | **Performance Deep Dive and Hot-Path Optimisation Plan** | **CURRENT** |
 
 ---
 
@@ -202,9 +203,9 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**CURRENT milestone:** **8C — Next Systems Extension Decision** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)) — **planning only**, no implementation in 8C.
+**CURRENT milestone:** **9A — Performance Deep Dive and Hot-Path Optimisation Plan** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**8B** is **Done** (commit `266df9d`). After 8C, queue **9A — Performance deep dive** per [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) (not persistence/TCP/publisher).
+**8C** is **Done** (commit `e85786b`). **9A** is planning/measurement first; **9B** is optional one measured optimisation — see [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md).
 
 ---
 
@@ -242,18 +243,29 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 8C — Next Systems Extension Decision
 
-**Status:** **CURRENT** — planning **complete** (revised [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md)). Awaiting human `/advance-milestone`.
-
-**Goal:** Choose next major direction: **performance deep dive** vs infrastructure (persistence, TCP, publisher).
+**Completed.**
 
 | Outcome | Detail |
 |---------|--------|
-| **Decision doc** | [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) (revised: perf-first) |
-| **Recommendation** | **9A — Performance Deep Dive and Hot-Path Optimisation Plan** (measurement + plan; code in 9B only if evidenced) |
-| **Deferred** | Persistence/journal, TCP gateway, market data publisher |
-| **Not done** | No C++/UI implementation; **9A not CURRENT** until human queues row 19 |
+| **Decision doc** | [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) — performance-first; infrastructure deferred |
+| **Recommendation** | **9A** performance deep dive (plan) → **9B** one measured optimisation (conditional) |
+| **Not done in 8C** | No C++, benchmarks changes, persistence, TCP, publisher |
 
-**After 8C advance:** Add **19 | 9A | Performance Deep Dive … | CURRENT** — do **not** queue persistence as next implementation row.
+**Commit:** `e85786b` — Document 8C performance roadmap decision.
+
+---
+
+### 9A — Performance Deep Dive and Hot-Path Optimisation Plan
+
+**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+
+**Goal:** Evidence-based baselines, profiling, hotspot analysis, and a scoped optimisation **plan** for the existing engine/book/replay/benchmark stack.
+
+**Slices (from 8C decision):** Release baselines → re-profile → hotspot ranking → cost separation → data-structure review → optimisation candidates → 9B plan doc. **No required code in 9A.**
+
+**Out of scope:** Persistence, TCP, publisher; speculative container rewrites; matching-semantics changes without tests.
+
+**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §4–5 · [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -268,4 +280,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B, 8C) are documented in [ROADMAP.md](ROADMAP.md).
