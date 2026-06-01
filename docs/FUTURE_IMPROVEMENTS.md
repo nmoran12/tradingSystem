@@ -197,7 +197,9 @@ Covered mainly under [CI and testing](#ci-and-testing). No matching-logic change
 
 ## Future systems milestones
 
-Documented in depth in [ROADMAP.md](ROADMAP.md). **Not implemented.** Choose one after **8C** planning.
+**8C decision (done, revised):** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) recommends **9A performance deep dive** (plan) and **9B** (one measured optimisation if justified). **Persistence, TCP, and publisher deferred** to 10A+. **Not implemented** until queued.
+
+Documented in depth in [ROADMAP.md](ROADMAP.md).
 
 ### TCP order gateway
 

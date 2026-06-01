@@ -2,7 +2,7 @@
 
 Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are frozen unless a later milestone explicitly requires a compatible extension.
 
-**Post-7C:** The ordered queue through **7C** is complete. **Planned** improvements (CI, demo packaging, extra tests) and proposed milestones **8A–8C** are in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md). Nothing in that backlog is implemented unless this repo already contains it.
+**Post-8C (revised):** Packaging (**8A**), CI/correctness (**8B**), and direction **decision** (**8C**) are done. **Recommended next:** performance deep dive and hot-path optimisation **plan** (**9A** in [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md)) — **not started**. Persistence, TCP gateway, and market data publisher are **deferred**. See [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
 ---
 
@@ -144,7 +144,21 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 7 (systems): TCP order gateway — **candidate, not started**
+### Milestone 8C (planning): Next milestone direction — **DONE (docs, revised)**
+
+**Deliverable:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) — recommends **9A performance deep dive**; defers persistence, TCP, publisher.
+
+---
+
+### Milestone 9A (recommended): Performance deep dive — **not started**
+
+**Goal:** Release baselines, profiling, hotspot analysis, dated table, scoped optimisation plan ([MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §4).
+
+**9B:** At most one measured hot-path optimisation if 9A justifies it.
+
+---
+
+### Milestone 7 (systems): TCP order gateway — **deferred** (after perf 9A/9B per 8C revision)
 
 **Goal:** Accept remote commands over TCP and return events/acks.
 
@@ -161,7 +175,7 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 8: Market data publisher — **candidate, not started**
+### Milestone 8: Market data publisher — **deferred** (overlaps 7A–7C viz — see 8C decision)
 
 **Goal:** Publish trades and top-of-book (and optional depth) from `EngineEvent` stream.
 
@@ -176,7 +190,9 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 9: Persistence and deterministic replay — **candidate, not started**
+### Milestone 9: Persistence and deterministic replay — **deferred (was initial 8C draft)**
+
+**8C revision:** Revisit as **10A** after performance 9A/9B. Journal + replay equivalence remains a valid future milestone; not the current queue recommendation.
 
 **Goal:** Durable command/event log and recovery.
 

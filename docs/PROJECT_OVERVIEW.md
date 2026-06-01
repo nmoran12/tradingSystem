@@ -56,7 +56,7 @@ This repository implements that core as a **single-threaded, deterministic** fou
 | Performance | 6A–6H | Baselines, streaming read, `process_into`, profiling, reserve tuning, SPSC |
 | Visualisation | 7A–7C | NDJSON export, live SSE, UI live-follow, run summary metrics |
 
-Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8B** — CI/correctness (implemented, pending review). **8A** done: [DEMO_GUIDE.md](DEMO_GUIDE.md).
+Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8C** — direction decision ([MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md)); **recommended next:** **9A** performance deep dive (not queued yet).
 
 ## Long-term vision (candidate, not queued)
 
@@ -67,7 +67,7 @@ From [ROADMAP.md](ROADMAP.md)—implement only after planning and tests:
 - Persistence and deterministic replay log
 - Replication research (after persistence)
 
-**Proposed near-term packaging:** milestones **8A** (docs/demo), **8B** (CI/correctness), **8C** (choose next systems feature)—see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+**Near-term track:** **8A–8B** done; **8C** chose **9A/9B performance** over new infrastructure—see [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md).
 
 ## Portfolio value (skills demonstrated)
 

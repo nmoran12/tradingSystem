@@ -7,7 +7,7 @@ This is an **educational / portfolio** project: no live markets, no brokerage co
 | | |
 |--|--|
 | **Tests** | **164/164** via `./scripts/verify.sh` |
-| **Queue** | **8B** (CI/correctness) **CURRENT** — implementation done, pending review · **8A** done · **8C** proposed |
+| **Queue** | **8C** decision done → **9A** performance deep dive recommended ([MILESTONE_8C_DECISION.md](docs/MILESTONE_8C_DECISION.md)) · **8A–8B** done |
 | **CI** | GitHub Actions — build + **164** tests + UI build ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) |
 
 Run all commands from **`cpp-low-latency-orderbook/`** (this directory), not the parent workspace folder.
@@ -194,7 +194,8 @@ Screenshot/GIF assets are **not** in the repository yet. When you capture them, 
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module boundaries and invariants |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Completed milestones and systems candidates |
 | [docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) | Backlog (CI, tests, next features) |
-| [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md) | Delivery queue (**8A** CURRENT) |
+| [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md) | Delivery queue |
+| [docs/MILESTONE_8C_DECISION.md](docs/MILESTONE_8C_DECISION.md) | **Next direction:** **9A** perf plan; infrastructure deferred |
 | [docs/ACTIVE_MILESTONE.md](docs/ACTIVE_MILESTONE.md) | Active milestone acceptance criteria |
 | [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | UI, export, stream, run summary |
 | [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md) | OBK1 layout |

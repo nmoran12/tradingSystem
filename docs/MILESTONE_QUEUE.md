@@ -204,7 +204,7 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 **CURRENT milestone:** **8C — Next Systems Extension Decision** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)) — **planning only**, no implementation in 8C.
 
-**8B** is **Done** (commit `266df9d`). After 8C, queue the **chosen** systems milestone (TCP gateway, persistence, or market data publisher) from [ROADMAP.md](ROADMAP.md) as the next implementation row.
+**8B** is **Done** (commit `266df9d`). After 8C, queue **9A — Performance deep dive** per [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) (not persistence/TCP/publisher).
 
 ---
 
@@ -242,13 +242,18 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 8C — Next Systems Extension Decision
 
-**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Status:** **CURRENT** — planning **complete** (revised [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md)). Awaiting human `/advance-milestone`.
 
-**Goal:** Compare and **choose** the next major systems feature before any implementation: **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)).
+**Goal:** Choose next major direction: **performance deep dive** vs infrastructure (persistence, TCP, publisher).
 
-**Deliverable (planned):** Written decision + scoped outline (e.g. `docs/MILESTONE_8C_DECISION.md` or ROADMAP addendum). **No C++/UI code in 8C.**
+| Outcome | Detail |
+|---------|--------|
+| **Decision doc** | [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) (revised: perf-first) |
+| **Recommendation** | **9A — Performance Deep Dive and Hot-Path Optimisation Plan** (measurement + plan; code in 9B only if evidenced) |
+| **Deferred** | Persistence/journal, TCP gateway, market data publisher |
+| **Not done** | No C++/UI implementation; **9A not CURRENT** until human queues row 19 |
 
-**After 8C:** Human adds the chosen systems milestone as the next queue row, then `/run-active-milestone` for implementation.
+**After 8C advance:** Add **19 | 9A | Performance Deep Dive … | CURRENT** — do **not** queue persistence as next implementation row.
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
