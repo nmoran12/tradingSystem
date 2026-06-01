@@ -1,6 +1,8 @@
 # Architecture
 
-This document describes the **current** architecture of `cpp-low-latency-orderbook` after Milestones 1–4. It is the source of truth for module boundaries and invariants.
+This document describes module boundaries and invariants for `cpp-low-latency-orderbook`. The **detailed** diagrams below were written around Milestones 1–4; the repo has since added **binary OBK1** (5), **benchmarks / SPSC** (6), and **optional visualisation** (7) without a full rewrite of every diagram here.
+
+**For an up-to-date picture:** see the architecture-at-a-glance section in [README.md](../README.md) and paths for `protocol/`, `viz/`, and `ui/replay-visualiser/`. Planned doc updates: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
 ## High-level architecture
 
@@ -194,17 +196,18 @@ include/
   benchmarks/       WorkloadGenerator
 src/                implementations + main.cpp
 benchmarks/         matching_engine_benchmark.cpp
-tests/              GoogleTest (56 tests)
+tests/              GoogleTest (160 tests via ./scripts/verify.sh)
 data/               sample_events.csv, sample_commands.csv
 ```
 
 ## Future module boundaries (not implemented)
 
-| Module | Planned milestone | Notes |
-|--------|-------------------|--------|
-| `protocol/` binary encode/decode | 5 | Maps bytes ↔ `OrderCommand` |
-| `concurrency/` SPSC ring buffer | 6 | Wraps engine; engine stays single-threaded |
-| TCP gateway | 7 | Submits commands; no logic in engine |
+| Module | Status | Notes |
+|--------|--------|--------|
+| `protocol/` binary OBK1 | **Shipped** (M5) | Maps bytes ↔ `OrderCommand`; see [BINARY_PROTOCOL.md](BINARY_PROTOCOL.md) |
+| `concurrency/` SPSC ring buffer | **Shipped** (M6) | Pipeline around engine; engine stays single-threaded |
+| `viz/` export + stream | **Shipped** (M7) | NDJSON export and localhost SSE; see [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
+| TCP gateway | **Candidate** | Submits commands; no logic in engine — see [ROADMAP.md](ROADMAP.md) |
 | Market data publisher | 8 | Consumes `EngineEvent` stream |
 | Persistence / replay log | 9 | Append-only command/event log |
 | Replication | 10 | After persistence is solid |

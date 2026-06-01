@@ -199,7 +199,25 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**No milestone is CURRENT.** The ordered queue through **7C** is complete. Further work is listed in [ROADMAP.md](ROADMAP.md) (e.g. Milestone 7 TCP gateway, Milestone 8 market data publisher) but is **not** auto-queued — add the next item to the table above before `/run-active-milestone`.
+**No milestone is CURRENT.** The ordered queue through **7C** is complete.
+
+**Next steps (human):** Review [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md), pick from the **proposed** milestones below (or a single systems milestone from [ROADMAP.md](ROADMAP.md)), add one row as **CURRENT**, then refresh [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
+
+---
+
+## Proposed next milestones (not CURRENT)
+
+These are **candidates** for the next queue rows. None are implemented; none are marked CURRENT.
+
+| Order | ID | Name | Status | Goal |
+|-------|-----|------|--------|------|
+| 16 | **8A** | Documentation and Demo Packaging | **Proposed** | Make the project easy to understand, run, and assess from GitHub: README sync (160 tests, 7A–7C), architecture-at-a-glance, benchmark summary with disclaimers, demo instructions, screenshot/GIF placeholders |
+| 17 | **8B** | CI and Correctness Hardening | **Proposed** | Credibility via automation: GitHub Actions (build + ctest + optional UI build); binary vs CSV equivalence; workload invariant tests; stable stream integration coverage |
+| 18 | **8C** | Next Systems Extension Decision | **Proposed** | Planning only: compare and scope **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)) before implementation |
+
+**Suggested order:** 8A → 8B → 8C, then queue one systems milestone (e.g. TCP or persistence) as the next implementation tranche.
+
+**Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
 ---
 

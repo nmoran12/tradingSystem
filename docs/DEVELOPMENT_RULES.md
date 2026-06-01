@@ -88,7 +88,7 @@ Not the parent `tradingSystem/` folder. Always run `cmake -S . -B build` from in
 
 - [ ] Behaviour matches acceptance criteria in `ROADMAP.md` / milestone plan
 - [ ] New tests added and named clearly
-- [ ] All 56+ tests pass
+- [ ] All tests pass (`./scripts/verify.sh` — currently **160**)
 - [ ] Replay CLI still works (`--replay`)
 - [ ] Engine CLI still works (`--engine`) if engine touched
 - [ ] Benchmark still runs if perf-related code touched

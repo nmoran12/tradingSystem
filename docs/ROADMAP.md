@@ -2,6 +2,8 @@
 
 Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are frozen unless a later milestone explicitly requires a compatible extension.
 
+**Post-7C:** The ordered queue through **7C** is complete. **Planned** improvements (CI, demo packaging, extra tests) and proposed milestones **8A–8C** are in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md). Nothing in that backlog is implemented unless this repo already contains it.
+
 ---
 
 ## Completed milestones
@@ -126,56 +128,23 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 7A: Replay Visualiser UI
+### Milestone 7 — Replay visualisation (7A, 7B, 7C) — **DONE**
 
-**Goal:** Build an optional replay visualiser that helps users understand and debug order book behaviour without contaminating the performance-critical C++ core.
+**Goal:** Optional replay visualiser and export/stream paths without contaminating the performance-critical C++ core.
 
-**Recommended architecture:**
+| Slice | Status | Shipped (summary) |
+|-------|--------|-------------------|
+| **7A** | Done | `--export-visualisation` NDJSON; React UI (file/scenarios); `schemaVersion: 1` |
+| **7B** | Done | `--stream-visualisation` localhost HTTP/SSE; UI `EventSource` live-follow |
+| **7C** | Done | Client-side run summary metrics panel (informational; not Release benchmarks) |
 
-- The C++ engine remains headless and performance-focused.
-- Replay paths export deterministic, visualisation-friendly output (JSON or NDJSON).
-- A separate frontend app reads those outputs (implementation detail intentionally flexible; e.g. React + Vite).
-- UI is optional and kept out of benchmark and Release measurement workflows.
+**Docs:** [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md).
 
-**Scope (first prototype):**
-
-- Export visualisation-friendly replay data:
-  - order book snapshots (or top-of-book / limited depth)
-  - trades
-  - best bid / best ask
-  - spread
-  - command sequence number or timestamp
-  - basic replay metrics (counts, totals)
-- UI prototype views:
-  - order book ladder
-  - trade tape
-  - best bid/ask + spread display
-  - replay controls (step, play, pause, reset)
-  - load replay output from file initially
-- Keep UI separate from core:
-  - no UI code inside `MatchingEngine` or `OrderBook`
-  - no frontend dependency in benchmark or Release paths
-  - no added instrumentation in hot paths unless explicitly gated
-
-**Acceptance criteria:**
-
-- Clear docs for generating replay visualisation output and running the UI
-- Visualiser reads a recorded replay output file and renders the basic views
-- Core correctness tests and benchmarks remain unchanged
-
-**Out of scope:**
-
-- React/Vite implementation details until the milestone starts
-- WebSocket/HTTP servers
-- GUI frameworks in C++ (Qt, Dear ImGui, etc.)
-- Live trading simulation or real exchange connectivity
-- Changes to matching logic or replay semantics
-
-**Plan:** [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
+**Follow-ups (planned, not done):** See [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md) — demo script, CI, full-depth export, UI polish.
 
 ---
 
-### Milestone 7: TCP order gateway
+### Milestone 7 (systems): TCP order gateway — **candidate, not started**
 
 **Goal:** Accept remote commands over TCP and return events/acks.
 
@@ -192,7 +161,7 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 8: Market data publisher
+### Milestone 8: Market data publisher — **candidate, not started**
 
 **Goal:** Publish trades and top-of-book (and optional depth) from `EngineEvent` stream.
 
@@ -207,7 +176,7 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 
 ---
 
-### Milestone 9: Persistence and deterministic replay
+### Milestone 9: Persistence and deterministic replay — **candidate, not started**
 
 **Goal:** Durable command/event log and recovery.
 
@@ -248,3 +217,19 @@ Staged delivery plan for `cpp-low-latency-orderbook`. Completed milestones are f
 | 9 before 10 | Durability before distributed consensus |
 
 Do not skip ahead without updating docs and tests for the current milestone.
+
+---
+
+## Future improvements and proposed queue (8A–8C)
+
+Detailed backlog (priority, difficulty, resume value, scope limits): **[FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md)**.
+
+**Proposed** next queue rows (not CURRENT until human approval)—see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md):
+
+| ID | Name | Purpose |
+|----|------|---------|
+| **8A** | Documentation and Demo Packaging | Accurate README, architecture-at-a-glance, demo instructions, screenshot/GIF placeholders |
+| **8B** | CI and Correctness Hardening | GitHub Actions; binary vs CSV equivalence; invariants; stream test coverage |
+| **8C** | Next Systems Extension Decision | Plan and choose: TCP gateway vs persistence/replay log vs market data publisher |
+
+These are **planning milestones**; no CI workflow, demo script, or new systems code exists until implemented.

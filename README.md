@@ -1,12 +1,22 @@
 # cpp-low-latency-orderbook
 
-A C++20 low-latency market data and order book engine that processes exchange-style events, reconstructs bid/ask depth, and benchmarks event processing latency.
+A C++20 low-latency market data and order book engine that processes exchange-style events, reconstructs bid/ask depth, matches client orders, and measures processing latency. An optional React replay visualiser helps debug and demo behaviour without touching the benchmark hot path.
 
-This project focuses on core market data infrastructure: parsing simulated exchange messages, maintaining a price-time priority order book, matching client orders, and measuring per-event processing latency. It is not a trading bot and does not connect to live exchanges.
+This project is an **educational / portfolio** exchange simulator: it does not connect to live markets and is not a trading bot.
 
-**Status:** Milestones 1–6 in progress · **123/123 tests** passing · replay + engine CLI + binary replay + benchmarks
+**Status (post-7C):** Milestones **1–7C** complete on the ordered queue · **160/160** tests (`./scripts/verify.sh`) · binary OBK1 replay · Release benchmarks · optional replay UI (file, live SSE, run summary)
 
 Run all commands from this directory (`cpp-low-latency-orderbook/`), not the parent workspace folder.
+
+## What you get
+
+- **Replay path** — market-event CSV → `OrderBook` (Milestone 1)
+- **Engine path** — command CSV → `MatchingEngine` → trades and resting book (Milestones 2–3)
+- **Binary engine** — OBK1 64-byte command files → `MatchingEngine` (Milestone 5)
+- **Performance** — `matching_engine_benchmark`, `binary_protocol_benchmark`, `ring_buffer_pipeline_benchmark`, profiling docs (Milestones 4, 6)
+- **Visualisation (optional)** — NDJSON export, localhost SSE stream, React UI with live follow and run-summary metrics (Milestones 7A–7C)
+
+Benchmark numbers are **machine-dependent samples**, not production latency claims. See [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
 
 ## Project documentation
 
@@ -14,152 +24,137 @@ Run all commands from this directory (`cpp-low-latency-orderbook/`), not the par
 |----------|-------------|
 | [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) | Goals, components, portfolio value |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module boundaries, data flow, invariants |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Completed and future milestones |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Completed milestones and long-term systems ideas |
+| [docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) | **Planned** backlog (CI, demo, tests, next milestones) |
+| [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md) | Ordered delivery queue (through 7C done) |
 | [docs/DEVELOPMENT_RULES.md](docs/DEVELOPMENT_RULES.md) | Coding, testing, and architecture guardrails |
-| [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Benchmark harness and sample results |
-| [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) | Release-mode baseline methodology |
-| [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md) | Profiling tools and benchmark stability |
-| [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | File-based replay visualiser UI (spike) |
-| [docs/MILESTONE_5_PLAN.md](docs/MILESTONE_5_PLAN.md) | Binary protocol milestone plan |
-| [docs/MILESTONE_6_PLAN.md](docs/MILESTONE_6_PLAN.md) | Performance and SPSC milestone plan |
+| [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Benchmark harness and methodology |
+| [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) | Release-mode baseline workflow |
+| [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md) | Profiling tools and stability notes |
+| [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | Replay UI: file, live stream, run summary |
 
-## Architecture
+## Architecture at a glance
 
-**Replay path (Milestone 1):**
+```text
+REPLAY PATH
+  market-events.csv → MarketDataParser → MarketEvent → OrderBook
 
+ENGINE PATH
+  order-commands.csv → OrderCommandParser → MatchingEngine → EngineEvent → OrderBook
+
+BINARY ENGINE PATH
+  commands.obk (OBK1) → BinaryCommandReader → MatchingEngine → EngineEvent → OrderBook
+
+OPTIONAL VISUALISATION (opt-in CLI flags)
+  MatchingEngine steps → ReplayVisualisationWriter → NDJSON file  OR  localhost SSE
+
+OPTIONAL UI (separate app)
+  NDJSON file / bundled scenarios / EventSource live stream → replay-visualiser
+
+BENCHMARKS (separate binaries, not in default CLI)
+  WorkloadGenerator → MatchingEngine / binary read / SPSC pipeline → metrics
 ```
-Market Data CSV → MarketDataParser → MarketEvent → OrderBook → Depth / Latency
-```
 
-**Engine path (Milestones 2–3):**
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-```
-Command CSV → OrderCommandParser → OrderCommand → MatchingEngine → EngineEvent → OrderBook
-```
-
-## Build
+## Build and verify
 
 ```bash
 cmake -S . -B build
 cmake --build build
-ctest --test-dir build --output-on-failure
+./scripts/verify.sh          # build + ctest (160 tests)
 ```
 
-Requirements:
+Requirements: C++20, CMake 3.20+, network on first configure (GoogleTest via FetchContent).
 
-- C++20 compiler (GCC 11+, Clang 14+, or Apple Clang 14+)
-- CMake 3.20+
-- Internet access on first configure (GoogleTest is fetched via CMake FetchContent)
+**UI (optional):**
+
+```bash
+cd ui/replay-visualiser
+npm install
+npm run build
+```
 
 ## Run
 
-From project root (after `cmake --build build`):
-
-**Replay mode** (Milestone 1 market-event CSV):
+**Replay mode** (market-event CSV):
 
 ```bash
 ./build/cpp-low-latency-orderbook --replay data/sample_events.csv
-# backward compatible:
-./build/cpp-low-latency-orderbook data/sample_events.csv
 ```
 
-**Engine mode** (Milestone 3 command CSV through MatchingEngine):
+**Engine mode** (command CSV):
 
 ```bash
 ./build/cpp-low-latency-orderbook --engine data/sample_commands.csv
 ```
 
-**Binary engine mode** (Milestone 5 OBK1 command file through MatchingEngine):
+**Binary engine** (OBK1 command file):
 
 ```bash
-./build/cpp-low-latency-orderbook --binary-engine path/to/order_commands.obk
+./build/cpp-low-latency-orderbook --binary-engine path/to/commands.obk
 ```
 
-Binary files contain back-to-back fixed-width 64-byte OBK1 v1 command messages with no file header. Use `protocol::write_order_commands_binary` from tests or tooling to generate local simulated command files. Protocol helpers support both buffered and streaming binary reads; this is still simulated/local replay only, not real exchange connectivity.
+Generate local `.obk` files via `protocol::write_order_commands_binary` in tests/tooling (see [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md) if present, or test helpers). `*.obk` may be gitignored.
 
-Engine modes print each `EngineEvent`, final best bid/ask, book depth, and latency stats.
-
-### Command CSV format
-
-```csv
-type,order_id,side,order_type,price,quantity
-NEW,1,SELL,LIMIT,10055,100
-NEW,2,BUY,LIMIT,10060,150
-NEW,3,SELL,LIMIT,10070,50
-NEW,4,BUY,MARKET,0,25
-CANCEL,2,BUY,LIMIT,0,0
-MODIFY,1,SELL,LIMIT,10050,75
-```
-
-- `type`: `NEW`, `CANCEL`, or `MODIFY`
-- `price` / `quantity`: integer ticks and shares; use `0` for market price placeholder
-- Prices are integer cents/ticks (e.g. `10055` = $100.55)
-
-**Sample engine run** (`data/sample_commands.csv`):
-
-1. Resting sell at 10055 (order 1)
-2. Aggressive buy limit 10060 (order 2) fully trades against order 1; remainder rests
-3. Additional ask at 10070 (order 3)
-4. Market buy 25 (order 4) consumes available ask liquidity
-
-## Milestone 3: Exchange Command Layer
-
-- **Market orders** — consume liquidity price-time priority; unfilled quantity is cancelled (never rests)
-- **Modify orders** — cancel-and-reinsert by `order_id`; crossing price triggers normal matching
-- **OrderCommandParser** — separate CSV parser for engine commands
-- **Engine CLI** — `--engine` mode with event printing
-- **OrderBook introspection** — `get_order`, `active_order_count`, `total_resting_quantity`, `validate_invariants`
-
-**Modify tradeoff:** all successful modifies use cancel-and-reinsert, so FIFO queue position is always reset.
-
-## Milestone 4: Benchmarking
-
-See [docs/BENCHMARKING.md](docs/BENCHMARKING.md) for full methodology and **machine-dependent sample results** (not production claims).
+**Visualisation export** (NDJSON, one JSON line per command step):
 
 ```bash
-./build/matching_engine_benchmark              # default 1M commands, seed 42
-./build/matching_engine_benchmark 100000 42    # custom size/seed
-./build/binary_protocol_benchmark 100000 42    # OBK1 write/read/decode + engine apply phases
+./build/cpp-low-latency-orderbook \
+  --binary-engine path/to/commands.obk \
+  --export-visualisation replay.ndjson
 ```
 
-Release build recommended for meaningful throughput: `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release`
-
-For repeatable local baselines, use:
+**Live visualisation stream** (localhost SSE, proof-of-concept):
 
 ```bash
+./build/cpp-low-latency-orderbook \
+  --binary-engine path/to/commands.obk \
+  --stream-visualisation 127.0.0.1:9000
+```
+
+Then connect with the UI ([docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md)) or `curl -N http://127.0.0.1:9000/stream`.
+
+## Benchmarks
+
+```bash
+./build/matching_engine_benchmark 100000 42
+./build/binary_protocol_benchmark 100000 42
+./build/ring_buffer_pipeline_benchmark 100000 42
 ./scripts/benchmark_release.sh 100000 42
+./scripts/repeated-benchmark.sh   # see docs
 ```
 
-Benchmark numbers are machine-specific. See [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) for the current Release-mode baseline workflow and recorded local results. For repeated runs and profiling guidance, see [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md).
+See [docs/BENCHMARKING.md](docs/BENCHMARKING.md) and [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md).
 
-## Current Features
+## Replay visualiser (7A–7C)
 
-- Market-event CSV replay (`ADD` / `CANCEL` / `EXECUTE`)
-- Command CSV exchange simulator (`NEW` / `CANCEL` / `MODIFY`, `LIMIT` / `MARKET`)
-- Binary OBK1 command-file replay via `--binary-engine`
-- MatchingEngine with automatic trade generation, partial/full fills, cancels
-- Latency tracker with min/max/average and p50/p95/p99
-- GoogleTest coverage + `matching_engine_benchmark` + `binary_protocol_benchmark`
+React + Vite app under `ui/replay-visualiser/`:
 
-## Project Layout
+- Load bundled scenarios or uploaded NDJSON
+- **Live follow** via `EventSource` against `--stream-visualisation`
+- **Run summary** panel (client-side metrics; not Release benchmarks)
 
+Full instructions: [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md).
+
+## Planned improvements (not implemented)
+
+CI (GitHub Actions), demo script/screenshots, stronger equivalence tests, and the next systems milestone (TCP gateway vs persistence vs market data publisher) are **documented only**:
+
+[docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) · proposed queue **8A–8C** in [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md)
+
+## Project layout
+
+```text
+include/          Headers (market_data, order_book, matching_engine, protocol, viz, …)
+src/              Implementations
+benchmarks/       matching_engine, binary_protocol, ring_buffer_pipeline
+ui/replay-visualiser/   Optional React UI
+tests/            GoogleTest (160 cases)
+scripts/          verify.sh, benchmark_release.sh, repeated-benchmark.sh
+data/             sample CSV fixtures
+docs/
 ```
-include/
-  market_data/      MarketDataParser, OrderCommandParser
-  order_book/       Order, Trade, OrderBook
-  matching_engine/  OrderCommand, EngineEvent, MatchingEngine, EngineEventPrinter
-  benchmarks/       WorkloadGenerator
-  metrics/          LatencyTracker
-  protocol/         OBK1 binary encode/decode and command file reader/writer
-benchmarks/         matching_engine_benchmark.cpp
-                    benchmark_binary_protocol.cpp
-data/               sample_events.csv, sample_commands.csv
-tests/
-```
-
-## Future milestones
-
-See [docs/ROADMAP.md](docs/ROADMAP.md). Current performance work is tracked in **Milestone 6**.
 
 ## License
 

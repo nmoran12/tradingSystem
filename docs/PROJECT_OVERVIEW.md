@@ -2,7 +2,7 @@
 
 ## cpp-low-latency-orderbook
 
-A C++20 educational exchange simulator focused on market data, order-book reconstruction, and deterministic order matching with latency measurement. The project demonstrates how exchange-style systems separate **commands** (client input) from **events** (engine output), maintain price-time priority, and measure per-operation performance—without connecting to live markets or handling real money.
+A C++20 educational exchange simulator focused on market data, order-book reconstruction, deterministic order matching, binary command replay (OBK1), performance measurement, and an **optional** replay visualiser. The project separates **commands** (client input) from **events** (engine output), maintains price-time priority, and documents a path toward gateways and persistence—without live markets or real money.
 
 ## Problem it solves
 
@@ -12,97 +12,69 @@ Trading systems need a fast, correct core that can:
 2. Match crossing orders and emit trade events.
 3. Accept structured commands (new, cancel, modify) and reject invalid input.
 4. Measure how long each operation takes on a given machine.
+5. (Optionally) Explain behaviour to humans via exported or streamed replay steps.
 
-This repository implements that core as a **single-threaded, deterministic** foundation suitable for learning, testing, and future low-latency extensions.
+This repository implements that core as a **single-threaded, deterministic** foundation, plus opt-in tooling for benchmarks and visualisation.
 
 ## Why it is useful as a C++ systems project
 
-- **Real structure, not a toy snippet:** modular headers, CMake, GoogleTest, CLI modes, and a benchmark harness.
-- **Correctness first:** 56 automated tests cover parsers, book state, matching, market/modify behaviour, and workload determinism.
-- **Performance awareness:** `LatencyTracker` and `matching_engine_benchmark` report throughput and percentiles on synthetic workloads.
-- **Clear extension path:** documented milestones for binary protocol, ring buffers, networking, persistence, and replication—without implementing them prematurely.
+- **Real structure:** modular headers, CMake, GoogleTest, multiple CLI modes, benchmark harnesses, optional UI.
+- **Correctness first:** **160** automated tests (`./scripts/verify.sh`) cover parsers, book, engine, binary protocol, SPSC pipeline, and visualisation export/stream helpers.
+- **Performance awareness:** Release benchmarks, baseline docs, profiler-guided 6E/6G work—**without** claiming production throughput.
+- **Clear boundaries:** parsers vs `MatchingEngine` vs `OrderBook`; replay path separate from engine path; UI and viz off the hot path by default.
+- **Extension path:** documented in [ROADMAP.md](ROADMAP.md) and prioritised in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
-## What this project is not (yet)
+## What this project is not
 
 - Not production-ready exchange software.
 - Not connected to real brokers or exchanges.
-- Not multi-threaded or lock-free in the hot path.
-- Not a strategy, PnL, or portfolio system.
-- Not a distributed or replicated trading cluster.
+- Not multi-threaded or lock-free in the default matching hot path.
+- Not a strategy, PnL, portfolio, auth, or cloud product.
+- Not a substitute for Release benchmarks when evaluating performance ([BENCHMARKING.md](BENCHMARKING.md)).
 
 ## Current system components
 
 | Component | Role |
 |-----------|------|
-| `OrderBook` | Resting order storage, price levels, FIFO queues, lookup by order ID |
-| `MarketEvent` + `MarketDataParser` | Milestone 1 replay path (`ADD` / `CANCEL` / `EXECUTE`) |
-| `MatchingEngine` | Trading logic: limit/market match, modify, cancel |
-| `OrderCommand` | Client-style input (`NewOrder`, `CancelOrder`, `ModifyOrder`) |
-| `EngineEvent` | Engine output (`OrderAccepted`, `Trade`, `BookUpdate`, etc.) |
-| `OrderCommandParser` | Command CSV → `OrderCommand` |
-| `EngineEventPrinter` | Human-readable CLI event output |
-| `WorkloadGenerator` | Deterministic synthetic command streams |
-| `matching_engine_benchmark` | Throughput/latency benchmark executable |
-| `LatencyTracker` | Nanosecond stats (avg, min, max, p50/p95/p99) |
-| GoogleTest + CMake | Build, test, and CI-friendly workflow |
+| `OrderBook` | Resting orders, price levels, FIFO, lookup by order ID |
+| `MarketDataParser` | Replay path: CSV → `MarketEvent` |
+| `OrderCommandParser` | Engine path: CSV → `OrderCommand` |
+| `MatchingEngine` | Matching, market/modify, cancel |
+| `BinaryProtocol` / `BinaryCommandReader` | OBK1 encode/decode and `.obk` file I/O |
+| `ReplayVisualisationWriter` / `ReplayVisualisationStreamServer` | Opt-in NDJSON export and localhost SSE (7B) |
+| `SpscRingBuffer` / `SpscCommandPipeline` | Optional ingest wrapper (6H) |
+| `WorkloadGenerator` | Deterministic synthetic workloads |
+| Benchmark executables | Engine, binary protocol, ring-buffer pipeline |
+| `ui/replay-visualiser/` | Optional React UI: file, live stream, run summary (7A–7C) |
 
-## Completed milestones
+## Completed milestone track (summary)
 
-### Milestone 1: OrderBook and CSV replay
+| Track | IDs | Highlights |
+|-------|-----|------------|
+| Core | 1–4 | Replay, matching engine, market/modify, benchmarks |
+| Binary | 5C–5F | OBK1 decoder, file I/O, `--binary-engine`, benchmark integration |
+| Performance | 6A–6H | Baselines, streaming read, `process_into`, profiling, reserve tuning, SPSC |
+| Visualisation | 7A–7C | NDJSON export, live SSE, UI live-follow, run summary metrics |
 
-- CSV parser for `MarketEvent`
-- Domain types (`MarketEvent`, `Order`, `Trade`)
-- `OrderBook` with price-time priority
-- `LatencyTracker`
-- GoogleTest coverage
-- Replay CLI path (`--replay` or legacy single-arg)
+Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **No milestone is CURRENT** until the next row is added.
 
-### Milestone 2: MatchingEngine
+## Long-term vision (candidate, not queued)
 
-- `OrderCommand` input model
-- `EngineEvent` output model
-- Automatic limit-order matching
-- Partial and full fills
-- Cancels and duplicate-order rejection
+From [ROADMAP.md](ROADMAP.md)—implement only after planning and tests:
 
-### Milestone 3: Complete exchange command layer
+- TCP order gateway (commands over the wire)
+- Market data publisher (trades / BBO from engine events)
+- Persistence and deterministic replay log
+- Replication research (after persistence)
 
-- Market orders (no rest; unfilled quantity cancelled)
-- Modify orders (cancel-and-reinsert semantics)
-- `OrderCommandParser` for command CSV
-- Engine CLI mode (`--engine`)
-- `EngineEventPrinter`
-- Replay path preserved
-
-### Milestone 4: Benchmarking and profiling harness
-
-- `matching_engine_benchmark` executable
-- Deterministic `WorkloadGenerator`
-- Throughput and latency metrics (including p50/p95/p99)
-- Post-run book invariant sanity checks
-
-## Long-term vision
-
-Evolve from a **correct single-threaded simulator** into a **performance-oriented exchange core** with:
-
-- Compact binary command protocol (Milestone 5)
-- SPSC ring-buffer command pipeline (Milestone 6)
-- TCP order gateway (Milestone 7)
-- Market data publisher (Milestone 8)
-- Persistence and deterministic replay (Milestone 9)
-- Replication/failover research (Milestone 10)
-
-Each step should preserve existing tests and architectural boundaries unless a milestone explicitly changes them.
+**Proposed near-term packaging:** milestones **8A** (docs/demo), **8B** (CI/correctness), **8C** (choose next systems feature)—see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
 ## Portfolio value (skills demonstrated)
 
-- **Modern C++20:** `enum class`, `std::optional`, RAII, clear module boundaries
-- **Data structures:** `std::map` price levels, `std::list` FIFO, `std::unordered_map` order lookup
-- **Deterministic matching:** price-time priority, resting-price execution, explicit event ordering
-- **Command/event architecture:** input commands vs output events, separate replay path
-- **Testing:** unit tests for parsers, book, engine, market/modify edge cases
-- **Benchmarking:** fixed-seed workloads, latency percentiles, invariant checks
-- **Systems thinking:** thin `main.cpp`, parsers separate from engine, benchmark code isolated
-- **Foundation for low-latency work:** documented path toward binary feeds, ring buffers, and gateways—without claiming production latency today
+- Modern C++20, clear module boundaries, CMake + GoogleTest
+- Price-time matching, command/event separation, binary wire format
+- Benchmarking and profiling discipline (dated samples, no hype)
+- Optional full-stack demo path: C++ export/stream + React visualiser
+- Documented backlog and scope limits ([FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md))
 
-Tone note: treat benchmark numbers as **machine-dependent samples** for relative comparison, not as guarantees of production performance.
+Treat benchmark numbers as **machine-dependent samples** for comparison on your hardware, not guarantees of production performance.

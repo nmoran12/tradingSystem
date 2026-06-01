@@ -58,9 +58,16 @@ Implementation: `viz::ReplayVisualisationWriter` (shared JSON) + `viz::ReplayVis
 
 Run summary panel aggregates command/trade totals, final book snapshot, and min/max spread from all loaded steps (file, scenario, or live stream). Informational only; does not replace Release benchmarks. Commit `7423903`.
 
+## Post-7C planned work
+
+Milestone slices **7A–7C are complete**. Further visualiser, demo, and CI ideas are **planned only** in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md) (e.g. demo script, screenshot, fixture alignment, full-depth export).
+
+Proposed queue packaging: **8A** (docs/demo), **8B** (CI/correctness), **8C** (systems decision) in [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md).
+
 ## Out of scope (all visualisation milestones)
 
 - Changing matching or replay semantics
 - Embedding UI in C++
 - Live exchange connectivity
 - Benchmark hot-path instrumentation by default
+- Claiming Release benchmark results from UI run summary
