@@ -3,71 +3,83 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **6H is CURRENT**
+**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **7A is CURRENT**
 
 ---
 
-## Milestone 6H — Optional SPSC Queue
+## Milestone 7A — Replay Visualiser UI
 
 | Field | Value |
 |-------|--------|
 | **Status** | READY (workflow) |
-| **Parent** | Milestone 6 — Performance and optimisation groundwork |
-| **Test baseline** | 129 tests after 6G order lookup reservation pass |
+| **Parent** | Milestone 7 — Optional visualisation (offline-first) |
+| **Test baseline** | 149 tests after 6H SPSC pipeline work |
 
 ### Model recommendation
 
-Use a **strong performance-focused coding model**. SPSC queues involve memory ordering, capacity edge cases, and later pipeline equivalence with `MatchingEngine` — correctness and documented semantics first.
+Use a **clear, product-minded model** for export schema and UI structure. The C++ export path must stay simple and gated; avoid coupling `OrderBook` / `MatchingEngine` to frontend code. **Cursor Auto** is reasonable for a minimal NDJSON export slice and docs; prefer a **stronger model** for full UI layout, playback state, and schema versioning if the first slice grows quickly.
 
 ---
 
 ### Goal
 
-Introduce a **single-producer / single-consumer (SPSC)** ring buffer pipeline that **wraps** `MatchingEngine` command ingest (and optionally event egress later) to practice low-latency queue patterns **without** making the engine multi-threaded internally or changing matching semantics.
+Build an **optional** replay visualiser so users can understand and debug order-book behaviour from recorded output — **without** changing matching semantics, replay semantics, or Release benchmark hot paths.
 
-Direct `process` / `process_into` on the engine must remain the semantic baseline; any pipeline path must prove **equivalence** on fixed workloads before claiming performance benefit.
+The C++ core stays headless. Visualisation data is exported deterministically (file-based first), then consumed by a separate UI (e.g. React + Vite under a `viz/` or similar folder — implementation detail flexible).
 
 ### First slice (planned)
 
-1. **`include/concurrency/SpscRingBuffer.hpp`** — fixed-capacity template with `try_push` / `try_pop`, acquire/release atomics, power-of-two capacity (mask indexing) where practical; document full/empty behaviour.
-2. **`tests/test_spsc_ring_buffer.cpp`** — single-threaded FIFO, full-buffer reject, empty pop fail, wrap-around stress (no `MatchingEngine` yet).
-3. **Do not** in this first slice:
-   - integrate with `MatchingEngine` or change engine/book code
-   - add MPMC queues, mutexes in the hot path, or networking
-   - add TCP, persistence, or UI work
+1. **Design and implement a minimal offline export path** (engine or replay run) that writes versioned **NDJSON** (or JSON lines) with stable fields, for example:
+   - step index, optional timestamp
+   - best bid / best ask / spread
+   - trades (price, quantity, sides/order ids where available)
+   - optional shallow depth or top-of-book only for v1
+   - summary counters (active orders, resting quantity) per step or at end
+2. **Explicit CLI or mode** (e.g. `--export-viz <file.ndjson>`) — not enabled in benchmark binaries by default.
+3. **Docs** — how to generate a sample file and what each field means; state that the UI is not part of performance measurement.
+4. **Do not** in the first slice:
+   - embed UI in C++ (Qt, ImGui, etc.)
+   - add WebSocket/HTTP server (that is **7B**)
+   - change `MatchingEngine` / `OrderBook` matching logic
+   - instrument `matching_engine_benchmark` or `binary_protocol_benchmark` hot loops
+   - claim throughput or latency improvements from the visualiser
 
-**Slice 2 (done in tree):** `pipeline::SpscCommandPipeline` — deterministic single-threaded enqueue/drain around `process_into`; equivalence tests vs direct processing (no throughput claims).
+Later slices: minimal UI prototype reading the export file (ladder, tape, BBO, step/play controls) — see [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7A.2.
 
-**Slice 3 (done in tree):** `WorkloadGenerator` equivalence tests (100 and 1 000 commands, seed 42; large-queue `run_sequence` and small-queue interleaved enqueue/drain). Correctness only — no throughput claims.
+### Likely files touched (first slice)
 
-**Slice 4 (done in tree):** `ring_buffer_pipeline_benchmark` — side-by-side direct `process_into` vs `SpscCommandPipeline` on the same workload; local numbers only, sanity check that outputs match (see [BENCHMARKING.md](BENCHMARKING.md)).
-
-Later slices: optional two-thread smoke, optional output ring, close 6H — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
+| Area | Examples |
+|------|----------|
+| Export / orchestration | `src/main.cpp`, new `include/viz/` or `src/viz/` exporter (thin) |
+| Types / schema | Small header for export record shapes; `schema_version` field |
+| Tests | Golden-file or round-trip tests on export lines from a tiny fixed command sequence |
+| Docs | `docs/MILESTONE_7_PLAN.md`, new `docs/VISUALISER.md` or section in README |
+| UI (later slice) | `viz/` frontend (not required in first slice) |
 
 ### Scope
 
-- SPSC ring buffer API and correctness tests
-- Cache-line awareness on head/tail where appropriate (document layout)
-- Optional two-thread tests **only** if explicitly labeled and deterministic
-- Keep **replay path** and **engine path** behaviour unchanged until an equivalence-tested pipeline adapter exists
-- Document design in header comments + short `docs/` note when behaviour is non-obvious
+- Deterministic, file-based visualisation export from an existing engine or replay path
+- Stable, documented field names and schema version
+- No regression to existing CLI modes (`--replay`, `--engine`, `--binary-engine`)
+- Keep benchmarks and default builds free of export overhead
 
 ### Out of scope
 
-- Changing `OrderBook` / `MatchingEngine` matching or storage semantics
-- MPMC queues, lock-free engine internals, or multithreaded matching
-- Networking, TCP gateway, replication, persistence
+- Live streaming interface (**7B**)
+- Benchmark overlay in UI (**7C**)
+- TCP gateway, persistence, replication
 - Binary protocol semantic changes
-- Further order-book container optimisation (completed under **6G**)
-- Benchmark throughput claims before pipeline equivalence is proven
+- Matching or FIFO / price-time rule changes
+- SPSC pipeline or performance optimisation work (completed under **6H**)
 
 ### Acceptance criteria
 
-- [ ] `./scripts/verify.sh` passes (new buffer tests included)
-- [ ] Ring buffer API documented (full/empty, capacity, memory ordering intent)
-- [ ] Single-threaded buffer tests cover FIFO, boundary, and wrap-around
-- [ ] No engine integration or matching/book changes in the first slice unless acceptance criteria are explicitly expanded by human review
-- [ ] No later-milestone work (7A+) in the same change set
+- [ ] `./scripts/verify.sh` passes (add tests if export behaviour is new)
+- [ ] Export mode is opt-in and documented; default behaviour unchanged
+- [ ] Sample NDJSON (or documented format) can be produced from a small deterministic run
+- [ ] Docs explain separation from C++ core and from Release benchmarks
+- [ ] No UI dependency linked into `orderbook_core` or benchmark targets in the first slice unless explicitly approved
+- [ ] No later-milestone work (7B/7C) in the same change set unless explicitly approved
 
 ### Required verification
 
@@ -77,18 +89,19 @@ From project root:
 ./scripts/verify.sh
 ```
 
-Pipeline benchmarks (later slices only):
+Manual check after export slice exists:
 
 ```bash
-./scripts/benchmark_repeat.sh 5 100000 42
+# Example — exact flags TBD when implemented
+./build/cpp-low-latency-orderbook --engine data/sample_commands.csv --export-viz /tmp/replay.ndjson
 ```
 
 ### Key docs
 
-- [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md) — future `concurrency/` boundary
+- [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
 - [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
-- [PROFILING_REPORT.md](PROFILING_REPORT.md)
+- [BENCHMARKING.md](BENCHMARKING.md) — UI must not pollute benchmark paths
 
 ### Human review before advance
 

@@ -26,8 +26,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 9 | 6E | Targeted Hot-Path Optimisation | Done |
 | 10 | 6F | Memory Pool / Object Pool | Done |
 | 11 | 6G | Order Book Data-Structure Optimisation | Done |
-| 12 | **6H** | Optional SPSC Queue | **CURRENT** |
-| 13 | 7A | Replay Visualiser UI | Queued |
+| 12 | 6H | Optional SPSC Queue | Done |
+| 13 | **7A** | Replay Visualiser UI | **CURRENT** |
 | 14 | 7B | Live Replay Streaming Interface | Queued |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Queued |
 
@@ -125,7 +125,18 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 6H — Optional SPSC Queue
 
-Design and optional implementation of single-producer / single-consumer ingest pipeline.
+**Completed.** Correctness-first SPSC ingest wrapper around `MatchingEngine`; no matching or book internals changed.
+
+| Deliverable | Detail |
+|-------------|--------|
+| **`SpscRingBuffer<T>`** | Header-only fixed-capacity ring; acquire/release atomics; deterministic tests |
+| **`SpscCommandPipeline`** | Single-threaded enqueue/drain → `process_into` |
+| **Equivalence tests** | Hand-written sequences + `WorkloadGenerator` (100 / 1 000 commands, seed 42); large-queue and interleaved small-queue paths |
+| **`ring_buffer_pipeline_benchmark`** | Side-by-side direct vs pipeline on same workload |
+| **Benchmark (one local run)** | Pipeline **slower** (~6.3M vs ~8.4M cmd/s at 100k/seed 42) — expected enqueue/drain overhead; **no throughput improvement claim** |
+| **Not done** | Multithreaded pipeline, output ring, pipeline optimisation |
+
+**Docs:** [BENCHMARKING.md](BENCHMARKING.md) (`ring_buffer_pipeline_benchmark`), [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §6H.
 
 **Plan reference:** [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md) (as scoped)
 

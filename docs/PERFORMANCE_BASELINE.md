@@ -232,3 +232,18 @@ Latency ns:
 | Buffered engine apply | **median ~9.74M** (prior session) | ~11.34–12.05M cmd/s; **median ~11.83M** | Noisy; same trade/invariant counts |
 
 **Conclusion:** Reserve is profiler-justified for reducing hash growth work during ramp-up; repeated benchmarks on this machine **do not** show a stable throughput improvement versus the post-6F median. Treat any delta as noise unless reproduced on the same commit in one session. Correctness unchanged (56086 trades, 10070 active orders, 5039585 resting quantity on every run).
+
+## 6H SPSC pipeline benchmark (slice 4)
+
+**Local, machine-dependent numbers only. One Release run — not repeated here.**
+
+**Goal of 6H:** correctness and equivalence (direct `process_into` vs `SpscCommandPipeline`), not throughput wins.
+
+**Command:** `./build-release/ring_buffer_pipeline_benchmark 100000 42` (queue capacity defaults to command count).
+
+| Path | Throughput (one run) | Notes |
+|------|----------------------|--------|
+| Direct `process_into` | ~8.36M commands/sec | Baseline hot loop |
+| SPSC pipeline (`run_sequence`) | ~6.30M commands/sec | Enqueue-all-then-drain; **slower** on this run |
+
+Event sequences and final book metrics (trades, active orders, best bid/ask, resting quantity) **matched** between paths on that run. The pipeline path adds queue overhead; **do not** claim the SPSC wrapper improves throughput from this single measurement. See [BENCHMARKING.md](BENCHMARKING.md) for how to re-run locally.
