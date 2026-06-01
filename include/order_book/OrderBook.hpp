@@ -17,6 +17,11 @@ namespace order_book {
 
 class OrderBook {
 public:
+    /// Pre-size @c order_lookup_ for at least @p expected_active_orders entries.
+    /// Does not reserve list/map nodes; safe to call on an empty or non-empty book.
+    /// Reduces rehash during growth when the peak active order count is known approximately.
+    void reserve_active_orders(size_t expected_active_orders);
+
     bool add_order(const Order& order);
     bool cancel_order(uint64_t order_id);
     bool execute_order(uint64_t order_id, uint32_t quantity);

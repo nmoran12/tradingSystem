@@ -215,3 +215,20 @@ Latency ns:
 | Streaming engine apply | *(6E session not re-run here)* | ~5.22–7.76M commands/sec; **median ~7.51M** | Same trade/invariant counts all runs |
 
 **Conclusion:** On this machine/session, matching-engine median throughput rose versus the documented post-6E baseline (~6.46M → ~9.25M), consistent with removing per-command output-vector allocation in the benchmark hot loop. Runs were still noisy (spread ~8.0–9.8M on matching engine). Treat as **directional local evidence**, not a portable guarantee — no before/after binary-protocol phases were captured on the identical pre-6F commit in the same session. Correctness unchanged (56086 trades, 10070 active orders, 5039585 resting quantity on every run).
+
+## 6G Order Lookup Reservation (slice 1)
+
+**Local, machine-dependent numbers only.**
+
+**Code change:** `OrderBook::reserve_active_orders` pre-sizes `order_lookup_`; matching-engine and binary-protocol benchmarks call `reserve_book_capacity(command_count / 10)` before the apply loop (seed-42 peak active orders ≈ 10% of command count). No change to `std::list` / `std::map` or matching rules.
+
+**Profiler (pre-change):** Engine-only `sample` showed `add_order_to_side` with hash emplace/rehash and `operator new` (see `docs/PROFILING_REPORT.md` §6G).
+
+**Release benchmark comparison** (`./scripts/benchmark_repeat.sh 5 100000 42`, seed 42, Release):
+
+| Phase | Post-6F reference (5 runs, prior session) | After 6G slice 1 (5 runs, this session) | Notes |
+|-------|------------------------------------------|----------------------------------------|--------|
+| Matching engine synthetic | **median ~9.25M** cmd/s (~8.0–9.8M) | ~8.19–10.44M cmd/s; **median ~10.22M** | Ranges overlap; not a clear win |
+| Buffered engine apply | **median ~9.74M** (prior session) | ~11.34–12.05M cmd/s; **median ~11.83M** | Noisy; same trade/invariant counts |
+
+**Conclusion:** Reserve is profiler-justified for reducing hash growth work during ramp-up; repeated benchmarks on this machine **do not** show a stable throughput improvement versus the post-6F median. Treat any delta as noise unless reproduced on the same commit in one session. Correctness unchanged (56086 trades, 10070 active orders, 5039585 resting quantity on every run).

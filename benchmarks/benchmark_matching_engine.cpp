@@ -28,6 +28,12 @@ uint64_t count_trades(const std::vector<matching_engine::EngineEvent>& events) {
     return trades;
 }
 
+size_t estimated_peak_active_orders(size_t command_count) {
+    // Seed-42 synthetic workload: peak active resting orders ~= command_count / 10
+    // (100k commands -> 10070 active; 1M -> 97187 in engine-only profiling).
+    return command_count / 10;
+}
+
 bool has_flag(int argc, char* argv[], const std::string& flag) {
     for (int i = 1; i < argc; ++i) {
         if (argv[i] == flag) {
@@ -55,6 +61,7 @@ int run_engine_only_profile_mode(const benchmarks::WorkloadConfig& config) {
     }
 
     matching_engine::MatchingEngine engine;
+    engine.reserve_book_capacity(estimated_peak_active_orders(commands.size()));
     std::vector<matching_engine::EngineEvent> event_scratch;
     event_scratch.reserve(4);
     const auto runtime_start = std::chrono::steady_clock::now();
@@ -100,6 +107,7 @@ int main(int argc, char* argv[]) {
     const auto commands = benchmarks::WorkloadGenerator(config).generate();
 
     matching_engine::MatchingEngine engine;
+    engine.reserve_book_capacity(estimated_peak_active_orders(commands.size()));
     metrics::LatencyTracker tracker;
     uint64_t total_trades = 0;
     std::vector<matching_engine::EngineEvent> event_scratch;

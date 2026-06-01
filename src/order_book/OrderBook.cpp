@@ -18,6 +18,10 @@ Order order_from_event(const market_data::MarketEvent& event) {
 
 }  // namespace
 
+void OrderBook::reserve_active_orders(size_t expected_active_orders) {
+    order_lookup_.reserve(expected_active_orders);
+}
+
 bool OrderBook::add_order(const Order& order) {
     if (order.side != market_data::Side::BUY && order.side != market_data::Side::SELL) {
         return false;

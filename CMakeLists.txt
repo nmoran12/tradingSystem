@@ -40,6 +40,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(orderbook_tests
     tests/test_market_data_parser.cpp
     tests/test_order_book.cpp
+    tests/test_order_book_reserve.cpp
     tests/test_latency_tracker.cpp
     tests/test_matching_engine.cpp
     tests/test_matching_engine_process_into.cpp

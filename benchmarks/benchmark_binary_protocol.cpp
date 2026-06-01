@@ -112,6 +112,7 @@ int main(int argc, char* argv[]) {
         });
 
         matching_engine::MatchingEngine buffered_engine;
+        buffered_engine.reserve_book_capacity(commands.size() / 10);
         uint64_t buffered_trades = 0;
         std::vector<matching_engine::EngineEvent> buffered_event_scratch;
         buffered_event_scratch.reserve(4);
@@ -129,6 +130,7 @@ int main(int argc, char* argv[]) {
         }
 
         matching_engine::MatchingEngine streaming_engine;
+        streaming_engine.reserve_book_capacity(commands.size() / 10);
         uint64_t streaming_trades = 0;
         std::size_t streaming_commands = 0;
         std::vector<matching_engine::EngineEvent> streaming_event_scratch;

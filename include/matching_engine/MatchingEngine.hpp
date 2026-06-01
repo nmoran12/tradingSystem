@@ -23,6 +23,11 @@ public:
 
     [[nodiscard]] const order_book::OrderBook& book() const { return book_; }
 
+    /// Forward to @c OrderBook::reserve_active_orders for benchmark/workload setup.
+    void reserve_book_capacity(size_t expected_active_orders) {
+        book_.reserve_active_orders(expected_active_orders);
+    }
+
 private:
     void process_new_order(const OrderCommand& command, std::vector<EngineEvent>& events);
     void process_cancel(const OrderCommand& command, std::vector<EngineEvent>& events);

@@ -145,11 +145,20 @@ Does not change production behaviour, matching/book/protocol semantics, or the n
 
 `process()` callers still pay per-call vector allocation; reuse benefit requires adopting `process_into` at the call site.
 
+## 6G order lookup reservation (slice 1)
+
+| Step | Result |
+|------|--------|
+| Pre-change engine-only `sample` | `profiling/6g/engine_only_sample.txt` (local, not in git) — `add_order_to_side` with `__hash_table` emplace / `__do_rehash` and `operator new` under resting adds |
+| Change | `OrderBook::reserve_active_orders(n)` → `order_lookup_.reserve(n)`; `MatchingEngine::reserve_book_capacity(n)`; benchmarks call `command_count / 10` from seed-42 peak active ratio |
+| Containers unchanged | `std::list`, `std::map`, `OrderLocation`, matching semantics unchanged |
+| Benchmark repeat | No clear median throughput win vs post-6F session; see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §6G |
+
 ## Future optimisation work
 
 Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
 
-**Recently completed:** event-output reuse via `process_into` (**6F**). **Queued next:** order-book data-structure optimisation (**6G**) — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
+**Recently completed:** order lookup pre-reserve (**6G slice 1**). **Next profiling targets:** list/map node allocation if book path remains hot — see roadmap; no container swap in slice 1.
 
 ## Related documentation
 
