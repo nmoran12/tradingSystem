@@ -203,9 +203,9 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**CURRENT milestone:** **9A — Performance Deep Dive and Hot-Path Optimisation Plan** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**CURRENT milestone:** **9B — One Measured Hot-Path Optimisation (Conditional)** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**8C** is **Done** (commit `e85786b`). **9A** is planning/measurement first; **9B** is optional one measured optimisation — see [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md).
+**9A** is **Done** (commit `191ddab`). **9B** is implementation (conditional on 9A measurement) — see [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) and [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5.
 
 ---
 
@@ -257,19 +257,34 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 9A — Performance Deep Dive and Hot-Path Optimisation Plan
 
-**Status:** **CURRENT** — **complete, pending human review** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)). Docs/measurement only; no engine/book code in 9A.
+**Completed.**
 
 | Outcome | Detail |
 |---------|--------|
 | **Plan doc** | [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) — dated Release baselines (2026-06-01), cost separation, hotspots, rejected ideas, **9B recommendation** |
-| **Baselines** | `./scripts/benchmark_release.sh 100000 42`; ME ×3; `ring_buffer_pipeline_benchmark` — see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A |
-| **Profiling** | 6G apply-loop `sample` + allocation attribution carried forward; 9A mistimed `sample` documented — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9A |
-| **9B target** | Byte-ranked alloc profile → **conditional** list-node allocation reduction in `add_order_to_side` |
-| **Not done** | No optimisation implementation; queue not advanced to 9B |
+| **Baselines** | `./scripts/benchmark_release.sh 100000 42`; ME ×3; `ring_buffer_pipeline_benchmark` — [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A |
+| **Profiling** | 6G apply-loop `sample` + allocation attribution; 9A mistimed `sample` documented — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9A |
+| **9B handoff** | Byte-ranked alloc profile (slice 1) → conditional list-node reduction in `add_order_to_side` (slice 2) |
+| **Not done in 9A** | No optimisation implementation |
 
-**Out of scope:** Persistence, TCP, publisher; speculative container rewrites; matching-semantics changes without tests.
+**Commit:** `191ddab` — Document 9A performance baseline and optimisation plan.
 
-**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §4–5 · [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
+---
+
+### 9B — One Measured Hot-Path Optimisation (Conditional)
+
+**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+
+**Goal:** At most **one** measured optimisation from [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §7 — **slice 1 measurement required** before book changes.
+
+| Slice | Work |
+|-------|------|
+| 1 | Instruments Allocations or `heaptrack` on engine-only apply (1M–2M cmds, seed 42) |
+| 2 | List-node pool/arena in `add_order_to_side` **if** slice 1 confirms dominance; else benchmark throughput mode or **stop** |
+
+**Out of scope:** Container family swap; persistence/TCP/publisher; protocol changes; unmeasured throughput claims.
+
+**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5 · [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -284,4 +299,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B, 8C) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B, 8C, 9A) are documented in [ROADMAP.md](ROADMAP.md).
