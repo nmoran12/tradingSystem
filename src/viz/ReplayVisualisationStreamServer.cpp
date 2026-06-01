@@ -159,6 +159,7 @@ void ReplayVisualisationStreamServer::wait_for_client() {
         "Content-Type: text/event-stream\r\n"
         "Cache-Control: no-cache\r\n"
         "Connection: keep-alive\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
         "\r\n";
     write_all(client_fd_, kHeaders);
 }

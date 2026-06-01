@@ -7,7 +7,7 @@ This document tracks the optional replay visualisation milestone slices. It comp
 | Slice | Name | Status | Summary |
 |-------|------|--------|---------|
 | **7A** | File-based replay visualisation | **Done** | NDJSON export from `--binary-engine`; React/Vite UI loads files offline |
-| **7B** | Live replay streaming | **Backend done** | Localhost SSE CLI; UI live-follow deferred |
+| **7B** | Live replay streaming | **Done (PoC)** | Localhost SSE CLI + UI `EventSource` live-follow |
 | **7C** | UI metrics / benchmark overlay | Queued | Informational overlays only; not a substitute for Release benchmarks |
 
 ## 7A — File-based (complete)
@@ -42,10 +42,16 @@ Stream the **same** replay visualisation record shape as 7A file export while th
 
 Implementation: `viz::ReplayVisualisationWriter` (shared JSON) + `viz::ReplayVisualisationStreamServer` (POSIX HTTP/SSE). Client connects (e.g. `curl -N`); server emits one SSE `data:` frame per engine command step.
 
-### Deferred (later 7B / UI slices)
+### UI live-follow (slice 2 — shipped)
 
-- React **live-follow** mode (`EventSource` consumer)
-- WebSocket transport polish
+- `ui/replay-visualiser/` — Connect / Disconnect, default `http://127.0.0.1:9000/stream`
+- Appends steps by `index`; follows newest step by default
+
+### Optional polish (later)
+
+- WebSocket transport
+- Reconnect/backpressure
+- Small demo script documenting backend + UI startup order
 - Production gateway patterns (see [ROADMAP.md](ROADMAP.md) Milestone 7 TCP — separate track)
 
 ## 7C — UI metrics overlay (queued)

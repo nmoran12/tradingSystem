@@ -89,6 +89,63 @@ body {
   flex-wrap: wrap;
 }
 
+.live-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(30, 41, 59, 0.85);
+  background: rgba(7, 12, 28, 0.55);
+}
+
+.stream-url-input {
+  min-width: 280px;
+  flex: 1 1 280px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(30, 41, 59, 0.90);
+  background: rgba(15, 23, 42, 0.55);
+  color: #e5e7eb;
+  font-size: 0.84rem;
+}
+
+.stream-url-input:disabled {
+  opacity: 0.6;
+}
+
+.live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 41, 59, 0.85);
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.live-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.live-status.connecting::before {
+  background: #fbbf24;
+}
+
+.live-status.connected::before {
+  background: #22c55e;
+}
+
+.live-status.error::before {
+  background: #ef4444;
+}
+
 .btn {
   background: rgba(15, 23, 42, 0.65);
   color: #e5e7eb;

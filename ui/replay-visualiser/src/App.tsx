@@ -1,41 +1,11 @@
-import React, { useMemo, useState } from 'react';
-
-type Trade = {
-  price: number;
-  quantity: number;
-  aggressiveOrderId?: number;
-  restingOrderId?: number;
-};
-
-type Level = {
-  price: number;
-  quantity: number;
-};
-
-type ReplayStep = {
-  schemaVersion?: number;
-  index: number;
-  commandType: string;
-  side: string;
-  orderType: string;
-  orderId: number;
-  price: number;
-  quantity: number;
-  symbol?: string;
-  bestBid: number | null;
-  bestAsk: number | null;
-  spread: number | null;
-  restingBidLevels: Level[];
-  restingAskLevels: Level[];
-  trades: Trade[];
-  totalRestingOrders: number;
-  totalRestingQuantity: number;
-};
-
-type Source =
-  | { kind: 'none' }
-  | { kind: 'scenario'; label: string; file: string }
-  | { kind: 'file'; name: string };
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  appendReplayStep,
+  DEFAULT_STREAM_URL,
+  parseLiveReplayStep,
+  type LiveConnectionStatus,
+} from './liveReplay';
+import type { ReplayStep, Source, Trade } from './replayTypes';
 
 type Scenario = { label: string; file: string };
 
@@ -112,6 +82,75 @@ export const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [source, setSource] = useState<Source>({ kind: 'none' });
+  const [streamUrl, setStreamUrl] = useState(DEFAULT_STREAM_URL);
+  const [liveStatus, setLiveStatus] = useState<LiveConnectionStatus>('disconnected');
+  const [followLive, setFollowLive] = useState(true);
+  const [malformedLiveEvents, setMalformedLiveEvents] = useState(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const followLiveRef = useRef(followLive);
+
+  React.useEffect(() => {
+    followLiveRef.current = followLive;
+  }, [followLive]);
+
+  const disconnectLive = useCallback(() => {
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setLiveStatus('disconnected');
+  }, []);
+
+  React.useEffect(() => () => disconnectLive(), [disconnectLive]);
+
+  const connectLive = useCallback(() => {
+    disconnectLive();
+    setSteps([]);
+    setCurrentIndex(0);
+    setIsPlaying(false);
+    setFollowLive(true);
+    setMalformedLiveEvents(0);
+    setLoadError(null);
+    setSource({ kind: 'live', url: streamUrl });
+    setLiveStatus('connecting');
+
+    const eventSource = new EventSource(streamUrl);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      setLiveStatus('connected');
+      setLoadError(null);
+    };
+
+    eventSource.onmessage = (event) => {
+      const step = parseLiveReplayStep(event.data);
+      if (!step) {
+        setMalformedLiveEvents((count) => count + 1);
+        return;
+      }
+
+      setSteps((previous) => {
+        const next = appendReplayStep(previous, step);
+        if (followLiveRef.current && next.length > 0) {
+          setCurrentIndex(next.length - 1);
+        }
+        return next;
+      });
+    };
+
+    eventSource.onerror = () => {
+      setLiveStatus('error');
+      setLoadError(
+        'Live stream disconnected or failed. Start the C++ backend with --stream-visualisation, then connect again.',
+      );
+      eventSource.close();
+      if (eventSourceRef.current === eventSource) {
+        eventSourceRef.current = null;
+      }
+    };
+  }, [disconnectLive, streamUrl]);
+
+  const stopOfflineSource = useCallback(() => {
+    disconnectLive();
+  }, [disconnectLive]);
   const scenarios: Scenario[] = useMemo(
     () => [
       { label: 'Basic replay', file: '/sample-replay.ndjson' },
@@ -168,6 +207,7 @@ export const App: React.FC = () => {
   const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    stopOfflineSource();
     try {
       const text = await file.text();
       const parsed = parseNdjson(text);
@@ -187,6 +227,7 @@ export const App: React.FC = () => {
   };
 
   const loadScenario = async (file: string) => {
+    stopOfflineSource();
     try {
       const res = await fetch(file);
       if (!res.ok) {
@@ -246,7 +287,11 @@ export const App: React.FC = () => {
       ? 'No replay loaded'
       : source.kind === 'scenario'
         ? source.label
-        : `File: ${source.name}`;
+        : source.kind === 'live'
+          ? `Live: ${source.url}`
+          : `File: ${source.name}`;
+
+  const liveConnected = liveStatus === 'connected' || liveStatus === 'connecting';
 
   return (
     <div className="app">
@@ -302,6 +347,50 @@ export const App: React.FC = () => {
         </div>
       </header>
 
+      <section className="live-controls" aria-label="Live stream">
+        <label className="select-wrap" style={{ flex: '1 1 280px' }}>
+          <span className="select-label">Stream URL</span>
+          <input
+            className="stream-url-input"
+            type="url"
+            value={streamUrl}
+            onChange={(e) => setStreamUrl(e.target.value)}
+            disabled={liveConnected}
+            spellCheck={false}
+          />
+        </label>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={connectLive}
+          disabled={liveConnected}
+        >
+          Connect
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={disconnectLive}
+          disabled={liveStatus === 'disconnected'}
+        >
+          Disconnect
+        </button>
+        <span className={`live-status ${liveStatus}`}>
+          {liveStatus === 'disconnected' && 'Disconnected'}
+          {liveStatus === 'connecting' && 'Connecting…'}
+          {liveStatus === 'connected' && 'Connected'}
+          {liveStatus === 'error' && 'Error'}
+        </span>
+        {liveStatus === 'connected' && !followLive && (
+          <button type="button" className="btn" onClick={() => setFollowLive(true)}>
+            Follow live
+          </button>
+        )}
+        {malformedLiveEvents > 0 && (
+          <span className="pill">Skipped {malformedLiveEvents} malformed event(s)</span>
+        )}
+      </section>
+
       <section className="controls-bar">
         <div className="controls">
           <button
@@ -320,6 +409,7 @@ export const App: React.FC = () => {
           className="btn"
           onClick={() => {
             setIsPlaying(false);
+            setFollowLive(false);
             setCurrentIndex((idx) => Math.max(0, idx - 1));
           }}
           disabled={steps.length === 0 || currentIndex === 0}
@@ -331,7 +421,15 @@ export const App: React.FC = () => {
           className="btn"
           onClick={() => {
             setIsPlaying(false);
-            setCurrentIndex((idx) => Math.min(steps.length - 1, idx + 1));
+            setCurrentIndex((idx) => {
+              const next = Math.min(steps.length - 1, idx + 1);
+              if (next >= steps.length - 1) {
+                setFollowLive(true);
+              } else {
+                setFollowLive(false);
+              }
+              return next;
+            });
           }}
           disabled={steps.length === 0 || currentIndex >= steps.length - 1}
         >

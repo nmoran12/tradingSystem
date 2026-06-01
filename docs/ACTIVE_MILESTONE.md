@@ -11,7 +11,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | READY FOR REVIEW — slice 1 (backend SSE) complete; UI live-follow deferred |
+| **Status** | READY FOR REVIEW — 7B backend SSE + UI live-follow complete |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
 | **Prerequisite** | 7A complete — file-based NDJSON export + UI spike |
 | **Test baseline** | 160 tests (7B writer + stream server tests) |
@@ -35,7 +35,7 @@ The C++ core stays headless. Streaming is **opt-in**, **non-production**, and **
 | NDJSON line format | `schemaVersion: 1` — `viz::ReplayVisualisationWriter` |
 | File export CLI | `--binary-engine` + `--export-visualisation` |
 | Live stream CLI | `--binary-engine` + `--stream-visualisation <host:port>` (localhost SSE) |
-| UI (file playback) | `ui/replay-visualiser/` |
+| UI (file + live) | `ui/replay-visualiser/` — file/scenarios + `EventSource` live-follow |
 | Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
 ### Slice plan
@@ -44,9 +44,10 @@ The C++ core stays headless. Streaming is **opt-in**, **non-production**, and **
 |-------|-------------|--------|
 | **0** | Roadmap docs: 7A vs 7B, same schema, backend-first, UI deferred | **Done** |
 | **1** | Localhost SSE CLI + shared record writer + tests | **Done** |
-| **2+** | UI live-follow (`EventSource`); transport polish | **Next** |
+| **2** | UI live-follow (`EventSource`) | **Done** |
+| **3+** | Polish: demo script, reconnect, close 7B review | Optional |
 
-**Defer to later slices:** UI “live follow” mode in React; WebSocket polish; production gateway patterns (**Milestone 7 TCP** in [ROADMAP.md](ROADMAP.md) is separate).
+**Defer:** WebSocket transport; production gateway patterns (**Milestone 7 TCP** in [ROADMAP.md](ROADMAP.md) is separate).
 
 See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 
@@ -74,13 +75,13 @@ See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 - TCP order gateway ([ROADMAP.md](ROADMAP.md) Milestone 7 TCP)
 - Claiming throughput/latency improvements from streaming
 
-### Acceptance criteria (backend slice — met)
+### Acceptance criteria (7B — met)
 
-- [x] `./scripts/verify.sh` passes (writer + stream server tests; no flaky CLI subprocess test)
-- [x] Opt-in stream mode documented; default CLI unchanged
-- [x] Stream emits `schemaVersion: 1` records (same JSON as file export)
-- [x] Localhost-only boundary documented
-- [x] No UI in this slice
+- [x] `./scripts/verify.sh` passes (C++ stream tests unchanged)
+- [x] Opt-in stream CLI; default binary engine unchanged
+- [x] UI connects via `EventSource`, appends `schemaVersion: 1` steps, follows live by default
+- [x] File upload and bundled scenarios preserved
+- [x] Localhost-only documented; proof-of-concept scope clear
 
 Human review still required before `/advance-milestone`.
 
