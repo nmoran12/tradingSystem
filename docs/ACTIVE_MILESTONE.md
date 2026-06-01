@@ -36,7 +36,9 @@ Direct `process` / `process_into` on the engine must remain the semantic baselin
    - add MPMC queues, mutexes in the hot path, or networking
    - add TCP, persistence, or UI work
 
-Later slices (only after buffer tests pass): producer/consumer pipeline around `process_into`, optional output ring, pipeline benchmark vs direct loop — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
+**Slice 2 (done in tree):** `pipeline::SpscCommandPipeline` — deterministic single-threaded enqueue/drain around `process_into`; equivalence tests vs direct processing (no throughput claims).
+
+Later slices: optional output ring, pipeline benchmark vs direct loop — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
 
 ### Scope
 
