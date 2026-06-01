@@ -50,6 +50,7 @@ add_executable(orderbook_tests
     tests/test_binary_command_reader.cpp
     tests/test_cli_binary_engine.cpp
     tests/test_binary_protocol.cpp
+    tests/test_spsc_ring_buffer.cpp
 )
 
 add_executable(matching_engine_benchmark benchmarks/benchmark_matching_engine.cpp)
