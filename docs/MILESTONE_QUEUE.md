@@ -31,7 +31,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 14 | 7B | Live Replay Streaming Interface | Done |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Done |
 | 16 | 8A | Documentation and Demo Packaging | Done |
-| 17 | **8B** | **CI and Correctness Hardening** | **CURRENT** |
+| 17 | 8B | CI and Correctness Hardening | Done |
+| 18 | **8C** | **Next Systems Extension Decision** | **CURRENT** |
 
 ---
 
@@ -201,9 +202,9 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**CURRENT milestone:** **8B — CI and Correctness Hardening** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**CURRENT milestone:** **8C — Next Systems Extension Decision** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)) — **planning only**, no implementation in 8C.
 
-**8A** is **Done** (commit `f4116b3`). **8C** remains **Proposed** below. Do not implement **8B** until `/run-active-milestone` in a new session.
+**8B** is **Done** (commit `266df9d`). After 8C, queue the **chosen** systems milestone (TCP gateway, persistence, or market data publisher) from [ROADMAP.md](ROADMAP.md) as the next implementation row.
 
 ---
 
@@ -224,9 +225,7 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 8B — CI and Correctness Hardening
 
-**Status:** **CURRENT** — implementation **complete**, pending human review ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
-
-**Goal:** Project credibility via automated build/test and stronger replay/protocol correctness checks.
+**Completed.**
 
 | Outcome | Detail |
 |---------|--------|
@@ -237,19 +236,19 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 | **Tests** | **164** total (`./scripts/verify.sh`) |
 | **Deferred** | OBK1 fuzz/property tests; CLI subprocess stream test; benchmark CI gates |
 
-**Out of scope for 8B:** MatchingEngine / OrderBook semantic changes; perf regression gates; 8C systems features.
-
-**Related backlog:** [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+**Commit:** `266df9d` — Add CI and correctness hardening for 8B.
 
 ---
 
-## Later milestones (Proposed, not CURRENT)
+### 8C — Next Systems Extension Decision
 
-| Order | ID | Name | Status | Goal |
-|-------|-----|------|--------|------|
-| 18 | **8C** | Next Systems Extension Decision | **Proposed** | Planning only: compare and scope **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)) before implementation |
+**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**After 8B:** advance to **8C**, then queue one systems milestone from [ROADMAP.md](ROADMAP.md).
+**Goal:** Compare and **choose** the next major systems feature before any implementation: **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)).
+
+**Deliverable (planned):** Written decision + scoped outline (e.g. `docs/MILESTONE_8C_DECISION.md` or ROADMAP addendum). **No C++/UI code in 8C.**
+
+**After 8C:** Human adds the chosen systems milestone as the next queue row, then `/run-active-milestone` for implementation.
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -264,4 +263,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B) are documented in [ROADMAP.md](ROADMAP.md).
