@@ -208,7 +208,7 @@ Implementation queue through **7C** is complete. **8A** is queued for the next i
 
 ### 8A — Documentation and Demo Packaging
 
-**Status:** **CURRENT** — not started (docs-only milestone; see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Status:** **CURRENT** — docs implemented ([DEMO_GUIDE.md](DEMO_GUIDE.md), README); pending human review before advance to **8B** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
 **Goal:** Make the project easy to understand, run, and assess from GitHub.
 

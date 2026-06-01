@@ -9,7 +9,7 @@
 
 ## CURRENT: 8A — Documentation and Demo Packaging
 
-**Status:** Queued for implementation — **not started** in this milestone tranche (queue prep only until `/run-active-milestone`).
+**Status:** Implementation **complete** (docs-only) — pending human `/review-milestone` before `/advance-milestone` to **8B**.
 
 ### Goal
 
@@ -49,13 +49,22 @@ Make the project easy to understand, run, and assess from GitHub.
 
 ### Acceptance criteria
 
-- [ ] `README.md` reflects post-7C reality (160 tests, milestones through 7C, architecture-at-a-glance, honest perf disclaimers, visualiser summary).
-- [ ] Demo sections cover offline scenarios and live SSE end-to-end (commands + UI steps).
-- [ ] Screenshot/GIF **capture checklist** exists (placeholders OK; no false claim that images are in-repo).
-- [ ] Onboarding path is a single obvious flow for a new clone.
-- [ ] `profiling/` called out as untracked/local-only.
-- [ ] `./scripts/verify.sh` still passes after any doc-only edits.
+- [x] `README.md` reflects post-7C reality (160 tests, milestones through 7C, architecture-at-a-glance, honest perf disclaimers, visualiser summary).
+- [x] Demo sections cover offline scenarios and live SSE end-to-end (commands + UI steps) — [DEMO_GUIDE.md](DEMO_GUIDE.md).
+- [x] Screenshot/GIF **capture checklist** exists (placeholders OK; no false claim that images are in-repo).
+- [x] Onboarding path is a single obvious flow for a new clone.
+- [x] `profiling/` called out as untracked/local-only.
+- [x] `./scripts/verify.sh` still passes after doc-only edits.
 - [ ] Human review + `/review-milestone` before `/advance-milestone` to **8B**.
+
+### Deliverables (this session)
+
+| Artifact | Location |
+|----------|----------|
+| README polish | [README.md](../README.md) |
+| Demo walkthrough | [DEMO_GUIDE.md](DEMO_GUIDE.md) |
+| Visualiser cross-links | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
+| Overview queue status | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
 
 ### References
 
@@ -63,10 +72,9 @@ Make the project easy to understand, run, and assess from GitHub.
 - Visualiser: [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md)
 - Long-term systems (not 8A): [ROADMAP.md](ROADMAP.md)
 
-### Baseline verification (pre-8A)
+### Baseline verification
 
 | Check | Result |
 |-------|--------|
-| `./scripts/verify.sh` | **160/160** |
-| `cd ui/replay-visualiser && npm run build` | Passes |
-| Post-7C docs commit | `378c3cb` |
+| `./scripts/verify.sh` | **160/160** (re-run after doc edits) |
+| `cd ui/replay-visualiser && npm run build` | Passes (re-run after doc edits) |

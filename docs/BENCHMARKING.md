@@ -2,6 +2,8 @@
 
 Guide to the benchmark harnesses and how to interpret results.
 
+**Honest use:** numbers are **machine- and build-dependent**. Prefer repeated Release runs (`./scripts/benchmark_repeat.sh`) and [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) for dated samples. The replay UI **run summary** is not a benchmark. Demo commands: [DEMO_GUIDE.md](DEMO_GUIDE.md).
+
 ## Purpose
 
 The benchmarks turn `cpp-low-latency-orderbook` from a correctness-only project into a **performance-measured** systems project. They answer:

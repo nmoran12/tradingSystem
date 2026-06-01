@@ -11,7 +11,7 @@ Binary/CSV input → C++ replay CLI (headless)
                  → React + Vite replay UI (file, scenarios, or live SSE follow)
 ```
 
-Roadmap: [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md). Planned UI/demo/CI follow-ups: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+Roadmap: [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md). **Demo commands:** [DEMO_GUIDE.md](DEMO_GUIDE.md). Planned UI/demo/CI follow-ups: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
 - The **C++ engine remains headless and performance-focused**.
 - Visualisation output is **optional** and only generated when explicitly requested.
@@ -236,7 +236,7 @@ data: {"schemaVersion":1,"index":0,...}
 - C++ export depth is **shallow (BBO only)** — one aggregated level per side at the best price. Full book depth would require additional introspection APIs and exporter changes.
 - Bundled multi-level NDJSON in `public/` is for UI demonstration; align or regenerate from CLI export when closing 7A.
 - NDJSON schema may evolve as the visualiser grows (keep `schemaVersion` stable and bump it when fields change).
-- **Planned (not implemented):** live-replay demo script, README screenshot/GIF, playback speed, metrics-at-current-step toggle — see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+- **Planned (not implemented):** `scripts/demo-live-replay.sh`, playback speed, metrics-at-current-step toggle — see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md). Screenshot/GIF **checklist** (assets optional): [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
 ## Repository hygiene
 

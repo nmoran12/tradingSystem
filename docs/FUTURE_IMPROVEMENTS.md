@@ -59,9 +59,12 @@ Also **avoid** unless profiler evidence justifies it:
 
 ## Documentation / README polish
 
+**8A (CURRENT):** README refresh, architecture-at-a-glance, and [DEMO_GUIDE.md](DEMO_GUIDE.md) are **done**; screenshot/GIF **checklist** is in the demo guide (binary assets still optional).
+
 ### README / overview refresh
 
 - **Description:** Sync `README.md`, [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), and top-level status lines with **160** tests, completed milestones **5–7C**, binary OBK1, SPSC, visualiser, `./scripts/verify.sh`.
+- **Status:** Addressed in milestone **8A** (see [DEMO_GUIDE.md](DEMO_GUIDE.md)).
 - **Why:** Stale “123 tests” / “Milestones 1–6 in progress” undermines trust for reviewers.
 - **Priority:** now · **Difficulty:** small · **Resume:** high
 

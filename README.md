@@ -1,37 +1,61 @@
 # cpp-low-latency-orderbook
 
-A C++20 low-latency market data and order book engine that processes exchange-style events, reconstructs bid/ask depth, matches client orders, and measures processing latency. An optional React replay visualiser helps debug and demo behaviour without touching the benchmark hot path.
+A C++20 **exchange simulator** that reconstructs an order book from market events, matches client orders with price-time priority, replays commands from CSV or **OBK1** binary files, measures latency on synthetic workloads, and optionally streams replay steps to a small React visualiser.
 
-This project is an **educational / portfolio** exchange simulator: it does not connect to live markets and is not a trading bot.
+This is an **educational / portfolio** project: no live markets, no brokerage connectivity, no trading bot.
 
-**Status (post-7C):** Milestones **1–7C** complete on the ordered queue · **160/160** tests (`./scripts/verify.sh`) · binary OBK1 replay · Release benchmarks · optional replay UI (file, live SSE, run summary)
+| | |
+|--|--|
+| **Tests** | **160/160** via `./scripts/verify.sh` |
+| **Queue** | Milestones **1–7C** complete · **8A** (docs/demo) **CURRENT** · **8B–8C** proposed |
+| **CI** | **Not yet** — planned in 8B ([FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md)) |
 
-Run all commands from this directory (`cpp-low-latency-orderbook/`), not the parent workspace folder.
+Run all commands from **`cpp-low-latency-orderbook/`** (this directory), not the parent workspace folder.
 
-## What you get
+---
 
-- **Replay path** — market-event CSV → `OrderBook` (Milestone 1)
-- **Engine path** — command CSV → `MatchingEngine` → trades and resting book (Milestones 2–3)
-- **Binary engine** — OBK1 64-byte command files → `MatchingEngine` (Milestone 5)
-- **Performance** — `matching_engine_benchmark`, `binary_protocol_benchmark`, `ring_buffer_pipeline_benchmark`, profiling docs (Milestones 4, 6)
-- **Visualisation (optional)** — NDJSON export, localhost SSE stream, React UI with live follow and run-summary metrics (Milestones 7A–7C)
+## What I built
 
-Benchmark numbers are **machine-dependent samples**, not production latency claims. See [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
+A single-threaded, deterministic core with clear module boundaries:
 
-## Project documentation
+| Layer | What it does |
+|-------|----------------|
+| **Order book** | Resting liquidity, FIFO at each price, best bid/ask, cancel/execute replay |
+| **Matching engine** | Limit/market orders, cancel, modify; emits `EngineEvent`s (trades, rejects, rests) |
+| **CSV paths** | Market-event replay → book; command CSV → engine |
+| **OBK1 binary** | 64-byte wire messages; `.obk` file read/write; `--binary-engine` CLI |
+| **Benchmarks** | `matching_engine_benchmark`, `binary_protocol_benchmark`, `ring_buffer_pipeline_benchmark` with documented Release workflow |
+| **Profiling discipline** | Baseline tables and profiler notes — **machine-local samples**, not production SLA claims |
+| **Optional visualiser** | NDJSON export, **localhost SSE** live stream, React UI with file/scenario load, live follow, and **run summary** metrics (informational only) |
 
-| Document | Description |
-|----------|-------------|
-| [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) | Goals, components, portfolio value |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module boundaries, data flow, invariants |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Completed milestones and long-term systems ideas |
-| [docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) | **Planned** backlog (CI, demo, tests, next milestones) |
-| [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md) | Ordered delivery queue (through 7C done) |
-| [docs/DEVELOPMENT_RULES.md](docs/DEVELOPMENT_RULES.md) | Coding, testing, and architecture guardrails |
-| [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Benchmark harness and methodology |
-| [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) | Release-mode baseline workflow |
-| [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md) | Profiling tools and stability notes |
-| [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | Replay UI: file, live stream, run summary |
+Skills demonstrated: modern C++20, CMake + GoogleTest, protocol design, benchmark methodology, separation of hot path vs debug/demo tooling.
+
+---
+
+## Quick start (clone → build → test → demo)
+
+```bash
+git clone <your-repo-url>
+cd cpp-low-latency-orderbook
+
+cmake -S . -B build
+cmake --build build
+./scripts/verify.sh                    # 160 tests
+
+# Headless demos
+./build/cpp-low-latency-orderbook --engine data/sample_commands.csv
+./build/cpp-low-latency-orderbook --replay data/sample_events.csv
+
+# UI demo (offline — no .obk needed)
+cd ui/replay-visualiser && npm install && npm run dev
+# Open dev URL → load a bundled scenario (e.g. sample-replay)
+```
+
+**Full demo walkthrough** (binary file, NDJSON export, live SSE, fixture notes): **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**
+
+**Requirements:** C++20, CMake 3.20+, Node.js/npm for the optional UI. First CMake configure may fetch GoogleTest over the network.
+
+---
 
 ## Architecture at a glance
 
@@ -39,122 +63,159 @@ Benchmark numbers are **machine-dependent samples**, not production latency clai
 REPLAY PATH
   market-events.csv → MarketDataParser → MarketEvent → OrderBook
 
-ENGINE PATH
+ENGINE PATH (CSV)
   order-commands.csv → OrderCommandParser → MatchingEngine → EngineEvent → OrderBook
 
 BINARY ENGINE PATH
   commands.obk (OBK1) → BinaryCommandReader → MatchingEngine → EngineEvent → OrderBook
 
-OPTIONAL VISUALISATION (opt-in CLI flags)
-  MatchingEngine steps → ReplayVisualisationWriter → NDJSON file  OR  localhost SSE
+OPTIONAL VISUALISATION (opt-in CLI on --binary-engine only)
+  MatchingEngine steps → ReplayVisualisationWriter
+    → NDJSON file (--export-visualisation)
+    OR localhost SSE (--stream-visualisation)
 
-OPTIONAL UI (separate app)
-  NDJSON file / bundled scenarios / EventSource live stream → replay-visualiser
+OPTIONAL UI (separate npm app)
+  bundled NDJSON / uploaded export / EventSource live stream → replay-visualiser
+  run summary metrics computed client-side (not benchmark throughput)
 
-BENCHMARKS (separate binaries, not in default CLI)
-  WorkloadGenerator → MatchingEngine / binary read / SPSC pipeline → metrics
+BENCHMARKS (separate binaries; not default CLI)
+  WorkloadGenerator → engine / binary phases / optional SPSC pipeline
 ```
 
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Deeper module rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Build and verify
+**Planned systems work (not implemented):** TCP order gateway, market data publisher, persistence/replay log — [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
+## Build and test
 
 ```bash
 cmake -S . -B build
 cmake --build build
-./scripts/verify.sh          # build + ctest (160 tests)
+./scripts/verify.sh
 ```
-
-Requirements: C++20, CMake 3.20+, network on first configure (GoogleTest via FetchContent).
-
-**UI (optional):**
 
 ```bash
 cd ui/replay-visualiser
 npm install
-npm run build
+npm run build    # optional; npm run dev for interactive demo
 ```
 
-## Run
+There is **no GitHub Actions workflow** in this repository yet; local `./scripts/verify.sh` is the source of truth until **8B**.
 
-**Replay mode** (market-event CSV):
+---
+
+## Run (headless)
+
+| Mode | Command |
+|------|---------|
+| Market replay | `./build/cpp-low-latency-orderbook --replay data/sample_events.csv` |
+| Command engine | `./build/cpp-low-latency-orderbook --engine data/sample_commands.csv` |
+| Binary engine | `./build/cpp-low-latency-orderbook --binary-engine /path/to/commands.obk` |
+
+**Generate a local `.obk`** (not committed):
 
 ```bash
-./build/cpp-low-latency-orderbook --replay data/sample_events.csv
+./build/binary_protocol_benchmark 5000 42
+# Use the "Binary file:" path printed in the output
 ```
 
-**Engine mode** (command CSV):
+Protocol layout: [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md).
+
+---
+
+## Replay visualiser
+
+React + Vite under `ui/replay-visualiser/`:
+
+| Feature | Description |
+|---------|-------------|
+| **File / scenarios** | Upload CLI-exported NDJSON or load bundled `public/sample-*.ndjson` |
+| **Live SSE** | `EventSource` to `--stream-visualisation` (start C++ first, then Connect in UI) |
+| **Run summary** | Totals, trade stats, final BBO, min/max spread — **not** Release benchmark numbers |
 
 ```bash
-./build/cpp-low-latency-orderbook --engine data/sample_commands.csv
-```
-
-**Binary engine** (OBK1 command file):
-
-```bash
-./build/cpp-low-latency-orderbook --binary-engine path/to/commands.obk
-```
-
-Generate local `.obk` files via `protocol::write_order_commands_binary` in tests/tooling (see [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md) if present, or test helpers). `*.obk` may be gitignored.
-
-**Visualisation export** (NDJSON, one JSON line per command step):
-
-```bash
+# Export then view in UI
 ./build/cpp-low-latency-orderbook \
-  --binary-engine path/to/commands.obk \
-  --export-visualisation replay.ndjson
-```
+  --binary-engine /path/to/commands.obk \
+  --export-visualisation /tmp/replay.ndjson
 
-**Live visualisation stream** (localhost SSE, proof-of-concept):
-
-```bash
+# Live stream (see docs/DEMO_GUIDE.md for two-terminal flow)
 ./build/cpp-low-latency-orderbook \
-  --binary-engine path/to/commands.obk \
+  --binary-engine /path/to/commands.obk \
   --stream-visualisation 127.0.0.1:9000
 ```
 
-Then connect with the UI ([docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md)) or `curl -N http://127.0.0.1:9000/stream`.
+Bundled scenarios may show **richer depth** than the C++ exporter (BBO-only). See [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md).
 
-## Benchmarks
+---
+
+## Benchmarks and profiling
 
 ```bash
 ./build/matching_engine_benchmark 100000 42
 ./build/binary_protocol_benchmark 100000 42
 ./build/ring_buffer_pipeline_benchmark 100000 42
 ./scripts/benchmark_release.sh 100000 42
-./scripts/repeated-benchmark.sh   # see docs
+./scripts/benchmark_repeat.sh 5 100000 42   # if present — repeated runs for stability
 ```
 
-See [docs/BENCHMARKING.md](docs/BENCHMARKING.md) and [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md).
+| Document | Purpose |
+|----------|---------|
+| [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Harness, workloads, what each metric means |
+| [docs/PERFORMANCE_BASELINE.md](docs/PERFORMANCE_BASELINE.md) | **Dated** local Release samples — compare on your machine only |
+| [docs/PROFILING_REPORT.md](docs/PROFILING_REPORT.md) | Instruments workflow, stability notes |
 
-## Replay visualiser (7A–7C)
+**Do not** treat UI run summary or a single benchmark run as proof of production latency. Repeat Release builds and report typical (e.g. median) results when claiming improvements.
 
-React + Vite app under `ui/replay-visualiser/`:
+---
 
-- Load bundled scenarios or uploaded NDJSON
-- **Live follow** via `EventSource` against `--stream-visualisation`
-- **Run summary** panel (client-side metrics; not Release benchmarks)
+## README media (optional)
 
-Full instructions: [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md).
+Screenshot/GIF assets are **not** in the repository yet. When you capture them, follow the checklist in [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) and link from here (e.g. `docs/images/demo-offline.png`).
 
-## Planned improvements (not implemented)
+---
 
-CI (GitHub Actions), demo script/screenshots, stronger equivalence tests, and the next systems milestone (TCP gateway vs persistence vs market data publisher) are **documented only**:
+## Repository hygiene
 
-[docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) · proposed queue **8A–8C** in [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md)
+- **`profiling/`** — local trace output; **keep untracked** (do not commit).
+- **`build/`**, **`node_modules/`**, **`dist/`**, **`*.obk`** — local/generated; do not commit.
+- **No CI** until milestone **8B** (planned).
+
+---
+
+## Documentation map
+
+| Document | Description |
+|----------|-------------|
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | **Demo commands** — clone through live SSE |
+| [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) | Goals, components, portfolio framing |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Module boundaries and invariants |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Completed milestones and systems candidates |
+| [docs/FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) | Backlog (CI, tests, next features) |
+| [docs/MILESTONE_QUEUE.md](docs/MILESTONE_QUEUE.md) | Delivery queue (**8A** CURRENT) |
+| [docs/ACTIVE_MILESTONE.md](docs/ACTIVE_MILESTONE.md) | Active milestone acceptance criteria |
+| [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | UI, export, stream, run summary |
+| [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md) | OBK1 layout |
+| [docs/BENCHMARKING.md](docs/BENCHMARKING.md) | Benchmark methodology |
+
+---
 
 ## Project layout
 
 ```text
-include/          Headers (market_data, order_book, matching_engine, protocol, viz, …)
-src/              Implementations
-benchmarks/       matching_engine, binary_protocol, ring_buffer_pipeline
-ui/replay-visualiser/   Optional React UI
-tests/            GoogleTest (160 cases)
-scripts/          verify.sh, benchmark_release.sh, repeated-benchmark.sh
-data/             sample CSV fixtures
-docs/
+include/                 Headers (market_data, order_book, matching_engine, protocol, viz, …)
+src/                     Implementations + main.cpp
+benchmarks/              Standalone benchmark binaries
+ui/replay-visualiser/    Optional React replay UI
+tests/                   GoogleTest (160 cases)
+scripts/                 verify.sh, benchmark_release.sh, …
+data/                    Sample CSV fixtures
+docs/                    Architecture, roadmap, demo guide
 ```
+
+---
 
 ## License
 

@@ -2,6 +2,8 @@
 
 This document records the Release-mode benchmark workflow used before performance optimisation work. Results here are local machine measurements and will vary by CPU, OS, compiler, build type, thermal state, and background load.
 
+Clone-to-demo (no benchmark claims required): [DEMO_GUIDE.md](DEMO_GUIDE.md). Methodology: [BENCHMARKING.md](BENCHMARKING.md).
+
 For profiler-backed **future optimisation candidates** (not yet implemented), see [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
 
 ## Purpose
