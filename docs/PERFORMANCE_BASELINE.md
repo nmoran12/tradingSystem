@@ -249,3 +249,41 @@ Latency ns:
 | SPSC pipeline (`run_sequence`) | ~6.30M commands/sec | Enqueue-all-then-drain; **slower** on this run |
 
 Event sequences and final book metrics (trades, active orders, best bid/ask, resting quantity) **matched** between paths on that run. The pipeline path adds queue overhead; **do not** claim the SPSC wrapper improves throughput from this single measurement. See [BENCHMARKING.md](BENCHMARKING.md) for how to re-run locally.
+
+## 9A Performance baseline refresh (post-8B HEAD)
+
+**Local, machine-dependent numbers only.** **Date:** 2026-06-01. **Machine:** macOS 26.5 (25F71), ARM64, Release `build-release/`. **Git:** `f2822d1`. **Tests:** 164/164 via `./scripts/verify.sh` before benchmarks.
+
+**Commands:**
+
+```bash
+./scripts/benchmark_release.sh 100000 42
+./build-release/matching_engine_benchmark 100000 42   # repeated 3×
+./build-release/ring_buffer_pipeline_benchmark 100000 42
+```
+
+Full analysis: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
+
+| Phase / benchmark | Throughput | ns/command or latency | Notes |
+|-------------------|------------|------------------------|--------|
+| Binary write | 16.37M cmd/s | 61 | OBK1 encode + file |
+| Buffered read/decode | 20.03M cmd/s | 49 | Decode only |
+| Buffered engine apply | 11.65M cmd/s | 85 | Engine + book |
+| Streaming read/decode/apply | 7.95M cmd/s | 125 | Per-message apply |
+| Matching engine (script run) | 9.39M cmd/s | avg 89, p50 **83** | Single run in `benchmark_release.sh` |
+| Matching engine (3 runs, typical) | **~8.9–9.5M cmd/s** | p50 **83** | ~6% spread, no code change |
+| Pipeline direct `process_into` | ~7.58M cmd/s | — | One run |
+| Pipeline SPSC | ~6.42M cmd/s | — | Slower; equivalence OK |
+
+**Cost takeaway:** Engine apply is slower than binary decode on the same workload; optimising the matching/book path matters more than decode for replay throughput. No portable performance claims.
+
+Raw `benchmark_release.sh` excerpt:
+
+```text
+  binary write: 0.00610929s (16368511 commands/sec, 61 ns/command)
+  buffered read/decode: 0.00499279s (20028873 commands/sec, 49 ns/command)
+  buffered engine apply: 0.00858562s (11647375 commands/sec, 85 ns/command)
+  streaming read/decode/apply: 0.0125722s (7954052 commands/sec, 125 ns/command)
+Throughput: 9386842 commands/sec  (matching engine, single run in script)
+Latency p50: 83
+```

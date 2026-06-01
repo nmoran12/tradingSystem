@@ -4,7 +4,7 @@ Profiler-backed **future optimisation candidates** for this project. Nothing her
 
 **Context after Milestone 6F:** `MatchingEngine::process_into(command, events)` lets hot loops reuse a caller-owned `std::vector<EngineEvent>` instead of constructing a fresh vector per command. That reduced event-output allocation pressure while `process()` remains a compatibility wrapper. The internal `OrderBook` storage model was **not** changed.
 
-**Active milestone queue:** Order-book data-structure work is tracked as **6G** in [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). This document records candidates and approaches for controlled future milestones — not a mandate to implement everything listed.
+**Active milestone queue:** **9A** (plan complete) recommends **9B** — byte-ranked alloc profile, then **conditional** list-node allocation reduction in `add_order_to_side` if justified. See [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md). **6G** book-structure work is closed (no container swap without new byte evidence).
 
 See also: [PROFILING_REPORT.md](PROFILING_REPORT.md), [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md), [BENCHMARKING.md](BENCHMARKING.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
@@ -130,13 +130,23 @@ Human review and `/advance-milestone` apply per [MILESTONE_QUEUE.md](MILESTONE_Q
 
 ## Suggested investigation order (non-binding)
 
+Updated after **9A** (2026-06-01). See [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
+
 | Priority | Candidate area | Typical risk | Notes |
 |----------|----------------|--------------|--------|
-| 1 | `add_order_to_side` / `order_lookup_` reserve & rehash | Low–medium | **Done in 6G slice 1** (rehash much reduced; noisy throughput) |
-| 2 | Redundant lookups on hot paths | Low | Profiler must justify |
-| 3 | `std::map` / `std::list` container experiments | Medium–high | **Not justified** by 6G slice 2 `sample` + failed byte attribution — see [PROFILING_REPORT.md](PROFILING_REPORT.md) §6G slice 2 |
-| 4 | PMR / pools for book nodes | High | Needs Instruments / `heaptrack` byte counts; slice 2 did not provide them |
-| 5 | Benchmark harness modes | Low | Measurement only |
-| 6 | Binary decode / symbol path | Medium | Separate from book structure |
+| 1 | **Byte-ranked alloc profile** (9B slice 1) | Low | Instruments / `heaptrack` on engine-only apply — **required before list pool** |
+| 2 | **List node allocation** in `add_order_to_side` | Medium | **9B slice 2** if slice 1 confirms dominance; not a `std::list`→`deque` swap without proof |
+| 3 | `order_lookup_` / map further tuning | Low–medium | Only if slice 1 ranks above list |
+| 4 | `std::map` / `std::list` container family swap | High | **Rejected** until byte-ranked evidence (6G + 9A) |
+| 5 | PMR / pools (other sites) | High | After ranked profile |
+| 6 | Benchmark harness throughput mode | Low | Alt 9B if alloc profile inconclusive |
+| 7 | Binary decode / symbol path | Medium | Decode ~2× faster than apply on 9A baseline — lower priority than book |
 
 This order is a planning hint only — **profiling on your machine** overrides it.
+
+### 9A rejected for 9B (without new evidence)
+
+- Wholesale `std::list` / `std::map` replacement
+- Multithreaded SPSC for single-thread throughput
+- Persistence, TCP gateway, market data publisher
+- Claiming throughput wins from single `benchmark_release.sh` runs

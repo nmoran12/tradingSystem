@@ -257,11 +257,15 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 9A — Performance Deep Dive and Hot-Path Optimisation Plan
 
-**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Status:** **CURRENT** — **complete, pending human review** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)). Docs/measurement only; no engine/book code in 9A.
 
-**Goal:** Evidence-based baselines, profiling, hotspot analysis, and a scoped optimisation **plan** for the existing engine/book/replay/benchmark stack.
-
-**Slices (from 8C decision):** Release baselines → re-profile → hotspot ranking → cost separation → data-structure review → optimisation candidates → 9B plan doc. **No required code in 9A.**
+| Outcome | Detail |
+|---------|--------|
+| **Plan doc** | [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) — dated Release baselines (2026-06-01), cost separation, hotspots, rejected ideas, **9B recommendation** |
+| **Baselines** | `./scripts/benchmark_release.sh 100000 42`; ME ×3; `ring_buffer_pipeline_benchmark` — see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A |
+| **Profiling** | 6G apply-loop `sample` + allocation attribution carried forward; 9A mistimed `sample` documented — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9A |
+| **9B target** | Byte-ranked alloc profile → **conditional** list-node allocation reduction in `add_order_to_side` |
+| **Not done** | No optimisation implementation; queue not advanced to 9B |
 
 **Out of scope:** Persistence, TCP, publisher; speculative container rewrites; matching-semantics changes without tests.
 

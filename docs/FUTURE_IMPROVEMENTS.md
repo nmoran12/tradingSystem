@@ -2,7 +2,7 @@
 
 **Status:** Planning document only. Items below are **candidates** unless explicitly marked as shipped elsewhere. Nothing in this file is implemented unless the repo already contains it.
 
-**Current baseline (post-7C):** `./scripts/verify.sh` — **160/160** tests; `ui/replay-visualiser` — `npm run build` passes; milestone queue through **7C** complete ([MILESTONE_QUEUE.md](MILESTONE_QUEUE.md)).
+**Current baseline (post-9A plan):** `./scripts/verify.sh` — **164/164** tests; `ui/replay-visualiser` — `npm run build` passes; queue **9A** complete pending review ([MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md)).
 
 **Related:** [ROADMAP.md](ROADMAP.md) (long-term systems milestones), [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) (proposed **8A–8C**), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
@@ -59,7 +59,9 @@ Also **avoid** unless profiler evidence justifies it:
 
 ## Documentation / README polish
 
-**8A (CURRENT):** README refresh, architecture-at-a-glance, and [DEMO_GUIDE.md](DEMO_GUIDE.md) are **done**; screenshot/GIF **checklist** is in the demo guide (binary assets still optional).
+**8A:** README refresh, architecture-at-a-glance, and [DEMO_GUIDE.md](DEMO_GUIDE.md) are **done**; screenshot/GIF **checklist** is in the demo guide (binary assets still optional).
+
+**9A (CURRENT queue item — plan done):** Performance baseline refresh and [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md); **9B** is the next implementation milestone (conditional list-node alloc optimisation).
 
 ### README / overview refresh
 

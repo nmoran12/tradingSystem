@@ -11,7 +11,9 @@
 
 ## CURRENT: 9A — Performance Deep Dive and Hot-Path Optimisation Plan
 
-**Status:** `READY` — not started. **Planning and measurement only** in 9A; do not implement hot-path code changes in this milestone unless explicitly moved to 9B.
+**Status:** **Complete (pending human review)** — planning and measurement only; **no** engine/book/protocol code changes in 9A.
+
+**Deliverable:** [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md)
 
 ### Goal
 
@@ -23,17 +25,15 @@ Produce an evidence-based picture of where time goes today and a **scoped, low-r
 
 ### Slices
 
-| # | Slice | Deliverable |
-|---|--------|-------------|
-| 1 | Clean Release baselines | Re-run `./scripts/benchmark_release.sh` / `./scripts/benchmark_repeat.sh`; **dated** table (machine-local labels) |
-| 2 | Re-profile | Update [PROFILING_REPORT.md](PROFILING_REPORT.md) for current `HEAD` — Instruments on engine/benchmark hot path |
-| 3 | Hotspot ranking | Top functions with % time; engine-only vs parse/replay/viz |
-| 4 | Cost separation | Document which subsystems dominate (engine loop, binary path, viz, SPSC) |
-| 5 | Data-structure review | `OrderBook` / `MatchingEngine` allocation and traversal notes — **no rewrite without evidence** |
-| 6 | Optimisation candidates | Rank 2–4 candidates; select **0–2** for 9B with go/no-go criteria |
-| 7 | 9B plan | Short doc: target, metrics, tests, rollback if noise/regression |
-
-Optional artifact: `docs/PERF_9A_BASELINE.md` if tables would clutter [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md).
+| # | Slice | Status |
+|---|--------|--------|
+| 1 | Clean Release baselines | Done — [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §2, [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A |
+| 2 | Re-profile | Done — 6G apply-loop evidence + 9A session notes ([PROFILING_REPORT.md](PROFILING_REPORT.md) §9A) |
+| 3 | Hotspot ranking | Done — plan §4 |
+| 4 | Cost separation | Done — plan §3 |
+| 5 | Data-structure review | Done — plan §5; no rewrite |
+| 6 | Optimisation candidates | Done — plan §6 |
+| 7 | 9B plan | Done — plan §7–9 (**recommended 9B:** list node alloc, conditional on byte-ranked profile) |
 
 ### Out of scope (9A)
 
@@ -44,21 +44,15 @@ Optional artifact: `docs/PERF_9A_BASELINE.md` if tables would clutter [PERFORMAN
 - Committing `profiling/` trace bundles.
 - UI, matching-semantics, or protocol layout changes.
 
-### Constraints
-
-- All benchmark claims must be **dated** and **machine-labelled**.
-- `./scripts/verify.sh` must stay **164/164** after any doc-only edits.
-- Prefer repeated runs (median/typical) over single-shot numbers.
-
 ### Acceptance criteria
 
-- [ ] Dated Release baseline table in docs.
-- [ ] Profiler section for post-8B `HEAD`.
-- [ ] Hotspot list with engine vs non-engine split.
-- [ ] Written 9B recommendation(s) tied to profiler evidence — or explicit “no change warranted.”
-- [ ] No matching-semantics changes in 9A.
-- [ ] `./scripts/verify.sh` passes.
-- [ ] Human review + `/review-milestone` before `/advance-milestone` to **9B** or next queue item.
+- [x] Dated Release baseline table in docs.
+- [x] Profiler section for post-8B `HEAD`.
+- [x] Hotspot list with engine vs non-engine split.
+- [x] Written 9B recommendation tied to profiler evidence.
+- [x] No matching-semantics changes in 9A.
+- [x] `./scripts/verify.sh` passes (**164/164**).
+- [ ] Human review + `/review-milestone` before `/advance-milestone` to **9B**.
 
 ### Verification
 
@@ -66,11 +60,10 @@ Optional artifact: `docs/PERF_9A_BASELINE.md` if tables would clutter [PERFORMAN
 ./scripts/verify.sh
 ```
 
-Benchmark/profiling commands documented in slice work — not gating CI unless you add doc-only instructions.
-
 ### References
 
 - [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §4–5
+- [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md)
 - [BENCHMARKING.md](BENCHMARKING.md) · [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) · [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md) · [PROFILING_REPORT.md](PROFILING_REPORT.md)
 
 ### Previous milestone (8C — done)

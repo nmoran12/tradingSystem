@@ -27,9 +27,11 @@ At 100k commands / seed 42 on a local Release build, recent work shows roughly:
 |------|------------------------------------------|
 | Binary write | ~10–16M commands/sec |
 | Buffered read/decode | ~19–20M commands/sec |
-| Buffered engine apply | ~7–9M commands/sec |
-| Streaming read/decode/apply | ~6–7M commands/sec |
-| Matching engine synthetic loop | ~6M commands/sec, p50 ~80–125 ns |
+| Buffered engine apply | ~8–12M commands/sec |
+| Streaming read/decode/apply | ~6–8M commands/sec |
+| Matching engine synthetic loop | ~9–10M commands/sec, p50 ~83 ns |
+
+**9A dated snapshot (2026-06-01):** see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A.
 
 Trade counts and book state should match across buffered vs streaming paths for the same workload. See the baseline doc for exact single-run numbers and 6C before/after tables.
 
@@ -204,11 +206,27 @@ sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
 
 **Recommendation:** Treat **6G book-structure work as complete** for human review; advance the milestone queue when agreed. No container replacement in slice 2. Optional future work: Instruments Allocations or Linux `heaptrack` if a byte-ranked profile is needed before any list/map experiment.
 
+## 9A profiling refresh (2026-06-01, post-8B HEAD)
+
+**Scope:** Measurement and documentation only — no production code changes.
+
+| Step | Result |
+|------|--------|
+| Baselines | `./scripts/benchmark_release.sh 100000 42` — see [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §9A |
+| Engine-only harness | `./build-release/matching_engine_benchmark 100000 42 --profile-engine-only` |
+| `sample` during apply | **Invalid capture:** `profiling/9a/engine_only_sample_9a.txt` taken during countdown sleep, not apply loop. **Do not use for hotspots.** |
+| Retry | 500k-command window too short for reliable `sample` attach on this machine |
+| **Primary evidence** | **6G slice 2** unchanged on same codebase: `profiling/6g/allocation_attribution.txt`, apply-loop `sample` — list `push_back` strongest `operator new` on adds; mixed map/hash; `remove_order_at_location` hot on teardown |
+
+**9A conclusion:** Hot-path CPU/allocation signals still centre on **`OrderBook::add_order_to_side`** (list nodes, residual hash emplace, occasional map level insert) and match/cancel teardown. Binary decode remains comparatively cheap vs engine apply (benchmark phase split).
+
+**9B profiling prerequisite:** Byte-ranked allocation profile (Instruments Allocations or `heaptrack`) on engine-only 1M–2M command apply loop before any list-node pool implementation. Details: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
+
 ## Future optimisation work
 
 Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
 
-**Recently completed:** order lookup pre-reserve (**6G slice 1**); allocation attribution review (**6G slice 2**, measurement only — mixed list/hash/map signals, no container swap justified). **Next profiling targets:** see roadmap; container experiments only after byte-ranked allocation evidence if still desired.
+**Recently completed:** order lookup pre-reserve (**6G slice 1**); allocation attribution review (**6G slice 2**); **9A** baseline + optimisation plan (no code). **Next implementation milestone:** **9B** — conditional list-node allocation work after byte-ranked profile; see [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md).
 
 ## Related documentation
 
