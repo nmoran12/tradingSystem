@@ -2,6 +2,8 @@
 
 This document records the Release-mode benchmark workflow used before performance optimisation work. Results here are local machine measurements and will vary by CPU, OS, compiler, build type, thermal state, and background load.
 
+For profiler-backed **future optimisation candidates** (not yet implemented), see [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
+
 ## Purpose
 
 - Establish a repeatable baseline before changing performance-sensitive code.

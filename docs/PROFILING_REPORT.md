@@ -145,21 +145,15 @@ Does not change production behaviour, matching/book/protocol semantics, or the n
 
 `process()` callers still pay per-call vector allocation; reuse benefit requires adopting `process_into` at the call site.
 
-## Next optimisation candidates
+## Future optimisation work
 
-Ordered roughly by risk and dependency (design before pools, measure before rewriting the book):
+Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
 
-1. **Further engine/book hot-path work** — book-side `add_order_to_side` / hash rehash remains heavy in engine-only profiles; likely **6G**
-2. **Trade/event buffer reuse** — **6F (done)** for call sites using `process_into`; no further vector reuse unless new API
-3. **Order storage allocation reduction** — reserve maps, reduce rehashing, avoid redundant lookups (without changing semantics)
-4. **Symbol representation improvements** — fixed buffers or interned symbols if string work shows up hot
-5. **Memory pool / object pool** — only after hot allocations are identified; higher complexity
-6. **Optional SPSC queue later** — pipeline design for a future threaded ingest path; not required for current single-threaded CLI/benchmarks
-
-Each item should be benchmark-driven: one change, `./scripts/verify.sh`, repeated Release runs, update [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) with typical results.
+**Recently completed:** event-output reuse via `process_into` (**6F**). **Queued next:** order-book data-structure optimisation (**6G**) — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
 ## Related documentation
 
+- [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md) — future candidates and optimisation process
 - [BENCHMARKING.md](BENCHMARKING.md) — harness details and repeated-run workflow
 - [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) — recorded local baselines and 6C comparison
 - [ARCHITECTURE.md](ARCHITECTURE.md) — OrderBook vs MatchingEngine boundaries

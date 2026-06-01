@@ -81,6 +81,7 @@ Optional: engine-only profiling if measuring apply-loop allocations:
 ### Key docs
 
 - [PROFILING_REPORT.md](PROFILING_REPORT.md)
+- [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)
 - [BENCHMARKING.md](BENCHMARKING.md)
 - [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md)
 - [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
