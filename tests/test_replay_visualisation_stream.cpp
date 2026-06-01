@@ -1,3 +1,4 @@
+#include "benchmarks/WorkloadGenerator.hpp"
 #include "matching_engine/MatchingEngine.hpp"
 #include "viz/ReplayVisualisationStreamServer.hpp"
 #include "viz/ReplayVisualisationWriter.hpp"
@@ -17,6 +18,7 @@
 #include <thread>
 #include <vector>
 
+using namespace benchmarks;
 using namespace matching_engine;
 using namespace market_data;
 using namespace viz;
@@ -183,4 +185,39 @@ TEST(ReplayVisualisationStreamTest, StreamsTradeRecordWhenOrdersCross) {
     EXPECT_FALSE(line_has_non_empty_trades(received[0]));
     ASSERT_TRUE(line_has_non_empty_trades(received[1]));
     EXPECT_NE(received[1].find("\"price\":100"), std::string::npos);
+}
+
+TEST(ReplayVisualisationStreamTest, StreamsDeterministicWorkloadStepRecords) {
+    WorkloadConfig config;
+    config.command_count = 30;
+    config.random_seed = 77;
+    const auto commands = WorkloadGenerator(config).generate();
+    ASSERT_EQ(commands.size(), 30u);
+
+    const uint16_t port = unique_stream_port();
+    std::thread server_thread([&]() {
+        ReplayVisualisationStreamServer server("127.0.0.1:" + std::to_string(port));
+        server.wait_for_client();
+
+        MatchingEngine engine;
+        std::vector<EngineEvent> scratch;
+        scratch.reserve(16);
+
+        for (size_t index = 0; index < commands.size(); ++index) {
+            engine.process_into(commands[index], scratch);
+            server.send_sse_record(ReplayVisualisationWriter::format_record(
+                index, commands[index], scratch, engine.book()));
+        }
+        server.close();
+    });
+
+    const auto received = read_sse_payloads(port);
+    server_thread.join();
+
+    ASSERT_EQ(received.size(), commands.size());
+    for (size_t index = 0; index < received.size(); ++index) {
+        EXPECT_NE(received[index].find("\"schemaVersion\":1"), std::string::npos);
+        EXPECT_NE(received[index].find("\"index\":" + std::to_string(index)), std::string::npos);
+        EXPECT_NE(received[index].find("\"commandType\":"), std::string::npos);
+    }
 }

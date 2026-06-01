@@ -6,9 +6,9 @@ This is an **educational / portfolio** project: no live markets, no brokerage co
 
 | | |
 |--|--|
-| **Tests** | **160/160** via `./scripts/verify.sh` |
-| **Queue** | Milestones **1–7C** complete · **8A** (docs/demo) **CURRENT** · **8B–8C** proposed |
-| **CI** | **Not yet** — planned in 8B ([FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md)) |
+| **Tests** | **164/164** via `./scripts/verify.sh` |
+| **Queue** | **8B** (CI/correctness) **CURRENT** — implementation done, pending review · **8A** done · **8C** proposed |
+| **CI** | GitHub Actions — build + **164** tests + UI build ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) |
 
 Run all commands from **`cpp-low-latency-orderbook/`** (this directory), not the parent workspace folder.
 
@@ -40,7 +40,7 @@ cd cpp-low-latency-orderbook
 
 cmake -S . -B build
 cmake --build build
-./scripts/verify.sh                    # 160 tests
+./scripts/verify.sh                    # 164 tests
 
 # Headless demos
 ./build/cpp-low-latency-orderbook --engine data/sample_commands.csv
@@ -102,7 +102,7 @@ npm install
 npm run build    # optional; npm run dev for interactive demo
 ```
 
-There is **no GitHub Actions workflow** in this repository yet; local `./scripts/verify.sh` is the source of truth until **8B**.
+CI runs on push/PR via [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (Ubuntu: CMake build, `ctest`, optional UI `npm run build`). Local `./scripts/verify.sh` remains the same check developers run before pushing.
 
 ---
 
@@ -181,7 +181,7 @@ Screenshot/GIF assets are **not** in the repository yet. When you capture them, 
 
 - **`profiling/`** — local trace output; **keep untracked** (do not commit).
 - **`build/`**, **`node_modules/`**, **`dist/`**, **`*.obk`** — local/generated; do not commit.
-- **No CI** until milestone **8B** (planned).
+- **CI** — do not commit secrets; workflow is build/test only (no deploy).
 
 ---
 
@@ -209,7 +209,7 @@ include/                 Headers (market_data, order_book, matching_engine, prot
 src/                     Implementations + main.cpp
 benchmarks/              Standalone benchmark binaries
 ui/replay-visualiser/    Optional React replay UI
-tests/                   GoogleTest (160 cases)
+tests/                   GoogleTest (164 cases)
 scripts/                 verify.sh, benchmark_release.sh, …
 data/                    Sample CSV fixtures
 docs/                    Architecture, roadmap, demo guide

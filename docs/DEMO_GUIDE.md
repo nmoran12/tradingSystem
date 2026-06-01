@@ -157,6 +157,6 @@ Screenshots and GIFs are **not required** in the repository for the project to f
 | `*.obk` | Generated locally; typically gitignored |
 | `build/` | Local CMake output |
 
-**CI:** GitHub Actions (build + test + optional UI) is **planned** for milestone **8B** — not configured in this repo yet.
+**CI:** GitHub Actions ([`../.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs on push/PR: C++ build + `ctest` (164 tests) and `ui/replay-visualiser` production build on Ubuntu.
 
 **Not implemented:** TCP order gateway, market data publisher, persistence/replay log — candidates only ([ROADMAP.md](ROADMAP.md)).

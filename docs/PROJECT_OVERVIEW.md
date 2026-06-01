@@ -19,7 +19,7 @@ This repository implements that core as a **single-threaded, deterministic** fou
 ## Why it is useful as a C++ systems project
 
 - **Real structure:** modular headers, CMake, GoogleTest, multiple CLI modes, benchmark harnesses, optional UI.
-- **Correctness first:** **160** automated tests (`./scripts/verify.sh`) cover parsers, book, engine, binary protocol, SPSC pipeline, and visualisation export/stream helpers.
+- **Correctness first:** **164** automated tests (`./scripts/verify.sh`) cover parsers, book, engine, binary protocol, CSV/binary equivalence, SPSC pipeline, and visualisation export/stream helpers. GitHub Actions CI on Ubuntu (see `.github/workflows/ci.yml`).
 - **Performance awareness:** Release benchmarks, baseline docs, profiler-guided 6E/6G work—**without** claiming production throughput.
 - **Clear boundaries:** parsers vs `MatchingEngine` vs `OrderBook`; replay path separate from engine path; UI and viz off the hot path by default.
 - **Extension path:** documented in [ROADMAP.md](ROADMAP.md) and prioritised in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
@@ -56,7 +56,7 @@ This repository implements that core as a **single-threaded, deterministic** fou
 | Performance | 6A–6H | Baselines, streaming read, `process_into`, profiling, reserve tuning, SPSC |
 | Visualisation | 7A–7C | NDJSON export, live SSE, UI live-follow, run summary metrics |
 
-Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8B** — CI and correctness hardening (not started). **8A** done: [DEMO_GUIDE.md](DEMO_GUIDE.md).
+Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8B** — CI/correctness (implemented, pending review). **8A** done: [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
 ## Long-term vision (candidate, not queued)
 

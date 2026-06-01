@@ -224,18 +224,20 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 8B — CI and Correctness Hardening
 
-**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Status:** **CURRENT** — implementation **complete**, pending human review ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
 **Goal:** Project credibility via automated build/test and stronger replay/protocol correctness checks.
 
-**Planned scope (not done yet):**
+| Outcome | Detail |
+|---------|--------|
+| **CI** | `.github/workflows/ci.yml` — Ubuntu push/PR: CMake Debug build + `ctest`; separate job for `ui/replay-visualiser` `npm ci` + `npm run build` |
+| **Equivalence** | `tests/test_csv_binary_engine_equivalence.cpp` — workload + sample CSV vs binary round-trip |
+| **Invariants** | `tests/test_matching_engine_workload_invariants.cpp` — 2 000 commands, per-step `validate_invariants()` |
+| **Stream** | `ReplayVisualisationStreamTest.StreamsDeterministicWorkloadStepRecords` — 30-step in-process SSE |
+| **Tests** | **164** total (`./scripts/verify.sh`) |
+| **Deferred** | OBK1 fuzz/property tests; CLI subprocess stream test; benchmark CI gates |
 
-1. GitHub Actions — `cmake` build, `ctest`, optional `ui/replay-visualiser` `npm run build`.
-2. Binary vs CSV equivalence test — same workload, equivalent observable book/trade outcomes.
-3. Long-workload invariant tests — `validate_invariants()` after large generated workloads.
-4. Stable stream integration coverage — reliable test for `--stream-visualisation` (no flaky subprocess pattern).
-
-**Out of scope for 8B:** MatchingEngine / OrderBook semantic changes; perf regression gates without explicit design; implementing 8C systems features.
+**Out of scope for 8B:** MatchingEngine / OrderBook semantic changes; perf regression gates; 8C systems features.
 
 **Related backlog:** [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 

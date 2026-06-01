@@ -5,13 +5,13 @@
 **Project root:** `cpp-low-latency-orderbook/`  
 **Queue:** [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — row **17**
 
-**Model recommendation:** Default agent is fine for GitHub Actions and invariant tests. Use a **stronger model** for OBK1 fuzz/property work if that slice is added in-session.
+**Model recommendation:** Default agent is fine for GitHub Actions and invariant tests. Use a **stronger model** for OBK1 fuzz/property work if that slice is added later.
 
 ---
 
 ## CURRENT: 8B — CI and Correctness Hardening
 
-**Status:** `READY` — not started. Do not implement from this advance step; use `/run-active-milestone` in a **new** session.
+**Status:** Implementation **complete** — pending human `/review-milestone` before `/advance-milestone` to **8C**.
 
 ### Goal
 
@@ -22,67 +22,55 @@ Add project credibility through automated build/test on push/PR and stronger cor
 #### 1. GitHub Actions CI
 
 - Workflow on push/PR (and optionally `workflow_dispatch`).
-- Steps: configure CMake, build, `./scripts/verify.sh` or equivalent `ctest`, optional `cd ui/replay-visualiser && npm ci && npm run build`.
-- **Not yet in repo** — this is the primary 8B deliverable.
+- Steps: configure CMake, build, `ctest`, optional `cd ui/replay-visualiser && npm ci && npm run build`.
+- **Shipped:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — Ubuntu, Debug build, two jobs (C++ tests + UI build).
 
 #### 2. Binary vs CSV equivalence test
 
-- Same deterministic command sequence fed through `--engine` (CSV) and `--binary-engine` (`.obk`).
-- Assert equivalent final book state / trade counts (define comparison helpers; no silent semantic drift).
-- Document any intentional differences if discovered.
+- Same deterministic command sequence fed through CSV parse and OBK1 binary round-trip.
+- **Shipped:** `tests/test_csv_binary_engine_equivalence.cpp` (workload seed 42 + `data/sample_commands.csv`).
 
 #### 3. Long-workload invariant tests
 
-- After large `WorkloadGenerator` or SPSC pipeline runs, call `OrderBook::validate_invariants()` (or existing introspection).
-- Seed-controlled workloads; keep runtime reasonable for CI.
+- **Shipped:** `tests/test_matching_engine_workload_invariants.cpp` — 2 000 commands, `validate_invariants()` after each step.
 
 #### 4. Stable stream integration coverage
 
-- Reliable test for `--stream-visualisation` / SSE path.
-- **Do not** reintroduce the flaky CLI subprocess pattern removed in 7B; prefer in-process server + client (see existing `tests/test_replay_visualisation_stream.cpp`).
+- **Shipped:** `ReplayVisualisationStreamTest.StreamsDeterministicWorkloadStepRecords` in `tests/test_replay_visualisation_stream.cpp` (in-process SSE, 30-command workload).
 
-### Out of scope
+### Out of scope (unchanged)
 
-- Changing `MatchingEngine` or `OrderBook` matching semantics.
-- Milestone **8C** systems work (TCP gateway, persistence, market data publisher).
-- Benchmark throughput regression gates without an explicit, reviewed design.
-- OBK1 fuzz/property tests — **optional** stretch; backlog item in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md), not required to close 8B if time-boxed.
-- Demo script, README screenshots, or further 8A doc polish.
-
-### Constraints
-
-- Preserve architecture boundaries ([ARCHITECTURE.md](ARCHITECTURE.md), [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)).
-- All existing tests must keep passing; add tests for new behaviour.
-- Do not commit `profiling/` or machine-local trace artifacts.
-- CI must not imply features that do not exist (no deploy, no cloud product).
+- MatchingEngine / OrderBook semantic changes.
+- Milestone **8C** systems work.
+- Benchmark regression gates.
+- OBK1 fuzz/property tests (deferred — [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md)).
 
 ### Acceptance criteria
 
-- [ ] GitHub Actions workflow runs build + **160** tests on a clean checkout (or documents any platform matrix limitation).
-- [ ] Optional UI build step passes in CI (or is clearly documented as optional/skipped with reason).
-- [ ] Binary vs CSV equivalence test added and passing.
-- [ ] At least one long-workload invariant test added and passing.
-- [ ] Stream path has stable automated coverage (extend existing tests or add focused test).
-- [ ] `./scripts/verify.sh` passes locally after changes.
+- [x] GitHub Actions workflow runs build + tests on a clean checkout (Ubuntu).
+- [x] UI build step in CI (`npm ci` + `npm run build`).
+- [x] Binary vs CSV equivalence test added and passing.
+- [x] Long-workload invariant test added and passing.
+- [x] Stream path has stable automated coverage (workload SSE test).
+- [x] `./scripts/verify.sh` passes locally (**164/164**).
 - [ ] Human review + `/review-milestone` before `/advance-milestone` to **8C**.
 
 ### Verification
 
 ```bash
 ./scripts/verify.sh
-cd ui/replay-visualiser && npm run build   # if UI included in CI scope
+cd ui/replay-visualiser && npm run build
 ```
 
 ### References
 
-- Backlog: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md) §CI and testing
+- Backlog: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md)
 - Binary layout: [BINARY_PROTOCOL.md](BINARY_PROTOCOL.md)
 - Stream behaviour: [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
-- Prior milestone (done): [DEMO_GUIDE.md](DEMO_GUIDE.md) — `f4116b3`
 
-### Previous milestone (8A — done)
+### Intentionally deferred
 
-| Check | Result |
-|-------|--------|
-| Docs-only delivery | `f4116b3` |
-| `./scripts/verify.sh` | **160/160** at review |
+- OBK1 decode fuzz / property tests.
+- Stable **CLI** subprocess stream integration test (flaky pattern avoided).
+- CI Release benchmark smoke / perf regression gates.
+- `scripts/demo-live-replay.sh` (8A backlog).

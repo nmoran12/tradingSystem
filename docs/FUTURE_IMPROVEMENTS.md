@@ -78,15 +78,19 @@ Also **avoid** unless profiler evidence justifies it:
 
 ## CI and testing
 
+**8B (CURRENT):** GitHub Actions, CSV/binary equivalence, workload invariants, and workload SSE stream test are **implemented** — see [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and `tests/test_csv_binary_engine_equivalence.cpp`.
+
 ### GitHub Actions: build + ctest + UI build
 
-- **Description:** Workflow on push/PR: `cmake` Release or Debug build, `ctest`, optional `cd ui/replay-visualiser && npm run build`. **Not yet implemented.**
+- **Description:** Workflow on push/PR: `cmake` Release or Debug build, `ctest`, optional `cd ui/replay-visualiser && npm run build`.
+- **Status:** **Shipped in 8B** (Ubuntu Debug; no benchmark gates).
 - **Why:** Largest credibility gap vs a portfolio C++ repo.
 - **Priority:** now · **Difficulty:** small · **Resume:** high
 
 ### Binary vs CSV equivalence test
 
 - **Description:** Same command sequence via CSV `--engine` and binary `--binary-engine` → equivalent final book / trade counts.
+- **Status:** **Shipped in 8B** (`test_csv_binary_engine_equivalence.cpp`).
 - **Why:** Strong correctness signal for OBK1 path.
 - **Priority:** later · **Difficulty:** medium · **Resume:** high
 
@@ -105,6 +109,7 @@ Also **avoid** unless profiler evidence justifies it:
 ### Long-workload invariant tests
 
 - **Description:** Call `OrderBook::validate_invariants()` after large `WorkloadGenerator` or SPSC drain runs.
+- **Status:** **Shipped in 8B** (2 000-command matching-engine test; SPSC workload tests already had invariants).
 - **Why:** Cheap extension of existing introspection.
 - **Priority:** later · **Difficulty:** small · **Resume:** medium
 

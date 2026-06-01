@@ -58,6 +58,8 @@ add_executable(orderbook_tests
     tests/test_spsc_ring_buffer.cpp
     tests/test_spsc_command_pipeline.cpp
     tests/test_spsc_command_pipeline_workload.cpp
+    tests/test_csv_binary_engine_equivalence.cpp
+    tests/test_matching_engine_workload_invariants.cpp
 )
 
 add_executable(matching_engine_benchmark benchmarks/benchmark_matching_engine.cpp)
