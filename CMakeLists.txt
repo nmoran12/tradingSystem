@@ -61,6 +61,9 @@ target_link_libraries(matching_engine_benchmark PRIVATE orderbook_core)
 add_executable(binary_protocol_benchmark benchmarks/benchmark_binary_protocol.cpp)
 target_link_libraries(binary_protocol_benchmark PRIVATE orderbook_core)
 
+add_executable(ring_buffer_pipeline_benchmark benchmarks/benchmark_ring_buffer_pipeline.cpp)
+target_link_libraries(ring_buffer_pipeline_benchmark PRIVATE orderbook_core)
+
 target_link_libraries(orderbook_tests
     PRIVATE
         orderbook_core

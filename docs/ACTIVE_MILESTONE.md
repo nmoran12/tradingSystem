@@ -40,7 +40,9 @@ Direct `process` / `process_into` on the engine must remain the semantic baselin
 
 **Slice 3 (done in tree):** `WorkloadGenerator` equivalence tests (100 and 1 000 commands, seed 42; large-queue `run_sequence` and small-queue interleaved enqueue/drain). Correctness only — no throughput claims.
 
-Later slices: optional output ring, pipeline benchmark vs direct loop — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
+**Slice 4 (done in tree):** `ring_buffer_pipeline_benchmark` — side-by-side direct `process_into` vs `SpscCommandPipeline` on the same workload; local numbers only, sanity check that outputs match (see [BENCHMARKING.md](BENCHMARKING.md)).
+
+Later slices: optional two-thread smoke, optional output ring, close 6H — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
 
 ### Scope
 

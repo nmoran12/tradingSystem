@@ -98,6 +98,42 @@ Example: `./build/matching_engine_benchmark 100000 42`
 
 Example: `./build/binary_protocol_benchmark 100000 42`
 
+## What `ring_buffer_pipeline_benchmark` measures
+
+**Scope:** side-by-side wall-clock comparison of the same deterministic `WorkloadGenerator` stream applied via:
+
+1. **Direct path** — loop calling `MatchingEngine::process_into(command, scratch)` per command.
+2. **Pipeline path** — enqueue all commands into `pipeline::SpscCommandPipeline`, then drain with `process_into` (single-threaded; no background threads).
+
+**Includes:** matching, book updates, SPSC enqueue/drain overhead, and reused `event_scratch` vectors (event lists are also collected for a post-run sanity check that both paths match).
+
+**Does not measure:** multithreaded producer/consumer overlap, networking, or CSV/binary I/O.
+
+**CLI:**
+
+```bash
+./build-release/ring_buffer_pipeline_benchmark [command_count] [random_seed] [queue_capacity]
+```
+
+| Parameter | Default |
+|-----------|---------|
+| `command_count` | 100,000 |
+| `random_seed` | 42 |
+| `queue_capacity` | same as `command_count` (enqueue-all-then-drain) |
+
+Examples:
+
+```bash
+cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build build-release --target ring_buffer_pipeline_benchmark
+./build-release/ring_buffer_pipeline_benchmark 100000 42
+./build-release/ring_buffer_pipeline_benchmark 100000 42 8   # small queue (must still fit workload)
+```
+
+Output labels results as **local and machine-dependent**. The benchmark verifies that event sequences and final book metrics match between paths; it does **not** claim the pipeline is faster unless you observe that on repeated Release runs on your hardware.
+
+For stability, prefer multiple runs via `./scripts/benchmark_repeat.sh` after adding this target to your manual comparison workflow (it is not wired into `benchmark_release.sh` by default).
+
 ## Metrics reported
 
 | Metric | Meaning |
