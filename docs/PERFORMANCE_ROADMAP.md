@@ -4,7 +4,7 @@ Profiler-backed **future optimisation candidates** for this project. Nothing her
 
 **Context after Milestone 6F:** `MatchingEngine::process_into(command, events)` lets hot loops reuse a caller-owned `std::vector<EngineEvent>` instead of constructing a fresh vector per command. That reduced event-output allocation pressure while `process()` remains a compatibility wrapper. The internal `OrderBook` storage model was **not** changed.
 
-**Active milestone queue:** **9B CURRENT** — slice 1 complete (mixed alloc; **no** list pool). Plan: [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §10. **Do not** start list-node pool without byte-ranked proof that list dominates. **6G** container swap remains closed.
+**Active milestone queue:** **10A** (persistence) is CURRENT; performance track **9A/9B** complete. **9B** closed with **no** list pool (mixed alloc — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B). **Do not** start list-node pool without byte-ranked proof. **6G** container swap remains closed.
 
 See also: [PROFILING_REPORT.md](PROFILING_REPORT.md), [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md), [BENCHMARKING.md](BENCHMARKING.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 

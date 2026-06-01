@@ -2,7 +2,7 @@
 
 **Status:** Planning document only. Items below are **candidates** unless explicitly marked as shipped elsewhere. Nothing in this file is implemented unless the repo already contains it.
 
-**Current baseline (post-9A):** `./scripts/verify.sh` — **164/164** tests; queue **9B CURRENT** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md), [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md)).
+**Current baseline (post-9B):** `./scripts/verify.sh` — **164/164** tests; queue **10A CURRENT** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
 **Related:** [ROADMAP.md](ROADMAP.md) (long-term systems milestones), [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) (proposed **8A–8C**), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
@@ -61,7 +61,7 @@ Also **avoid** unless profiler evidence justifies it:
 
 **8A:** README refresh, architecture-at-a-glance, and [DEMO_GUIDE.md](DEMO_GUIDE.md) are **done**; screenshot/GIF **checklist** is in the demo guide (binary assets still optional).
 
-**9A (done):** [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) (`191ddab`). **9B (CURRENT):** slice 1 alloc profile done — **mixed** hash/list/map; list-node pool **not** implemented; review before `/advance-milestone`.
+**9A/9B (done):** Performance plan (`191ddab`); alloc profile (`5febd9a`) — **no** list pool (mixed evidence). **10A (CURRENT):** persistence / command journal revisit per [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md).
 
 ### README / overview refresh
 

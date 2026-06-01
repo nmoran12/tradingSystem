@@ -3,36 +3,53 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue:** [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — row **20**
+**Queue:** [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — row **21**
+
+**Model recommendation:** Stronger model for persistence design (journal format, recovery, equivalence). Do not start until human approves scope in a planning pass.
 
 ---
 
-## CURRENT: 9B — One Measured Hot-Path Optimisation (Conditional)
+## CURRENT: 10A — Persistence / Command Journal (Revisit)
 
-**Status:** **Slice 1 complete — slice 2 not implemented** (allocation evidence mixed; list node pool **not** justified).
+**Status:** `READY` — not started. **Queued after 9B** per [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §6; performance track (9A/9B) complete.
 
 ### Goal
 
-If and only if measurement confirms a justified target, implement **at most one** narrow optimisation. **Slice 1 is done; slice 2 was skipped** per decision rule.
+Design and implement a **durable command journal** and deterministic recovery/replay path that reproduces the same book and engine event sequence as in-memory processing — without changing matching semantics on the existing hot path until explicitly integrated.
 
-### Slice 1 result (2026-06-01)
+### Background
 
-See [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1.
+9B concluded **no** list-node pool: mixed hash/list/map allocation on adds ([PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1). Infrastructure (persistence, TCP, publisher) was deferred during 8C in favour of the performance programme.
 
-| Finding | Detail |
-|---------|--------|
-| Tool | `sample` during apply (`2000000` cmds, seed 42, engine-only) |
-| Dominant add-path allocs | **Mixed** — hash `order_lookup_` emplace **~51–58** samples, list `push_back` **~46**, map **~29–36** |
-| Event vector | Weak signal (~11 `process_into` collapsed samples) |
-| Slice 2 | **Stopped** — does not meet “list clearly dominates” threshold |
+### Suggested slices (plan before code)
 
-### Acceptance criteria
+| # | Slice | Deliverable |
+|---|--------|-------------|
+| 0 | Plan doc | Journal format, append API, replay equivalence criteria |
+| 1 | Append-only command log | Write path; no engine change |
+| 2 | Replay from journal | `OrderCommand` stream → `MatchingEngine`; equivalence tests |
+| 3 | Optional snapshot / recovery | Document tradeoffs |
 
-- [x] Slice 1 alloc profile completed and documented.
-- [x] Explicit stop: “no implementation warranted” for list-node pool.
-- [ ] If slice 2 had run: 164/164 tests, benchmarks — **N/A (not run)**.
-- [x] No matching-semantics changes.
-- [ ] Human review + `/review-milestone` before `/advance-milestone`.
+### Out of scope (initial 10A)
+
+- TCP gateway (**10B**), market data publisher (**10C**).
+- Database / cloud persistence.
+- Matching-engine or order-book hot-path optimisation.
+- Auth, multi-user, production hardening.
+
+### Constraints
+
+- Preserve matching rules, FIFO, OBK1/CSV equivalence story.
+- `./scripts/verify.sh` must stay **164/164** (or current count) after each slice.
+- No unmeasured performance claims on the journal path.
+
+### Acceptance criteria (sketch — refine in plan slice 0)
+
+- [ ] Journal format documented; append and replay APIs defined.
+- [ ] Replay of a recorded workload matches direct `MatchingEngine` processing (trades, book, events).
+- [ ] Tests added for journal round-trip and recovery scenario.
+- [ ] `./scripts/verify.sh` passes.
+- [ ] Human review before `/advance-milestone`.
 
 ### Verification
 
@@ -42,11 +59,12 @@ See [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1.
 
 ### References
 
-- [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §10
-- [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1
+- [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §6
+- [ROADMAP.md](ROADMAP.md) — Milestone 9 (persistence)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
 
-### Previous milestone (9A — done)
+### Previous milestone (9B — done)
 
 | Deliverable | Commit |
 |-------------|--------|
-| Performance baseline and optimisation plan | `191ddab` |
+| Allocation profile; slice 2 not implemented (mixed evidence) | `5febd9a` |

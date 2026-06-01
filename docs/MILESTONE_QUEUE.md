@@ -203,9 +203,9 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**CURRENT milestone:** **9B — One Measured Hot-Path Optimisation (Conditional)** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**CURRENT milestone:** **10A — Persistence / Command Journal (Revisit)** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**9A** is **Done** (commit `191ddab`). **9B** is implementation (conditional on 9A measurement) — see [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) and [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5.
+**9A** Done (`191ddab`). **9B** Done (`5febd9a`) — slice 1 alloc profile only; **no** list-node optimisation (mixed evidence). Next infrastructure per [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §6.
 
 ---
 
@@ -273,18 +273,28 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 9B — One Measured Hot-Path Optimisation (Conditional)
 
-**Status:** **CURRENT** — **slice 1 done; slice 2 not implemented** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Completed.**
 
 | Outcome | Detail |
 |---------|--------|
 | **Slice 1** | `sample` on engine-only **2M** cmds, seed 42 — [PROFILING_REPORT.md](PROFILING_REPORT.md) §9B slice 1 |
 | **Finding** | **Mixed** alloc on adds: hash emplace ≈ list `push_back` > map; **no** byte-ranked Instruments/`heaptrack` on this host |
-| **Slice 2** | **Not done** — list node pool **not justified** |
+| **Slice 2** | **Not done** — list node pool **not justified** (valid outcome per 9A decision rule) |
 | **Code** | None |
 
-**Out of scope:** Container family swap; persistence/TCP/publisher; protocol changes; unmeasured throughput claims.
+**Commit:** `5febd9a` — Document 9B allocation profile findings.
 
-**Related:** [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §5 · [MILESTONE_9A_PERFORMANCE_PLAN.md](MILESTONE_9A_PERFORMANCE_PLAN.md) §10.
+---
+
+### 10A — Persistence / Command Journal (Revisit)
+
+**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+
+**Goal:** Append-only command journal, deterministic replay equivalence with `MatchingEngine`, optional recovery story — see [ROADMAP.md](ROADMAP.md) and [MILESTONE_8C_DECISION.md](MILESTONE_8C_DECISION.md) §6.
+
+**Queued after:** 9A/9B performance programme.
+
+**Not in queue yet:** **10B** TCP gateway, **10C** market data publisher (deferred).
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -299,4 +309,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B, 8C, 9A) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A, 8B, 8C, 9A, 9B) are documented in [ROADMAP.md](ROADMAP.md).
