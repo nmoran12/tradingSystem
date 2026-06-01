@@ -11,98 +11,76 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | READY (workflow) |
+| **Status** | IN PROGRESS (spike landed; closing slice: tests + doc sync) |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
-| **Test baseline** | 149 tests after 6H SPSC pipeline work |
+| **Test baseline** | 149 tests after 6H; export CLI tests added in current slice |
 
-### Model recommendation
+### What already exists (do not reimplement)
 
-Use a **clear, product-minded model** for export schema and UI structure. The C++ export path must stay simple and gated; avoid coupling `OrderBook` / `MatchingEngine` to frontend code. **Cursor Auto** is reasonable for a minimal NDJSON export slice and docs; prefer a **stronger model** for full UI layout, playback state, and schema versioning if the first slice grows quickly.
+| Deliverable | Location / notes |
+|-------------|------------------|
+| NDJSON export | Inline in `src/main.cpp` (`write_visualisation_step`) |
+| CLI | `--binary-engine <file.obk> --export-visualisation <replay.ndjson>` only |
+| UI spike | `ui/replay-visualiser/` (React + Vite) |
+| Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
----
+**Not implemented:** `--export-viz` alias; export on `--engine` (CSV) or `--replay`; full depth in export (shallow BBO level per side only).
+
+### Current slice (this change set)
+
+- Automated CLI/shape tests for binary-engine visualisation export (`tests/test_cli_visualisation_export.cpp`)
+- Milestone doc reconciliation (this file, [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md), [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md))
+- **No** UI rewrite, exporter refactor, or export semantics changes unless a test exposes a bug
 
 ### Goal
 
-Build an **optional** replay visualiser so users can understand and debug order-book behaviour from recorded output — **without** changing matching semantics, replay semantics, or Release benchmark hot paths.
+Optional replay visualiser for debugging and learning — **without** changing matching semantics, replay semantics, or Release benchmark hot paths. C++ core stays headless; UI consumes file-based NDJSON offline.
 
-The C++ core stays headless. Visualisation data is exported deterministically (file-based first), then consumed by a separate UI (e.g. React + Vite under a `viz/` or similar folder — implementation detail flexible).
+### Scope (remaining for 7A close)
 
-### First slice (planned)
-
-1. **Design and implement a minimal offline export path** (engine or replay run) that writes versioned **NDJSON** (or JSON lines) with stable fields, for example:
-   - step index, optional timestamp
-   - best bid / best ask / spread
-   - trades (price, quantity, sides/order ids where available)
-   - optional shallow depth or top-of-book only for v1
-   - summary counters (active orders, resting quantity) per step or at end
-2. **Explicit CLI or mode** (e.g. `--export-viz <file.ndjson>`) — not enabled in benchmark binaries by default.
-3. **Docs** — how to generate a sample file and what each field means; state that the UI is not part of performance measurement.
-4. **Do not** in the first slice:
-   - embed UI in C++ (Qt, ImGui, etc.)
-   - add WebSocket/HTTP server (that is **7B**)
-   - change `MatchingEngine` / `OrderBook` matching logic
-   - instrument `matching_engine_benchmark` or `binary_protocol_benchmark` hot loops
-   - claim throughput or latency improvements from the visualiser
-
-Later slices: minimal UI prototype reading the export file (ladder, tape, BBO, step/play controls) — see [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7A.2.
-
-### Likely files touched (first slice)
-
-| Area | Examples |
-|------|----------|
-| Export / orchestration | `src/main.cpp`, new `include/viz/` or `src/viz/` exporter (thin) |
-| Types / schema | Small header for export record shapes; `schema_version` field |
-| Tests | Golden-file or round-trip tests on export lines from a tiny fixed command sequence |
-| Docs | `docs/MILESTONE_7_PLAN.md`, new `docs/VISUALISER.md` or section in README |
-| UI (later slice) | `viz/` frontend (not required in first slice) |
-
-### Scope
-
-- Deterministic, file-based visualisation export from an existing engine or replay path
-- Stable, documented field names and schema version
-- No regression to existing CLI modes (`--replay`, `--engine`, `--binary-engine`)
-- Keep benchmarks and default builds free of export overhead
+- [x] Opt-in NDJSON export (`schemaVersion: 1`) from `--binary-engine`
+- [x] React + Vite UI prototype (ladder, tape, BBO, playback, chart)
+- [x] [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
+- [x] CLI export tests (shape + trade line)
+- [ ] Human review; optional: regenerate one UI sample from CLI export vs rich demo fixtures
+- [ ] Advance queue after `/review-milestone` (human approval)
 
 ### Out of scope
 
-- Live streaming interface (**7B**)
-- Benchmark overlay in UI (**7C**)
-- TCP gateway, persistence, replication
-- Binary protocol semantic changes
-- Matching or FIFO / price-time rule changes
-- SPSC pipeline or performance optimisation work (completed under **6H**)
+- Live streaming (**7B**), benchmark overlay UI (**7C**)
+- CSV/market-event export paths, full book depth export, `--export-viz` alias
+- Networking, persistence, matching/binary protocol changes
+- SPSC / performance work (completed under **6H**)
 
 ### Acceptance criteria
 
-- [ ] `./scripts/verify.sh` passes (add tests if export behaviour is new)
-- [ ] Export mode is opt-in and documented; default behaviour unchanged
-- [ ] Sample NDJSON (or documented format) can be produced from a small deterministic run
-- [ ] Docs explain separation from C++ core and from Release benchmarks
-- [ ] No UI dependency linked into `orderbook_core` or benchmark targets in the first slice unless explicitly approved
-- [ ] No later-milestone work (7B/7C) in the same change set unless explicitly approved
+- [x] `./scripts/verify.sh` passes (including new export tests)
+- [x] Export mode opt-in; default CLI unchanged
+- [x] NDJSON producible from deterministic tiny `.obk` (tests generate in temp dir)
+- [x] Docs separate UI from C++ core and benchmarks
+- [x] No UI linked into `orderbook_core` or benchmark targets
 
 ### Required verification
-
-From project root:
 
 ```bash
 ./scripts/verify.sh
 ```
 
-Manual check after export slice exists:
+Manual export example (generate `.obk` via tests/workload or binary writer; repo ships CSV only under `data/`):
 
 ```bash
-# Example — exact flags TBD when implemented
-./build/cpp-low-latency-orderbook --engine data/sample_commands.csv --export-viz /tmp/replay.ndjson
+./build/cpp-low-latency-orderbook \
+  --binary-engine /path/to/commands.obk \
+  --export-visualisation /tmp/replay.ndjson
 ```
 
 ### Key docs
 
 - [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
+- [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
-- [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
-- [BENCHMARKING.md](BENCHMARKING.md) — UI must not pollute benchmark paths
+- [BENCHMARKING.md](BENCHMARKING.md)
 
 ### Human review before advance
 
-After `/run-active-milestone` completes, run `/review-milestone`, then human approval before `/advance-milestone`.
+Run `/review-milestone`, then human approval before `/advance-milestone`.

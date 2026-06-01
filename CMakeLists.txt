@@ -49,6 +49,7 @@ add_executable(orderbook_tests
     tests/test_workload_generator.cpp
     tests/test_binary_command_reader.cpp
     tests/test_cli_binary_engine.cpp
+    tests/test_cli_visualisation_export.cpp
     tests/test_binary_protocol.cpp
     tests/test_spsc_ring_buffer.cpp
     tests/test_spsc_command_pipeline.cpp

@@ -1,7 +1,17 @@
 # Milestone 7 Plan: Replay Visualiser UI
 
-**Status:** Queued (planning only)  
+**Status:** In progress (7A CURRENT) — export, UI spike, and docs exist; automated export tests and milestone doc sync in flight.  
 **Prerequisite:** Replay and engine paths complete; no performance work is blocked on this milestone.
+
+### Implementation snapshot (repo)
+
+| Item | Status |
+|------|--------|
+| 7A.1 NDJSON export | Done — `--binary-engine` + `--export-visualisation`; shallow BBO depth only (`src/main.cpp`) |
+| 7A.2 UI prototype | Done — `ui/replay-visualiser/` (React + Vite) |
+| 7A.3 Documentation | Done — [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
+| CLI export tests | Added — `tests/test_cli_visualisation_export.cpp` |
+| Gaps | No CSV/`--replay` export; bundled UI samples may show multi-level depth as **demo** data; optional depth export and fixture regeneration later |
 
 ## Goal
 
@@ -86,7 +96,7 @@ Include an explicit note that the UI is not part of performance measurements and
 
 ## Explicitly out of scope
 
-- Implementing the UI in this milestone plan (only planning)
+- Re-implementing the existing UI/export spike from scratch
 - WebSocket server or HTTP server
 - Live exchange connectivity
 - UI embedded in C++ (Qt, Dear ImGui, etc.)
