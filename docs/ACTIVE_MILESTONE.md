@@ -3,72 +3,65 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **6G is CURRENT**
+**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **6H is CURRENT**
 
 ---
 
-## Milestone 6G — Order Book Data-Structure Optimisation
+## Milestone 6H — Optional SPSC Queue
 
 | Field | Value |
 |-------|--------|
 | **Status** | READY (workflow) |
 | **Parent** | Milestone 6 — Performance and optimisation groundwork |
-| **Test baseline** | 127 tests after 6F event-buffer reuse pass |
+| **Test baseline** | 129 tests after 6G order lookup reservation pass |
 
 ### Model recommendation
 
-Use a **strong performance-focused coding model**. Book changes affect FIFO, iterator stability, and invariants; preserve behaviour exactly. Profile first; one narrow change per pass.
+Use a **strong performance-focused coding model**. SPSC queues involve memory ordering, capacity edge cases, and later pipeline equivalence with `MatchingEngine` — correctness and documented semantics first.
 
 ---
 
 ### Goal
 
-Reduce **measured** cost of storing and looking up resting orders in `OrderBook` (e.g. `add_order_to_side`, `order_lookup_` insert/rehash, price-level work) **without** changing matching semantics, price-time priority, or book invariants.
+Introduce a **single-producer / single-consumer (SPSC)** ring buffer pipeline that **wraps** `MatchingEngine` command ingest (and optionally event egress later) to practice low-latency queue patterns **without** making the engine multi-threaded internally or changing matching semantics.
 
-Measure first (reuse 6E engine-only profiling or fresh Instruments/`sample`/perf), implement only what profiling confirms, and document before/after honestly as **local** and **machine-dependent**.
+Direct `process` / `process_into` on the engine must remain the semantic baseline; any pipeline path must prove **equivalence** on fixed workloads before claiming performance benefit.
 
-### First slice (planned — do not skip profiling)
+### First slice (planned)
 
-1. **Re-profile** the engine apply loop after 6F (`process_into`) to confirm book-side hotspots still dominate.
-2. If evidence points at `order_lookup_` rehash/emplace, implement **one** narrow optimisation such as `OrderBook::reserve_active_orders(size_t)` (or equivalent) calling `order_lookup_.reserve(...)` with a documented margin — only where call sites can supply a sensible expected active-order count or a profiled peak.
+1. **`include/concurrency/SpscRingBuffer.hpp`** — fixed-capacity template with `try_push` / `try_pop`, acquire/release atomics, power-of-two capacity (mask indexing) where practical; document full/empty behaviour.
+2. **`tests/test_spsc_ring_buffer.cpp`** — single-threaded FIFO, full-buffer reject, empty pop fail, wrap-around stress (no `MatchingEngine` yet).
 3. **Do not** in this first slice:
-   - replace `std::list<Order>` at price levels
-   - replace `std::map` bid/ask books
-   - redesign the overall book model, add global allocators, or swap container families without dedicated tests and benchmarks
+   - integrate with `MatchingEngine` or change engine/book code
+   - add MPMC queues, mutexes in the hot path, or networking
+   - add TCP, persistence, or UI work
 
-Later slices (only after profiling and a successful first slice) may consider other items in [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md); they are **not** part of the initial 6G implementation pass unless explicitly approved.
+Later slices (only after buffer tests pass): producer/consumer pipeline around `process_into`, optional output ring, pipeline benchmark vs direct loop — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
 
 ### Scope
 
-- Re-profile to confirm top book-side costs (hash rehash on `order_lookup_`, `std::map` price-level operations, `std::list` node churn, redundant lookups)
-- Implement **one focused** improvement for a confirmed hot site (first slice: likely `order_lookup_` reserve only)
-- Preserve **all** book invariants: FIFO within a price level, iterator stability on `reduce`, price-time priority, `validate_invariants()` semantics
-- Keep **replay path** (`MarketEvent` → `OrderBook`) and **engine path** (`OrderCommand` → `MatchingEngine`) behaviourally identical
-- Add tests if reserve or any API addition could affect observable behaviour
-- Update `docs/PERFORMANCE_BASELINE.md` with before/after repeated Release runs
-- Short notes in `docs/PROFILING_REPORT.md` on what changed and why
+- SPSC ring buffer API and correctness tests
+- Cache-line awareness on head/tail where appropriate (document layout)
+- Optional two-thread tests **only** if explicitly labeled and deterministic
+- Keep **replay path** and **engine path** behaviour unchanged until an equivalence-tested pipeline adapter exists
+- Document design in header comments + short `docs/` note when behaviour is non-obvious
 
 ### Out of scope
 
-- Matching semantics, priority rules, or user-visible behaviour changes
-- Memory pool / event-buffer reuse (that was **6F**)
-- SPSC queue, multithreading, or lock-free pipeline work (that is **6H**)
-- Replacing `std::list`, `std::map`, or the book storage model in the **first** 6G slice
-- New networking, persistence, replication, or exchange connectivity
+- Changing `OrderBook` / `MatchingEngine` matching or storage semantics
+- MPMC queues, lock-free engine internals, or multithreaded matching
+- Networking, TCP gateway, replication, persistence
 - Binary protocol semantic changes
-- Benchmark “gaming” (removing validation or changing measurement semantics)
-- Large third-party container dependencies without justification
+- Further order-book container optimisation (completed under **6G**)
+- Benchmark throughput claims before pipeline equivalence is proven
 
 ### Acceptance criteria
 
-- [ ] `./scripts/verify.sh` passes (add tests if new book API or behaviour edge cases)
-- [ ] Change is **profiler-justified** (tool used, book site targeted, documented)
-- [ ] Book invariants preserved (`validate_invariants()` and FIFO/price-time tests still pass)
-- [ ] Release benchmark comparison with repeated runs:
-  - same machine, build type, command count, seed
-  - compare **typical/median** results, not a single outlier
-- [ ] `docs/PERFORMANCE_BASELINE.md` updated with before/after and clear “local numbers” caveat
-- [ ] No later-milestone work (6H/7A+) included in the same change set
+- [ ] `./scripts/verify.sh` passes (new buffer tests included)
+- [ ] Ring buffer API documented (full/empty, capacity, memory ordering intent)
+- [ ] Single-threaded buffer tests cover FIFO, boundary, and wrap-around
+- [ ] No engine integration or matching/book changes in the first slice unless acceptance criteria are explicitly expanded by human review
+- [ ] No later-milestone work (7A+) in the same change set
 
 ### Required verification
 
@@ -78,26 +71,18 @@ From project root:
 ./scripts/verify.sh
 ```
 
-Then (Release, repeated):
+Pipeline benchmarks (later slices only):
 
 ```bash
 ./scripts/benchmark_repeat.sh 5 100000 42
 ```
 
-Optional: engine-only profiling if measuring apply-loop / book costs:
-
-```bash
-./build-release/matching_engine_benchmark 1000000 42 --profile-engine-only
-```
-
 ### Key docs
 
-- [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)
-- [PROFILING_REPORT.md](PROFILING_REPORT.md)
-- [BENCHMARKING.md](BENCHMARKING.md)
-- [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md)
+- [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — future `concurrency/` boundary
 - [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [PROFILING_REPORT.md](PROFILING_REPORT.md)
 
 ### Human review before advance
 

@@ -25,8 +25,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 8 | 6D | Benchmark Stability and Profiling Report | Done |
 | 9 | 6E | Targeted Hot-Path Optimisation | Done |
 | 10 | 6F | Memory Pool / Object Pool | Done |
-| 11 | **6G** | Order Book Data-Structure Optimisation | **CURRENT** |
-| 12 | 6H | Optional SPSC Queue | Queued |
+| 11 | 6G | Order Book Data-Structure Optimisation | Done |
+| 12 | **6H** | Optional SPSC Queue | **CURRENT** |
 | 13 | 7A | Replay Visualiser UI | Queued |
 | 14 | 7B | Live Replay Streaming Interface | Queued |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Queued |
@@ -109,7 +109,17 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 6G — Order Book Data-Structure Optimisation
 
-Order book storage improvements after profiling and baseline comparison.
+**Completed.** Narrow, profiler-backed book lookup tuning only — no container family swap.
+
+| Outcome | Detail |
+|---------|--------|
+| **Slice 1** | `OrderBook::reserve_active_orders`, `MatchingEngine::reserve_book_capacity`, benchmark `reserve_book_capacity(command_count / 10)`; tests for parity |
+| **Profiling** | Engine-only `sample`: `order_lookup_` **rehash pressure much reduced** after reserve |
+| **Throughput** | Repeated Release benchmarks **noisy** — **no clear throughput win** claimed |
+| **Slice 2** | Measurement-only allocation attribution (`sample`, `malloc_history`, failed `xctrace` attach): **mixed** list + hash + some map signals on resting adds |
+| **Not done** | `std::list` / `std::map` redesign — **not justified** by evidence |
+
+**Docs:** [PROFILING_REPORT.md](PROFILING_REPORT.md) §6G, [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) §6G, [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
 
 ---
 
