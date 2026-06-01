@@ -38,6 +38,8 @@ Direct `process` / `process_into` on the engine must remain the semantic baselin
 
 **Slice 2 (done in tree):** `pipeline::SpscCommandPipeline` — deterministic single-threaded enqueue/drain around `process_into`; equivalence tests vs direct processing (no throughput claims).
 
+**Slice 3 (done in tree):** `WorkloadGenerator` equivalence tests (100 and 1 000 commands, seed 42; large-queue `run_sequence` and small-queue interleaved enqueue/drain). Correctness only — no throughput claims.
+
 Later slices: optional output ring, pipeline benchmark vs direct loop — see [MILESTONE_6_PLAN.md](MILESTONE_6_PLAN.md).
 
 ### Scope
