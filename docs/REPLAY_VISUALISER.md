@@ -19,11 +19,18 @@ Roadmap: [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 
 ## Generating visualisation output
 
-Visualisation output is a simple **NDJSON** file: one JSON object per engine command step.
+Replay visualisation uses the same **`schemaVersion: 1`** JSON record for both file export and live stream. Choose one mode per run:
 
-Export is **opt-in** and only available on the **binary engine** path (not `--engine` CSV or `--replay` market events). The flag name is exactly:
+| Mode | CLI | Output |
+|------|-----|--------|
+| **File export (7A)** | `--export-visualisation <path.ndjson>` | NDJSON file (one object + newline per command step) |
+| **Live stream (7B)** | `--stream-visualisation <host:port>` | HTTP Server-Sent Events on loopback while replay runs |
 
-`--export-visualisation` (there is no `--export-viz` alias).
+Both are **opt-in** and only available on the **`--binary-engine`** path (not `--engine` CSV or `--replay` market events).
+
+### File export
+
+The flag name is exactly `--export-visualisation` (there is no `--export-viz` alias).
 
 ```bash
 ./build/cpp-low-latency-orderbook \
@@ -124,9 +131,7 @@ Current prototype features:
 
 ## Live streaming (7B — backend)
 
-7B adds an **opt-in** localhost stream using the **same** `schemaVersion: 1` JSON record as file export. The React UI does not consume the stream yet; see [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
-
-Planned command (slice 1):
+7B adds an **opt-in** localhost stream using the **same** `schemaVersion: 1` JSON record as file export. The React UI does **not** consume the stream yet (live-follow is a later slice); see [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 
 ```bash
 ./build/cpp-low-latency-orderbook \
@@ -134,9 +139,26 @@ Planned command (slice 1):
   --stream-visualisation 127.0.0.1:9000
 ```
 
-- **Localhost-only** (`127.0.0.1` or `localhost`); non-production proof-of-concept.
-- **One client**; server blocks until a client connects, then emits one SSE `data:` frame per command step.
-- **No matching-core changes**; benchmarks unchanged unless you pass stream flags.
+In another terminal (or from a browser later via `EventSource`), connect while the process is waiting:
+
+```bash
+curl -N http://127.0.0.1:9000/stream
+```
+
+Each replay step is one SSE frame:
+
+```text
+data: {"schemaVersion":1,"index":0,...}
+
+```
+
+### Stream limitations (proof-of-concept)
+
+- **Localhost-only** — endpoint host must be `127.0.0.1` or `localhost`; bind is always loopback.
+- **Single client** — blocks in `wait_for_client()` until one connection is accepted.
+- **Non-production** — no TLS, auth, backpressure, or multi-client fan-out.
+- **No matching-core changes** — `MatchingEngine` / `OrderBook` logic unchanged; benchmark binaries unchanged unless you pass stream flags.
+- Normal `--binary-engine` (no extra flags) and `--export-visualisation` behaviour are unchanged.
 
 ## Out of scope (for this spike)
 

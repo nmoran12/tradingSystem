@@ -17,6 +17,8 @@ add_library(orderbook_core
     src/benchmarks/WorkloadGenerator.cpp
     src/protocol/BinaryProtocol.cpp
     src/protocol/BinaryCommandReader.cpp
+    src/viz/ReplayVisualisationWriter.cpp
+    src/viz/ReplayVisualisationStreamServer.cpp
 )
 
 target_include_directories(orderbook_core
@@ -50,6 +52,8 @@ add_executable(orderbook_tests
     tests/test_binary_command_reader.cpp
     tests/test_cli_binary_engine.cpp
     tests/test_cli_visualisation_export.cpp
+    tests/test_replay_visualisation_writer.cpp
+    tests/test_replay_visualisation_stream.cpp
     tests/test_binary_protocol.cpp
     tests/test_spsc_ring_buffer.cpp
     tests/test_spsc_command_pipeline.cpp

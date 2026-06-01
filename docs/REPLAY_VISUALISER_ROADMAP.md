@@ -7,7 +7,7 @@ This document tracks the optional replay visualisation milestone slices. It comp
 | Slice | Name | Status | Summary |
 |-------|------|--------|---------|
 | **7A** | File-based replay visualisation | **Done** | NDJSON export from `--binary-engine`; React/Vite UI loads files offline |
-| **7B** | Live replay streaming | **In progress** | Same `schemaVersion: 1` records over localhost SSE while replay runs |
+| **7B** | Live replay streaming | **Backend done** | Localhost SSE CLI; UI live-follow deferred |
 | **7C** | UI metrics / benchmark overlay | Queued | Informational overlays only; not a substitute for Release benchmarks |
 
 ## 7A — File-based (complete)
@@ -32,15 +32,15 @@ Stream the **same** replay visualisation record shape as 7A file export while th
 - **Non-production:** Blocking single-client server; not for trading or benchmark claims.
 - **No hot-path coupling:** No changes to `MatchingEngine` / `OrderBook` matching logic; no instrumentation in `matching_engine_benchmark` or `binary_protocol_benchmark`.
 
-### Planned CLI (7B slice 1)
+### CLI (backend slice — shipped)
 
 ```bash
 ./build/cpp-low-latency-orderbook \
-  --binary-engine data/sample.obk \
+  --binary-engine /path/to/order_commands.obk \
   --stream-visualisation 127.0.0.1:9000
 ```
 
-Client connects (browser `EventSource` later); server emits one SSE `data:` frame per engine command step.
+Implementation: `viz::ReplayVisualisationWriter` (shared JSON) + `viz::ReplayVisualisationStreamServer` (POSIX HTTP/SSE). Client connects (e.g. `curl -N`); server emits one SSE `data:` frame per engine command step.
 
 ### Deferred (later 7B / UI slices)
 
