@@ -3,72 +3,70 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **no milestone CURRENT**
+**Queue:** [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — row **16**
 
 ---
 
-## Queue complete (through 7C)
+## CURRENT: 8A — Documentation and Demo Packaging
 
-The ordered implementation queue is **finished** through **7C — UI Metrics and Benchmark Overlay**.
+**Status:** Queued for implementation — **not started** in this milestone tranche (queue prep only until `/run-active-milestone`).
 
-| Verification | Result |
-|--------------|--------|
-| `./scripts/verify.sh` | **160/160** tests |
+### Goal
+
+Make the project easy to understand, run, and assess from GitHub.
+
+### Slices
+
+#### 1. README final polish
+
+- Accurate **160**-test baseline (`./scripts/verify.sh`).
+- Concise **“what I built”** section (matching engine, binary OBK1, benchmarks, optional replay visualiser).
+- **Architecture-at-a-glance** (replay path, CSV engine path, binary engine path, optional viz export/stream, UI, benchmarks off to the side).
+- **Benchmark / profiling** links with honest disclaimers ([BENCHMARKING.md](BENCHMARKING.md), [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md), [PROFILING_REPORT.md](PROFILING_REPORT.md)) — machine-local, dated evidence only.
+- **Replay visualiser** feature summary: file/scenario load, live SSE, run summary metrics ([REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)).
+
+#### 2. Demo packaging
+
+- Document how to run **offline** visualiser scenarios (bundled NDJSON / upload).
+- Document how to run **live SSE** visualisation (`--stream-visualisation` + UI connect) — see [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md).
+- Add a **placeholder checklist** for README screenshot / demo GIF capture (paths and steps; assets may remain absent until captured).
+- **Optional future:** `scripts/demo-live-replay.sh` — note in docs/backlog only; **do not implement** unless explicitly approved in a later slice.
+
+#### 3. Onboarding polish
+
+- One clear path: **clone → build → test → run demo** (C++ verify, optional UI build, sample replay/engine commands, visualiser).
+- State that **`profiling/`** trace directories are local-only and must **not** be committed.
+- Ensure docs do **not** overclaim benchmark wins; point readers to repeat scripts and baseline tables.
+
+### Constraints
+
+- **Docs only** for 8A — no matching-engine, order-book, parser, or protocol behaviour changes.
+- **No** C++ or React/UI source changes unless a future slice explicitly allows doc-adjacent fixes (default: **none**).
+- **No** GitHub Actions or other CI workflows (deferred to **8B**).
+- **No** `scripts/demo-live-replay.sh` unless human approves within 8A.
+- **No** screenshot/GIF binary assets required to mark 8A done — checklist and instructions are enough if assets are still pending capture.
+- **No** new benchmark throughput claims without dated, reproducible Release runs on this repo.
+
+### Acceptance criteria
+
+- [ ] `README.md` reflects post-7C reality (160 tests, milestones through 7C, architecture-at-a-glance, honest perf disclaimers, visualiser summary).
+- [ ] Demo sections cover offline scenarios and live SSE end-to-end (commands + UI steps).
+- [ ] Screenshot/GIF **capture checklist** exists (placeholders OK; no false claim that images are in-repo).
+- [ ] Onboarding path is a single obvious flow for a new clone.
+- [ ] `profiling/` called out as untracked/local-only.
+- [ ] `./scripts/verify.sh` still passes after any doc-only edits.
+- [ ] Human review + `/review-milestone` before `/advance-milestone` to **8B**.
+
+### References
+
+- Backlog detail: [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md)
+- Visualiser: [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md)
+- Long-term systems (not 8A): [ROADMAP.md](ROADMAP.md)
+
+### Baseline verification (pre-8A)
+
+| Check | Result |
+|-------|--------|
+| `./scripts/verify.sh` | **160/160** |
 | `cd ui/replay-visualiser && npm run build` | Passes |
-| Latest queue-advance commit | `6e23b61` — Advance milestone queue after 7C |
-
-### Milestone 7 visualisation track (done)
-
-| ID | Deliverable |
-|----|-------------|
-| 7A | NDJSON `--export-visualisation`; React UI (file/scenarios) |
-| 7B | `--stream-visualisation` localhost SSE; UI live-follow |
-| 7C | Run summary panel (`runMetrics.ts`) — informational only |
-
-Do **not** start new implementation from this file until a human adds a **CURRENT** row to [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md).
-
----
-
-## What to do next (planning only)
-
-1. Read **[FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md)** — full backlog with priority, difficulty, resume value, and **scope to avoid**.
-2. Review **proposed** milestones **8A**, **8B**, **8C** in [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md).
-3. Agree on order (recommended: **8A → 8B → 8C**, then a systems milestone from [ROADMAP.md](ROADMAP.md)).
-4. Add the chosen row as **CURRENT** and replace this file with that milestone’s goal and slices.
-5. Run `/run-active-milestone` in a **new** session.
-
-### Proposed 8A — Documentation and Demo Packaging (summary)
-
-- **Goal:** Accurate top-level docs and demo materials so reviewers can run and understand the project quickly.
-- **Includes (planned):** README/overview sync; architecture-at-a-glance; links to benchmarks; demo instructions; screenshot/GIF placeholders — **not in repo yet**.
-- **Excludes:** C++ feature work, CI workflows (see 8B).
-
-### Proposed 8B — CI and Correctness Hardening (summary)
-
-- **Goal:** Automated build/test and stronger correctness coverage.
-- **Includes (planned):** GitHub Actions; binary vs CSV equivalence; invariant workload tests; stream integration test — **not in repo yet**.
-- **Excludes:** New matching semantics; perf regression gates without careful design.
-
-### Proposed 8C — Next Systems Extension Decision (summary)
-
-- **Goal:** Choose the next **large** systems feature before coding.
-- **Candidates:** TCP order gateway · persistence/replay log · market data publisher ([ROADMAP.md](ROADMAP.md)).
-- **Output:** Written decision + scoped milestone plan; **no implementation** in 8C itself.
-
----
-
-## Long-term systems candidates (after 8A–8C)
-
-| ROADMAP item | One-line summary |
-|--------------|------------------|
-| TCP gateway | Remote commands → `MatchingEngine` → streamed `EngineEvent`s |
-| Persistence | Append-only log, snapshots, deterministic recovery replay |
-| Market data publisher | Trades and BBO from engine events to subscribers |
-
-All **candidate / not started** until queued and implemented.
-
----
-
-## Scope reminder
-
-This project should **not** expand into: full exchange platform, auth, cloud product, trading dashboard fiction, or benchmark claims without dated evidence. See [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md) §Scope boundaries.
+| Post-7C docs commit | `378c3cb` |

@@ -30,6 +30,7 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 13 | 7A | Replay Visualiser UI | Done |
 | 14 | 7B | Live Replay Streaming Interface | Done |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Done |
+| 16 | **8A** | **Documentation and Demo Packaging** | **CURRENT** |
 
 ---
 
@@ -199,23 +200,38 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**No milestone is CURRENT.** The ordered queue through **7C** is complete.
+**CURRENT milestone:** **8A — Documentation and Demo Packaging** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-**Next steps (human):** Review [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md), pick from the **proposed** milestones below (or a single systems milestone from [ROADMAP.md](ROADMAP.md)), add one row as **CURRENT**, then refresh [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
+Implementation queue through **7C** is complete. **8A** is queued for the next implementation session (`/run-active-milestone`). **8B** and **8C** remain **Proposed** below.
 
 ---
 
-## Proposed next milestones (not CURRENT)
+### 8A — Documentation and Demo Packaging
 
-These are **candidates** for the next queue rows. None are implemented; none are marked CURRENT.
+**Status:** **CURRENT** — not started (docs-only milestone; see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+
+**Goal:** Make the project easy to understand, run, and assess from GitHub.
+
+**Planned slices (not done yet):**
+
+1. README final polish — 160-test baseline, “what I built”, architecture-at-a-glance, honest benchmark/profiling links, replay visualiser summary.
+2. Demo packaging — offline scenarios and live SSE instructions; screenshot/GIF capture checklist (placeholders only); optional future `scripts/demo-live-replay.sh` noted in backlog, **not implemented in 8A unless explicitly approved**.
+3. Onboarding polish — clone → build → test → demo path; `profiling/` stays untracked; no unsubstantiated benchmark claims.
+
+**Out of scope for 8A:** C++/UI code changes, CI workflows (8B), demo script implementation (unless approved), real screenshots/GIFs in-repo until captured.
+
+**Related backlog:** [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+
+---
+
+## Later milestones (Proposed, not CURRENT)
 
 | Order | ID | Name | Status | Goal |
 |-------|-----|------|--------|------|
-| 16 | **8A** | Documentation and Demo Packaging | **Proposed** | Make the project easy to understand, run, and assess from GitHub: README sync (160 tests, 7A–7C), architecture-at-a-glance, benchmark summary with disclaimers, demo instructions, screenshot/GIF placeholders |
 | 17 | **8B** | CI and Correctness Hardening | **Proposed** | Credibility via automation: GitHub Actions (build + ctest + optional UI build); binary vs CSV equivalence; workload invariant tests; stable stream integration coverage |
 | 18 | **8C** | Next Systems Extension Decision | **Proposed** | Planning only: compare and scope **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)) before implementation |
 
-**Suggested order:** 8A → 8B → 8C, then queue one systems milestone (e.g. TCP or persistence) as the next implementation tranche.
+**After 8A:** advance to **8B**, then **8C**, then queue one systems milestone from [ROADMAP.md](ROADMAP.md).
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
