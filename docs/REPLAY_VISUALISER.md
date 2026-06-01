@@ -6,9 +6,12 @@ This document describes the prototype replay visualiser for `cpp-low-latency-ord
 
 ```text
 Binary/CSV input → C++ replay CLI (headless)
-                 → optional NDJSON visualisation export
-                 → React + Vite replay UI (file-based)
+                 → optional NDJSON file export (7A)
+                 → optional localhost SSE stream (7B, backend)
+                 → React + Vite replay UI (file-based today; live-follow later)
 ```
+
+Roadmap: [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 
 - The **C++ engine remains headless and performance-focused**.
 - Visualisation output is **optional** and only generated when explicitly requested.
@@ -119,9 +122,26 @@ Current prototype features:
   - Total resting quantity
   - Total trades so far
 
+## Live streaming (7B — backend)
+
+7B adds an **opt-in** localhost stream using the **same** `schemaVersion: 1` JSON record as file export. The React UI does not consume the stream yet; see [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
+
+Planned command (slice 1):
+
+```bash
+./build/cpp-low-latency-orderbook \
+  --binary-engine /path/to/order_commands.obk \
+  --stream-visualisation 127.0.0.1:9000
+```
+
+- **Localhost-only** (`127.0.0.1` or `localhost`); non-production proof-of-concept.
+- **One client**; server blocks until a client connects, then emits one SSE `data:` frame per command step.
+- **No matching-core changes**; benchmarks unchanged unless you pass stream flags.
+
 ## Out of scope (for this spike)
 
-- WebSockets, HTTP servers, or live streaming from the engine
+- UI live-follow / `EventSource` wiring (deferred to a later slice)
+- WebSockets or production HTTP gateways
 - React routing, authentication, or multi-page app
 - C++ GUI frameworks (Qt, Dear ImGui, etc.)
 - Production trading UI or real exchange connectivity

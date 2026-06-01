@@ -12,7 +12,7 @@
 | 7A.3 Documentation | **Done** — [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 | CLI export tests | **Done** — `tests/test_cli_visualisation_export.cpp` |
 | 7A follow-ups (optional) | CSV/`--replay` export; full depth; `--export-viz` alias; UI tests; CLI-aligned fixtures |
-| 7B streaming | **Queued → CURRENT** — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md) |
+| 7B streaming | **CURRENT** — localhost SSE; see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) |
 
 ## Goal
 
@@ -24,7 +24,7 @@ The UI is for education, debugging, and demo purposes. It is not part of the low
 
 - **Core remains headless:** `OrderBook` and `MatchingEngine` do not import or depend on any UI/frontend code.
 - **Deterministic exports:** The C++ side exports replay outputs deterministically for a given input and seed.
-- **Offline-first:** Start with file-based playback (JSON or NDJSON). Live streaming is a follow-up milestone.
+- **Offline-first (7A), then live stream (7B):** File-based NDJSON export shipped first; localhost SSE streaming reuses the same record shape.
 - **Benchmarks stay clean:** No UI output generation in `binary_protocol_benchmark` or `matching_engine_benchmark`.
 - **Explicit gating:** If additional export code is needed later, it must be behind explicit modes or build flags so hot paths are unaffected by default.
 
@@ -110,7 +110,17 @@ Include an explicit note that the UI is not part of performance measurements and
 
 ### 7B — Live Replay Streaming Interface
 
-Stream NDJSON over a local interface (still non-production) so the UI can follow a replay as it runs.
+Stream the same `schemaVersion: 1` replay visualisation records as 7A file export over a **localhost-only** transport (HTTP + Server-Sent Events for browser `EventSource` compatibility). Backend streaming is implemented before UI live-follow.
+
+| Item | Plan |
+|------|------|
+| Transport | HTTP/SSE on loopback (e.g. `127.0.0.1:9000`); no third-party server dependency |
+| CLI | `--binary-engine <file.obk> --stream-visualisation <host:port>` (opt-in) |
+| Record shape | Identical JSON fields to `--export-visualisation` NDJSON lines |
+| UI | **Deferred** — React live-follow connects in a later slice |
+| Production | Out of scope — no TLS, auth, or WAN |
+
+See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) and [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md).
 
 ### 7C — UI Metrics and Benchmark Overlay
 

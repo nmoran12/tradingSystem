@@ -11,7 +11,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | READY (workflow) |
+| **Status** | IN PROGRESS — slice 0 (docs) complete; slice 1 (backend SSE) next |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
 | **Prerequisite** | 7A complete — file-based NDJSON export + UI spike |
 | **Test baseline** | 152 tests after 7A export CLI tests |
@@ -32,19 +32,22 @@ The C++ core stays headless. Streaming is **opt-in**, **non-production**, and **
 
 | Deliverable | Location / notes |
 |-------------|------------------|
-| NDJSON line format | `write_visualisation_step` in `src/main.cpp`; `schemaVersion: 1` |
+| NDJSON line format | `schemaVersion: 1` (shared writer in `src/viz/` after slice 1) |
 | File export CLI | `--binary-engine` + `--export-visualisation` |
 | UI (file playback) | `ui/replay-visualiser/` |
 | Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
-### First slice (recommended)
+### Slice plan
 
-1. **Design** — document how streamed NDJSON relates to file export (same fields per line; no new schema version unless required).
-2. **Opt-in CLI mode** — e.g. stream steps to a localhost socket or simple HTTP chunked/SSE endpoint while processing `--binary-engine` (exact transport TBD in implementation).
-3. **Tests** — integration test with local client receiving N lines for a tiny `.obk` fixture (deterministic).
-4. **Docs** — how to run stream + UI; state localhost-only and out-of-scope for benchmarks.
+| Slice | Deliverable | Status |
+|-------|-------------|--------|
+| **0** | Roadmap docs: 7A vs 7B, same schema, backend-first, UI deferred | **Done** (this commit) |
+| **1** | Localhost SSE CLI + shared record writer + tests | **Next** |
+| **2+** | UI live-follow (`EventSource`); transport polish | Deferred |
 
 **Defer to later slices:** UI “live follow” mode in React; WebSocket polish; production gateway patterns (**Milestone 7 TCP** in [ROADMAP.md](ROADMAP.md) is separate).
+
+See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
 
 ### Likely files touched
 
