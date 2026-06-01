@@ -132,10 +132,10 @@ Human review and `/advance-milestone` apply per [MILESTONE_QUEUE.md](MILESTONE_Q
 
 | Priority | Candidate area | Typical risk | Notes |
 |----------|----------------|--------------|--------|
-| 1 | `add_order_to_side` / `order_lookup_` reserve & rehash | Low–medium | Fits 6G “one focused change” |
+| 1 | `add_order_to_side` / `order_lookup_` reserve & rehash | Low–medium | **Done in 6G slice 1** (rehash much reduced; noisy throughput) |
 | 2 | Redundant lookups on hot paths | Low | Profiler must justify |
-| 3 | `std::map` / `std::list` container experiments | Medium–high | Heavy test + benchmark burden |
-| 4 | PMR / pools for book nodes | High | After allocation counts known |
+| 3 | `std::map` / `std::list` container experiments | Medium–high | **Not justified** by 6G slice 2 `sample` + failed byte attribution — see [PROFILING_REPORT.md](PROFILING_REPORT.md) §6G slice 2 |
+| 4 | PMR / pools for book nodes | High | Needs Instruments / `heaptrack` byte counts; slice 2 did not provide them |
 | 5 | Benchmark harness modes | Low | Measurement only |
 | 6 | Binary decode / symbol path | Medium | Separate from book structure |
 

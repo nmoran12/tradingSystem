@@ -175,11 +175,40 @@ sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
 
 **Recommendation:** Do **not** start a `std::list` or `std::map` container swap from this sample alone. Treat 6G slice 1 as complete; use heap allocation attribution (Instruments Allocations / heaptrack) before any slice 2, or stop 6G book structure work and advance the queue when human review agrees.
 
+## 6G allocation attribution (slice 2 — measurement only)
+
+**Scope:** No production code changes. Local macOS only; no throughput or speedup claims.
+
+| Tool | Outcome |
+|------|---------|
+| `malloc_history` + `MallocStackLogging` | Dominated by harness `WorkloadGenerator::generate` → `vector<OrderCommand>::reserve` (~64 MiB). Apply loop (~0.11 s) too short for live history to attribute book-path allocs. |
+| `xctrace record --template Allocations` | Attach failed on this host; trace not analysed. `heaptrack` not installed. |
+| `sample` during apply loop | Primary evidence. After countdown `1…`, `sample <pid> 12` → `profiling/6g/allocation_engine_loop_sample.txt` (not in git). Summary also in `profiling/6g/allocation_attribution.txt`. |
+
+**Offset map** (`atos` on `build-release/matching_engine_benchmark`, load address from sample): in `add_order_to_side`, `+204` = `std::list<Order>::push_back`, `+128` / `+388` = `std::map` price-level insert, `+544` / `+644` = `order_lookup_` hash emplace.
+
+**Apply-loop `sample` (directional, not byte counts):**
+
+| Site | Signal in apply window |
+|------|-------------------------|
+| List `push_back` (`+204`) | **8** stacks with `operator new` directly under this offset — strongest alloc signal on resting adds |
+| Hash `order_lookup_` emplace | **4+3+1** stacks with `operator new` under emplace — residual after slice 1 reserve |
+| Map new price level (`__tree_balance_after_insert`) | **1–2** stacks on add path |
+| `remove_order_at_location` | **11** collapsed stacks (match/cancel teardown; mix of free + map/list/hash work) |
+| `process_into` / `EngineEvent` vector | Dispatch visible; no strong per-command output-vector alloc (6F reuse) |
+| Harness command vector | Outside apply loop; dominates `malloc_history` lifetime totals |
+
+**Cannot claim:** allocation bytes or counts per site; a single dominant allocator family. That would need Instruments Allocations or `heaptrack` on a machine where attach works.
+
+**Slice 2 conclusion:** Allocation pressure on resting adds is **mixed** (list nodes, hash inserts, occasional map price-level nodes). Match/cancel teardown is hot but does not isolate one alloc winner. **Does not justify** a `std::list` or `std::map` container swap from this evidence.
+
+**Recommendation:** Treat **6G book-structure work as complete** for human review; advance the milestone queue when agreed. No container replacement in slice 2. Optional future work: Instruments Allocations or Linux `heaptrack` if a byte-ranked profile is needed before any list/map experiment.
+
 ## Future optimisation work
 
 Profiler-backed candidates, risk notes, and the required milestone process are documented in **[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md)** (section *Future Performance Optimisation Candidates*).
 
-**Recently completed:** order lookup pre-reserve (**6G slice 1**). **Next profiling targets:** list/map node allocation if book path remains hot — see roadmap; no container swap in slice 1.
+**Recently completed:** order lookup pre-reserve (**6G slice 1**); allocation attribution review (**6G slice 2**, measurement only — mixed list/hash/map signals, no container swap justified). **Next profiling targets:** see roadmap; container experiments only after byte-ranked allocation evidence if still desired.
 
 ## Related documentation
 
