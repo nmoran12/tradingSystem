@@ -29,7 +29,7 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 12 | 6H | Optional SPSC Queue | Done |
 | 13 | 7A | Replay Visualiser UI | Done |
 | 14 | 7B | Live Replay Streaming Interface | Done |
-| 15 | **7C** | UI Metrics and Benchmark Overlay | **CURRENT** |
+| 15 | 7C | UI Metrics and Benchmark Overlay | Done |
 
 ---
 
@@ -182,7 +182,24 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 7C — UI Metrics and Benchmark Overlay
 
-Optional follow-up: display per-run timing and summary metrics in the visualiser for education and debugging (not a substitute for Release benchmarks).
+**Completed.** Client-side run summary metrics in the replay visualiser; no C++ schema or benchmark hot-path changes.
+
+| Outcome | Detail |
+|---------|--------|
+| **Metrics** | `ui/replay-visualiser/src/runMetrics.ts` — totals, trade stats, final BBO/spread, min/max spread, peak resting orders/qty |
+| **UI** | `RunSummaryPanel.tsx` — informational disclaimer; works for scenarios, file NDJSON, and live SSE |
+| **Docs** | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) §Run summary; references [BENCHMARKING.md](BENCHMARKING.md) for real benchmarks |
+| **Not done (optional)** | “At current step” vs full-run toggle; benchmark file ingestion; C++ latency on stream path |
+
+**Commit:** `7423903` — Add replay visualiser run summary metrics.
+
+**Docs:** [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7C, [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
+
+---
+
+## Queue status
+
+**No milestone is CURRENT.** The ordered queue through **7C** is complete. Further work is listed in [ROADMAP.md](ROADMAP.md) (e.g. Milestone 7 TCP gateway, Milestone 8 market data publisher) but is **not** auto-queued — add the next item to the table above before `/run-active-milestone`.
 
 ---
 
@@ -195,4 +212,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C) are documented in [ROADMAP.md](ROADMAP.md).

@@ -1,6 +1,6 @@
 # Milestone 7 Plan: Replay Visualiser UI
 
-**Status:** 7A **Done**; 7B **Done**; **7C CURRENT** (see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).  
+**Status:** 7A **Done**; 7B **Done**; 7C **Done** — visualisation queue complete (see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md)).  
 **Prerequisite:** Replay and engine paths complete; no performance work is blocked on this milestone.
 
 ### Implementation snapshot (repo)
@@ -13,7 +13,7 @@
 | CLI export tests | **Done** — `tests/test_cli_visualisation_export.cpp` |
 | 7A follow-ups (optional) | CSV/`--replay` export; full depth; `--export-viz` alias; UI tests; CLI-aligned fixtures |
 | 7B streaming | **Done** — localhost SSE + UI live-follow; see [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) |
-| 7C metrics overlay | **CURRENT** — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md) |
+| 7C metrics overlay | **Done** — `runMetrics.ts` + Run summary panel (`7423903`) |
 
 ## Goal
 
@@ -127,5 +127,5 @@ See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) and [REPLAY_VIS
 
 ### 7C — UI Metrics and Benchmark Overlay
 
-Overlay run metadata and summary metrics in the UI (counts, totals, and run configuration). This must remain informational and not replace Release benchmarks.
+**Done.** Overlay run summary metrics in the UI (counts, totals, final BBO, spread range) derived client-side from loaded replay steps. Informational only — not Release benchmarks. See [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) §Run summary panel.
 
