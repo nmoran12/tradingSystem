@@ -3,62 +3,80 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **7A is CURRENT**
+**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **7B is CURRENT**
 
 ---
 
-## Milestone 7A — Replay Visualiser UI
+## Milestone 7B — Live Replay Streaming Interface
 
 | Field | Value |
 |-------|--------|
-| **Status** | IN PROGRESS (spike landed; closing slice: tests + doc sync) |
+| **Status** | READY (workflow) |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
-| **Test baseline** | 149 tests after 6H; export CLI tests added in current slice |
+| **Prerequisite** | 7A complete — file-based NDJSON export + UI spike |
+| **Test baseline** | 152 tests after 7A export CLI tests |
+
+### Model recommendation
+
+Prefer a **stronger model** for the first slice if it includes localhost streaming, backpressure, and UI consumption state. **Cursor Auto** is fine for docs-only design or a minimal proof-of-concept with explicit scope; avoid ad-hoc protocol changes without review.
+
+---
+
+### Goal
+
+Let the replay visualiser **follow a binary-engine replay as it runs** by streaming the same NDJSON step records 7A already defines — without changing matching semantics, replay semantics, or Release benchmark hot paths.
+
+The C++ core stays headless. Streaming is **opt-in**, **non-production**, and **localhost-only** for the first implementation.
 
 ### What already exists (do not reimplement)
 
 | Deliverable | Location / notes |
 |-------------|------------------|
-| NDJSON export | Inline in `src/main.cpp` (`write_visualisation_step`) |
-| CLI | `--binary-engine <file.obk> --export-visualisation <replay.ndjson>` only |
-| UI spike | `ui/replay-visualiser/` (React + Vite) |
+| NDJSON line format | `write_visualisation_step` in `src/main.cpp`; `schemaVersion: 1` |
+| File export CLI | `--binary-engine` + `--export-visualisation` |
+| UI (file playback) | `ui/replay-visualiser/` |
 | Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
-**Not implemented:** `--export-viz` alias; export on `--engine` (CSV) or `--replay`; full depth in export (shallow BBO level per side only).
+### First slice (recommended)
 
-### Current slice (this change set)
+1. **Design** — document how streamed NDJSON relates to file export (same fields per line; no new schema version unless required).
+2. **Opt-in CLI mode** — e.g. stream steps to a localhost socket or simple HTTP chunked/SSE endpoint while processing `--binary-engine` (exact transport TBD in implementation).
+3. **Tests** — integration test with local client receiving N lines for a tiny `.obk` fixture (deterministic).
+4. **Docs** — how to run stream + UI; state localhost-only and out-of-scope for benchmarks.
 
-- Automated CLI/shape tests for binary-engine visualisation export (`tests/test_cli_visualisation_export.cpp`)
-- Milestone doc reconciliation (this file, [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md), [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md))
-- **No** UI rewrite, exporter refactor, or export semantics changes unless a test exposes a bug
+**Defer to later slices:** UI “live follow” mode in React; WebSocket polish; production gateway patterns (**Milestone 7 TCP** in [ROADMAP.md](ROADMAP.md) is separate).
 
-### Goal
+### Likely files touched
 
-Optional replay visualiser for debugging and learning — **without** changing matching semantics, replay semantics, or Release benchmark hot paths. C++ core stays headless; UI consumes file-based NDJSON offline.
+| Area | Examples |
+|------|----------|
+| CLI / orchestration | `src/main.cpp` or thin `src/viz/` stream helper (gated) |
+| Tests | New CLI/stream integration test; reuse binary writer fixtures |
+| Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7B |
+| UI (later) | `ui/replay-visualiser/` consumer for stream endpoint |
 
-### Scope (remaining for 7A close)
+### Constraints
 
-- [x] Opt-in NDJSON export (`schemaVersion: 1`) from `--binary-engine`
-- [x] React + Vite UI prototype (ladder, tape, BBO, playback, chart)
-- [x] [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
-- [x] CLI export tests (shape + trade line)
-- [ ] Human review; optional: regenerate one UI sample from CLI export vs rich demo fixtures
-- [ ] Advance queue after `/review-milestone` (human approval)
+- Reuse **7A NDJSON shape**; do not change `MatchingEngine` / `OrderBook` matching logic.
+- **No** instrumentation in `matching_engine_benchmark` or `binary_protocol_benchmark` by default.
+- **No** TLS, auth, or wide-area networking in 7B.
+- **No** changes to binary protocol semantics or default CLI behaviour without explicit flags.
+- Keep `orderbook_core` free of frontend dependencies.
 
 ### Out of scope
 
-- Live streaming (**7B**), benchmark overlay UI (**7C**)
-- CSV/market-event export paths, full book depth export, `--export-viz` alias
-- Networking, persistence, matching/binary protocol changes
-- SPSC / performance work (completed under **6H**)
+- Benchmark overlay UI (**7C**)
+- Full book depth export, CSV/`--replay` file export, `--export-viz` alias (7A follow-ups)
+- TCP order gateway ([ROADMAP.md](ROADMAP.md) Milestone 7 TCP)
+- Claiming throughput/latency improvements from streaming
 
-### Acceptance criteria
+### Acceptance criteria (for 7B close)
 
-- [x] `./scripts/verify.sh` passes (including new export tests)
-- [x] Export mode opt-in; default CLI unchanged
-- [x] NDJSON producible from deterministic tiny `.obk` (tests generate in temp dir)
-- [x] Docs separate UI from C++ core and benchmarks
-- [x] No UI linked into `orderbook_core` or benchmark targets
+- [ ] `./scripts/verify.sh` passes (add tests for stream path)
+- [ ] Opt-in stream mode documented; default CLI unchanged
+- [ ] Tiny deterministic `.obk` run produces expected NDJSON lines on the wire
+- [ ] Localhost-only boundary documented
+- [ ] No UI required in first slice unless explicitly approved
 
 ### Required verification
 
@@ -66,21 +84,13 @@ Optional replay visualiser for debugging and learning — **without** changing m
 ./scripts/verify.sh
 ```
 
-Manual export example (generate `.obk` via tests/workload or binary writer; repo ships CSV only under `data/`):
-
-```bash
-./build/cpp-low-latency-orderbook \
-  --binary-engine /path/to/commands.obk \
-  --export-visualisation /tmp/replay.ndjson
-```
-
 ### Key docs
 
-- [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
+- [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7B
 - [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
-- [BENCHMARKING.md](BENCHMARKING.md)
+- [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
 
 ### Human review before advance
 
-Run `/review-milestone`, then human approval before `/advance-milestone`.
+After `/run-active-milestone` completes, run `/review-milestone`, then human approval before `/advance-milestone`.

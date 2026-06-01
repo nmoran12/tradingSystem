@@ -1,17 +1,18 @@
 # Milestone 7 Plan: Replay Visualiser UI
 
-**Status:** In progress (7A CURRENT) — export, UI spike, and docs exist; automated export tests and milestone doc sync in flight.  
+**Status:** 7A **Done**; **7B CURRENT** (see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).  
 **Prerequisite:** Replay and engine paths complete; no performance work is blocked on this milestone.
 
 ### Implementation snapshot (repo)
 
 | Item | Status |
 |------|--------|
-| 7A.1 NDJSON export | Done — `--binary-engine` + `--export-visualisation`; shallow BBO depth only (`src/main.cpp`) |
-| 7A.2 UI prototype | Done — `ui/replay-visualiser/` (React + Vite) |
-| 7A.3 Documentation | Done — [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
-| CLI export tests | Added — `tests/test_cli_visualisation_export.cpp` |
-| Gaps | No CSV/`--replay` export; bundled UI samples may show multi-level depth as **demo** data; optional depth export and fixture regeneration later |
+| 7A.1 NDJSON export | **Done** — `--binary-engine` + `--export-visualisation`; shallow BBO depth only (`src/main.cpp`) |
+| 7A.2 UI prototype | **Done** — `ui/replay-visualiser/` (React + Vite) |
+| 7A.3 Documentation | **Done** — [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
+| CLI export tests | **Done** — `tests/test_cli_visualisation_export.cpp` |
+| 7A follow-ups (optional) | CSV/`--replay` export; full depth; `--export-viz` alias; UI tests; CLI-aligned fixtures |
+| 7B streaming | **Queued → CURRENT** — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md) |
 
 ## Goal
 

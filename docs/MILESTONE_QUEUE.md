@@ -27,8 +27,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 10 | 6F | Memory Pool / Object Pool | Done |
 | 11 | 6G | Order Book Data-Structure Optimisation | Done |
 | 12 | 6H | Optional SPSC Queue | Done |
-| 13 | **7A** | Replay Visualiser UI | **CURRENT** |
-| 14 | 7B | Live Replay Streaming Interface | Queued |
+| 13 | 7A | Replay Visualiser UI | Done |
+| 14 | **7B** | Live Replay Streaming Interface | **CURRENT** |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Queued |
 
 ---
@@ -144,7 +144,17 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 7A — Replay Visualiser UI
 
-Optional web-based UI that visualises replay output without adding dependencies or latency impact to the C++ core.
+**Completed.** Offline replay visualisation without coupling the UI or export path to benchmark hot loops.
+
+| Outcome | Detail |
+|---------|--------|
+| **NDJSON export** | Opt-in `--binary-engine <file.obk> --export-visualisation <replay.ndjson>`; `schemaVersion: 1`; shallow BBO depth per side (`src/main.cpp`) |
+| **UI** | React + Vite spike at `ui/replay-visualiser/` (ladder, tape, BBO, playback, chart) |
+| **Docs** | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) — exact flag name; bundled `public/*.ndjson` labelled as **demo fixtures** where multi-level depth exceeds exporter |
+| **Tests** | `tests/test_cli_visualisation_export.cpp` — CLI success, one line per command, field shape, trade line on cross |
+| **Not done (future)** | Full depth export; CSV `--engine` / `--replay` export; `--export-viz` alias; UI speed controls; frontend tests; regenerating rich demo fixtures from CLI |
+
+**Docs:** [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7A.
 
 **Plan reference:** [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md)
 
@@ -171,4 +181,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A, 6B, 6C) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A) are documented in [ROADMAP.md](ROADMAP.md).
