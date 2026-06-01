@@ -3,99 +3,89 @@
 **Source of truth** for `/run-active-milestone` and `/review-milestone`.
 
 **Project root:** `cpp-low-latency-orderbook/`  
-**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **7B is CURRENT**
+**Queue position:** See [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md) — **7C is CURRENT**
 
 ---
 
-## Milestone 7B — Live Replay Streaming Interface
+## Milestone 7C — UI Metrics and Benchmark Overlay
 
 | Field | Value |
 |-------|--------|
-| **Status** | READY FOR REVIEW — 7B backend SSE + UI live-follow complete |
+| **Status** | READY (workflow) |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
-| **Prerequisite** | 7A complete — file-based NDJSON export + UI spike |
-| **Test baseline** | 160 tests (7B writer + stream server tests) |
+| **Prerequisite** | 7A + 7B complete — file export, live SSE stream, and UI replay visualiser |
+| **Test baseline** | 160 tests; UI builds via `cd ui/replay-visualiser && npm run build` |
 
 ### Model recommendation
 
-Prefer a **stronger model** for the first slice if it includes localhost streaming, backpressure, and UI consumption state. **Cursor Auto** is fine for docs-only design or a minimal proof-of-concept with explicit scope; avoid ad-hoc protocol changes without review.
+**Cursor Auto** is fine for a first slice that aggregates metrics **client-side** from loaded or streamed replay steps (no C++ changes). Prefer a **stronger model** if the slice adds new C++ export fields, benchmark ingestion, or schema changes — review scope before coding.
 
 ---
 
 ### Goal
 
-Let the replay visualiser **follow a binary-engine replay as it runs** by streaming the same NDJSON step records 7A already defines — without changing matching semantics, replay semantics, or Release benchmark hot paths.
-
-The C++ core stays headless. Streaming is **opt-in**, **non-production**, and **localhost-only** for the first implementation.
+Show **informational** run and replay summary metrics in the existing replay visualiser (command counts, trade totals, resting-book stats, optional timing hints) so users can understand a replay or demo run at a glance — **without** claiming Release benchmark throughput/latency and **without** touching matching or benchmark hot paths.
 
 ### What already exists (do not reimplement)
 
 | Deliverable | Location / notes |
 |-------------|------------------|
-| NDJSON line format | `schemaVersion: 1` — `viz::ReplayVisualisationWriter` |
-| File export CLI | `--binary-engine` + `--export-visualisation` |
-| Live stream CLI | `--binary-engine` + `--stream-visualisation <host:port>` (localhost SSE) |
-| UI (file + live) | `ui/replay-visualiser/` — file/scenarios + `EventSource` live-follow |
+| Replay steps | `schemaVersion: 1` records from file export, scenarios, or live SSE |
+| UI shell | `ui/replay-visualiser/` — ladder, tape, BBO, chart, playback, live-follow |
+| Release benchmarks | `matching_engine_benchmark`, `binary_protocol_benchmark` — separate workflow ([BENCHMARKING.md](BENCHMARKING.md)) |
 | Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
-### Slice plan
+### First slice (recommended)
 
-| Slice | Deliverable | Status |
-|-------|-------------|--------|
-| **0** | Roadmap docs: 7A vs 7B, same schema, backend-first, UI deferred | **Done** |
-| **1** | Localhost SSE CLI + shared record writer + tests | **Done** |
-| **2** | UI live-follow (`EventSource`) | **Done** |
-| **3+** | Polish: demo script, reconnect, close 7B review | Optional |
+1. **Design** — decide which metrics are derivable from current step JSON only (e.g. total commands, cumulative trades, final resting orders/qty, spread range).
+2. **UI panel** — add a small “Run summary” or metrics sidebar/card group in `ui/replay-visualiser/`; update as steps load or live stream grows.
+3. **Copy** — label metrics as **informational / not a benchmark**; link to [BENCHMARKING.md](BENCHMARKING.md) for real measurements.
+4. **Docs** — short section in [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) describing the overlay.
 
-**Defer:** WebSocket transport; production gateway patterns (**Milestone 7 TCP** in [ROADMAP.md](ROADMAP.md) is separate).
-
-See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md).
+**Defer:** importing benchmark binary output files; C++ latency export on stream path; charts comparing runs; 7B polish (reconnect, demo script).
 
 ### Likely files touched
 
 | Area | Examples |
 |------|----------|
-| CLI / orchestration | `src/main.cpp` or thin `src/viz/` stream helper (gated) |
-| Tests | New CLI/stream integration test; reuse binary writer fixtures |
-| Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7B |
-| UI (later) | `ui/replay-visualiser/` consumer for stream endpoint |
+| UI | `ui/replay-visualiser/src/App.tsx`, optional `src/runMetrics.ts`, `styles.css` |
+| Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7C |
 
 ### Constraints
 
-- Reuse **7A NDJSON shape**; do not change `MatchingEngine` / `OrderBook` matching logic.
+- **No** changes to `MatchingEngine` / `OrderBook` matching logic unless explicitly approved for a tiny, gated export field.
 - **No** instrumentation in `matching_engine_benchmark` or `binary_protocol_benchmark` by default.
-- **No** TLS, auth, or wide-area networking in 7B.
-- **No** changes to binary protocol semantics or default CLI behaviour without explicit flags.
-- Keep `orderbook_core` free of frontend dependencies.
+- **No** performance or throughput claims from UI-derived numbers.
+- Keep file export, live stream, and scenario loading behaviour unchanged.
+- Do not commit `node_modules/`, `dist/`, or `profiling/`.
 
 ### Out of scope
 
-- Benchmark overlay UI (**7C**)
-- Full book depth export, CSV/`--replay` file export, `--export-viz` alias (7A follow-ups)
+- Replacing Release benchmarks or [PERFORMANCE_BASELINE.md](PERFORMANCE_BASELINE.md) workflows
+- Live exchange connectivity or production dashboards
+- Full book depth export (7A follow-up)
 - TCP order gateway ([ROADMAP.md](ROADMAP.md) Milestone 7 TCP)
-- Claiming throughput/latency improvements from streaming
 
-### Acceptance criteria (7B — met)
+### Acceptance criteria (for 7C close)
 
-- [x] `./scripts/verify.sh` passes (C++ stream tests unchanged)
-- [x] Opt-in stream CLI; default binary engine unchanged
-- [x] UI connects via `EventSource`, appends `schemaVersion: 1` steps, follows live by default
-- [x] File upload and bundled scenarios preserved
-- [x] Localhost-only documented; proof-of-concept scope clear
-
-Human review still required before `/advance-milestone`.
+- [ ] `./scripts/verify.sh` passes (160+ tests)
+- [ ] `npm run build` passes under `ui/replay-visualiser/`
+- [ ] Metrics panel visible for file, scenario, and live-loaded replays where data allows
+- [ ] Docs state informational-only scope
+- [ ] No matching-core or benchmark hot-path regression
 
 ### Required verification
 
 ```bash
 ./scripts/verify.sh
+cd ui/replay-visualiser && npm run build
 ```
 
 ### Key docs
 
-- [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7B
+- [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7C
 - [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [BENCHMARKING.md](BENCHMARKING.md)
 - [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
 
 ### Human review before advance

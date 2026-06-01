@@ -28,8 +28,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 11 | 6G | Order Book Data-Structure Optimisation | Done |
 | 12 | 6H | Optional SPSC Queue | Done |
 | 13 | 7A | Replay Visualiser UI | Done |
-| 14 | **7B** | Live Replay Streaming Interface | **CURRENT** |
-| 15 | 7C | UI Metrics and Benchmark Overlay | Queued |
+| 14 | 7B | Live Replay Streaming Interface | Done |
+| 15 | **7C** | UI Metrics and Benchmark Overlay | **CURRENT** |
 
 ---
 
@@ -162,7 +162,21 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ### 7B — Live Replay Streaming Interface
 
-Optional follow-up: stream replay output incrementally (still offline / non-production) for a smoother UI experience.
+**Completed.** Localhost live replay stream for the visualiser; no matching-core or benchmark hot-path changes.
+
+| Outcome | Detail |
+|---------|--------|
+| **CLI** | Opt-in `--binary-engine <file.obk> --stream-visualisation <host:port>` (localhost only) |
+| **Transport** | HTTP/SSE via `viz::ReplayVisualisationStreamServer`; `EventSource`-friendly |
+| **Records** | Reused `schemaVersion: 1` replay visualisation JSON (`viz::ReplayVisualisationWriter`) — same shape as `--export-visualisation` NDJSON lines |
+| **Tests** | `tests/test_replay_visualisation_writer.cpp`, `tests/test_replay_visualisation_stream.cpp` (writer, SSE framing, loopback guard, in-process stream client; no flaky CLI subprocess test) |
+| **UI** | `ui/replay-visualiser/` live-follow: stream URL, Connect/Disconnect, status, follow-live, malformed-event counter; file upload and bundled scenarios preserved |
+| **Docs** | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) |
+| **Not done (optional polish)** | Reconnect/backpressure; clear-steps control; `scripts/demo-live-replay.sh`; production streaming; live market data |
+
+**Commits:** backend `5758303`; UI `dd1bb22`.
+
+**Docs:** [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md), [MILESTONE_7_PLAN.md](MILESTONE_7_PLAN.md) §7B.
 
 ---
 
@@ -181,4 +195,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B) are documented in [ROADMAP.md](ROADMAP.md).

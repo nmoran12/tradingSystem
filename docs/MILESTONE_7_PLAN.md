@@ -1,6 +1,6 @@
 # Milestone 7 Plan: Replay Visualiser UI
 
-**Status:** 7A **Done**; **7B CURRENT** (see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).  
+**Status:** 7A **Done**; 7B **Done**; **7C CURRENT** (see [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md), [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).  
 **Prerequisite:** Replay and engine paths complete; no performance work is blocked on this milestone.
 
 ### Implementation snapshot (repo)
@@ -12,7 +12,8 @@
 | 7A.3 Documentation | **Done** — [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 | CLI export tests | **Done** — `tests/test_cli_visualisation_export.cpp` |
 | 7A follow-ups (optional) | CSV/`--replay` export; full depth; `--export-viz` alias; UI tests; CLI-aligned fixtures |
-| 7B streaming | **CURRENT** — localhost SSE; see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md), [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) |
+| 7B streaming | **Done** — localhost SSE + UI live-follow; see [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) |
+| 7C metrics overlay | **CURRENT** — see [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md) |
 
 ## Goal
 
@@ -117,10 +118,12 @@ Stream the same `schemaVersion: 1` replay visualisation records as 7A file expor
 | Transport | HTTP/SSE on loopback (e.g. `127.0.0.1:9000`); no third-party server dependency |
 | CLI | `--binary-engine <file.obk> --stream-visualisation <host:port>` (opt-in) |
 | Record shape | Identical JSON fields to `--export-visualisation` NDJSON lines |
-| UI | **Deferred** — React live-follow connects in a later slice |
+| UI | **Done** — `EventSource` live-follow in `ui/replay-visualiser/` |
 | Production | Out of scope — no TLS, auth, or WAN |
 
 See [REPLAY_VISUALISER_ROADMAP.md](REPLAY_VISUALISER_ROADMAP.md) and [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md).
+
+**Status:** **Done** (commits `5758303`, `dd1bb22`).
 
 ### 7C — UI Metrics and Benchmark Overlay
 

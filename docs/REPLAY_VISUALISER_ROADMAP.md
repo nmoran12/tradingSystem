@@ -8,7 +8,7 @@ This document tracks the optional replay visualisation milestone slices. It comp
 |-------|------|--------|---------|
 | **7A** | File-based replay visualisation | **Done** | NDJSON export from `--binary-engine`; React/Vite UI loads files offline |
 | **7B** | Live replay streaming | **Done (PoC)** | Localhost SSE CLI + UI `EventSource` live-follow |
-| **7C** | UI metrics / benchmark overlay | Queued | Informational overlays only; not a substitute for Release benchmarks |
+| **7C** | UI metrics / benchmark overlay | **CURRENT** | Informational overlays only; not a substitute for Release benchmarks |
 
 ## 7A — File-based (complete)
 
@@ -54,9 +54,9 @@ Implementation: `viz::ReplayVisualisationWriter` (shared JSON) + `viz::ReplayVis
 - Small demo script documenting backend + UI startup order
 - Production gateway patterns (see [ROADMAP.md](ROADMAP.md) Milestone 7 TCP — separate track)
 
-## 7C — UI metrics overlay (queued)
+## 7C — UI metrics overlay (CURRENT)
 
-Overlay run metadata and summary stats in the UI. Informational only; does not replace Release benchmarks.
+Overlay run metadata and summary stats in the UI (e.g. command/trade totals derived from loaded steps). Informational only; does not replace Release benchmarks. See [ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md).
 
 ## Out of scope (all visualisation milestones)
 
