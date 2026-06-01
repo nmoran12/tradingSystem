@@ -30,7 +30,8 @@ Ordered backlog for **one milestone at a time** automation. Do not implement mul
 | 13 | 7A | Replay Visualiser UI | Done |
 | 14 | 7B | Live Replay Streaming Interface | Done |
 | 15 | 7C | UI Metrics and Benchmark Overlay | Done |
-| 16 | **8A** | **Documentation and Demo Packaging** | **CURRENT** |
+| 16 | 8A | Documentation and Demo Packaging | Done |
+| 17 | **8B** | **CI and Correctness Hardening** | **CURRENT** |
 
 ---
 
@@ -200,25 +201,41 @@ Scoped event-buffer reuse via `MatchingEngine::process_into` (caller-owned `std:
 
 ## Queue status
 
-**CURRENT milestone:** **8A — Documentation and Demo Packaging** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**CURRENT milestone:** **8B — CI and Correctness Hardening** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
 
-Implementation queue through **7C** is complete. **8A** is queued for the next implementation session (`/run-active-milestone`). **8B** and **8C** remain **Proposed** below.
+**8A** is **Done** (commit `f4116b3`). **8C** remains **Proposed** below. Do not implement **8B** until `/run-active-milestone` in a new session.
 
 ---
 
 ### 8A — Documentation and Demo Packaging
 
-**Status:** **CURRENT** — docs implemented ([DEMO_GUIDE.md](DEMO_GUIDE.md), README); pending human review before advance to **8B** ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+**Completed.** Docs-only milestone; no C++/UI/CI changes.
 
-**Goal:** Make the project easy to understand, run, and assess from GitHub.
+| Outcome | Detail |
+|---------|--------|
+| **README** | “What I built”, architecture-at-a-glance, 160-test baseline, honest benchmark links, visualiser summary, no CI implied |
+| **Demo guide** | [DEMO_GUIDE.md](DEMO_GUIDE.md) — clone→demo, offline scenarios, NDJSON export, live SSE, fixture honesty, screenshot checklist |
+| **Hygiene** | `profiling/` untracked; systems features (TCP, publisher, persistence) labelled planned only |
+| **Not done** | `scripts/demo-live-replay.sh`, committed screenshots/GIFs (checklist only) |
 
-**Planned slices (not done yet):**
+**Commit:** `f4116b3` — Polish documentation and demo guide for 8A.
 
-1. README final polish — 160-test baseline, “what I built”, architecture-at-a-glance, honest benchmark/profiling links, replay visualiser summary.
-2. Demo packaging — offline scenarios and live SSE instructions; screenshot/GIF capture checklist (placeholders only); optional future `scripts/demo-live-replay.sh` noted in backlog, **not implemented in 8A unless explicitly approved**.
-3. Onboarding polish — clone → build → test → demo path; `profiling/` stays untracked; no unsubstantiated benchmark claims.
+---
 
-**Out of scope for 8A:** C++/UI code changes, CI workflows (8B), demo script implementation (unless approved), real screenshots/GIFs in-repo until captured.
+### 8B — CI and Correctness Hardening
+
+**Status:** **CURRENT** — not started ([ACTIVE_MILESTONE.md](ACTIVE_MILESTONE.md)).
+
+**Goal:** Project credibility via automated build/test and stronger replay/protocol correctness checks.
+
+**Planned scope (not done yet):**
+
+1. GitHub Actions — `cmake` build, `ctest`, optional `ui/replay-visualiser` `npm run build`.
+2. Binary vs CSV equivalence test — same workload, equivalent observable book/trade outcomes.
+3. Long-workload invariant tests — `validate_invariants()` after large generated workloads.
+4. Stable stream integration coverage — reliable test for `--stream-visualisation` (no flaky subprocess pattern).
+
+**Out of scope for 8B:** MatchingEngine / OrderBook semantic changes; perf regression gates without explicit design; implementing 8C systems features.
 
 **Related backlog:** [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -228,10 +245,9 @@ Implementation queue through **7C** is complete. **8A** is queued for the next i
 
 | Order | ID | Name | Status | Goal |
 |-------|-----|------|--------|------|
-| 17 | **8B** | CI and Correctness Hardening | **Proposed** | Credibility via automation: GitHub Actions (build + ctest + optional UI build); binary vs CSV equivalence; workload invariant tests; stable stream integration coverage |
 | 18 | **8C** | Next Systems Extension Decision | **Proposed** | Planning only: compare and scope **TCP order gateway** vs **persistence/replay log** vs **market data publisher** ([ROADMAP.md](ROADMAP.md)) before implementation |
 
-**After 8A:** advance to **8B**, then **8C**, then queue one systems milestone from [ROADMAP.md](ROADMAP.md).
+**After 8B:** advance to **8C**, then queue one systems milestone from [ROADMAP.md](ROADMAP.md).
 
 **Backlog items** not tied to a single milestone (playback speed, full-depth export, fuzz tests, etc.) live in [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
 
@@ -246,4 +262,4 @@ When a milestone is **done** and reviewed:
 3. Human reviews updated `ACTIVE_MILESTONE.md` and `MILESTONE_QUEUE.md`.
 4. Run **`/run-active-milestone`** in a **new** session when ready to implement the next item.
 
-Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C) are documented in [ROADMAP.md](ROADMAP.md).
+Completed milestones (1–4, 5A, 5B, 5C, 5D, 5E, 5F, 6A–6H, 7A, 7B, 7C, 8A) are documented in [ROADMAP.md](ROADMAP.md).

@@ -56,7 +56,7 @@ This repository implements that core as a **single-threaded, deterministic** fou
 | Performance | 6A–6H | Baselines, streaming read, `process_into`, profiling, reserve tuning, SPSC |
 | Visualisation | 7A–7C | NDJSON export, live SSE, UI live-follow, run summary metrics |
 
-Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8A** — documentation and demo packaging ([DEMO_GUIDE.md](DEMO_GUIDE.md), README polish).
+Queue detail: [MILESTONE_QUEUE.md](MILESTONE_QUEUE.md). **CURRENT:** **8B** — CI and correctness hardening (not started). **8A** done: [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
 ## Long-term vision (candidate, not queued)
 
