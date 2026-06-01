@@ -5,6 +5,8 @@ import {
   parseLiveReplayStep,
   type LiveConnectionStatus,
 } from './liveReplay';
+import { RunSummaryPanel } from './RunSummaryPanel';
+import { computeRunMetrics } from './runMetrics';
 import type { ReplayStep, Source, Trade } from './replayTypes';
 
 type Scenario = { label: string; file: string };
@@ -282,6 +284,8 @@ export const App: React.FC = () => {
     [askSeries],
   );
 
+  const runMetrics = useMemo(() => computeRunMetrics(steps), [steps]);
+
   const loadedLabel =
     source.kind === 'none'
       ? 'No replay loaded'
@@ -487,6 +491,8 @@ export const App: React.FC = () => {
             <div className="card-value">{String(tradesSoFar.length)}</div>
           </div>
         </section>
+
+        <RunSummaryPanel stepsLength={steps.length} metrics={runMetrics} />
 
         <section className="panel chart">
           <div className="panel-head">

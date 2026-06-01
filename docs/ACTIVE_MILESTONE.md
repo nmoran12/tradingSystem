@@ -11,7 +11,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Status** | READY (workflow) |
+| **Status** | IN PROGRESS — slice 1 (run summary panel) shipped; review before close |
 | **Parent** | Milestone 7 — Optional visualisation (offline-first) |
 | **Prerequisite** | 7A + 7B complete — file export, live SSE stream, and UI replay visualiser |
 | **Test baseline** | 160 tests; UI builds via `cd ui/replay-visualiser && npm run build` |
@@ -35,14 +35,16 @@ Show **informational** run and replay summary metrics in the existing replay vis
 | Release benchmarks | `matching_engine_benchmark`, `binary_protocol_benchmark` — separate workflow ([BENCHMARKING.md](BENCHMARKING.md)) |
 | Docs | [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) |
 
-### First slice (recommended)
+### Slice plan
 
-1. **Design** — decide which metrics are derivable from current step JSON only (e.g. total commands, cumulative trades, final resting orders/qty, spread range).
-2. **UI panel** — add a small “Run summary” or metrics sidebar/card group in `ui/replay-visualiser/`; update as steps load or live stream grows.
-3. **Copy** — label metrics as **informational / not a benchmark**; link to [BENCHMARKING.md](BENCHMARKING.md) for real measurements.
-4. **Docs** — short section in [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) describing the overlay.
+| Slice | Deliverable | Status |
+|-------|-------------|--------|
+| **1** | Client-side `runMetrics.ts` + Run summary panel + docs | **Done** |
+| **2** | Optional polish (e.g. “at current step” vs “full run” toggle) | Deferred |
 
-**Defer:** importing benchmark binary output files; C++ latency export on stream path; charts comparing runs; 7B polish (reconnect, demo script).
+**Slice 1 shipped:** `ui/replay-visualiser/src/runMetrics.ts`, `RunSummaryPanel.tsx`; metrics from all loaded steps; live stream updates as steps append.
+
+**Defer:** benchmark file ingestion; C++ latency export; charts comparing runs; 7B polish (reconnect, demo script).
 
 ### Likely files touched
 
@@ -68,11 +70,13 @@ Show **informational** run and replay summary metrics in the existing replay vis
 
 ### Acceptance criteria (for 7C close)
 
-- [ ] `./scripts/verify.sh` passes (160+ tests)
-- [ ] `npm run build` passes under `ui/replay-visualiser/`
-- [ ] Metrics panel visible for file, scenario, and live-loaded replays where data allows
-- [ ] Docs state informational-only scope
-- [ ] No matching-core or benchmark hot-path regression
+- [x] `./scripts/verify.sh` passes (160 tests; C++ unchanged)
+- [x] `npm run build` passes under `ui/replay-visualiser/`
+- [x] Run summary panel for file, scenario, and live-loaded replays
+- [x] Docs state informational-only scope ([REPLAY_VISUALISER.md](REPLAY_VISUALISER.md))
+- [x] No matching-core or benchmark hot-path changes
+
+Human review before `/advance-milestone`.
 
 ### Required verification
 

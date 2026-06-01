@@ -159,12 +159,37 @@ Current prototype features:
   - Recent trades (price and quantity)
   - Grows as you advance through the replay
 
-- **Market summary**
+- **Market summary** (current step)
   - Best bid / best ask
   - Spread
   - Total resting orders
   - Total resting quantity
   - Total trades so far
+
+- **Run summary** (7C — whole replay)
+  - Informational metrics derived **client-side** from all loaded `schemaVersion: 1` steps
+  - Includes totals (steps, trades, traded quantity), final book snapshot, and min/max spread and resting stats where available
+  - Updates when you load a file or scenario, and **grows during live stream** as new steps arrive
+  - **Not** Release benchmark throughput or latency — see [BENCHMARKING.md](BENCHMARKING.md) for the real benchmark workflow
+
+### Run summary panel (7C)
+
+The **Run summary** section aggregates metrics from every replay step currently in memory:
+
+| Metric | Meaning |
+|--------|---------|
+| Total steps | Number of visualisation records loaded |
+| Total trades | Sum of trade objects across all steps |
+| Total traded quantity | Sum of trade quantities |
+| Steps with trades | Commands that produced at least one trade |
+| Final resting orders / quantity | Values from the **last** step (by `index`) |
+| Final best bid / ask / spread | Top of book after the last step |
+| Min / max spread seen | Range over steps with a non-null `spread` |
+| Max resting quantity / active orders seen | Peak values across steps |
+
+**Sources:** bundled scenarios, uploaded NDJSON (`--export-visualisation`), or live SSE (`--stream-visualisation`) — same step shape for all modes.
+
+**Scope:** educational and debugging only. No C++ schema changes; no benchmark binary ingestion. For Release measurements use `matching_engine_benchmark`, `binary_protocol_benchmark`, and [BENCHMARKING.md](BENCHMARKING.md).
 
 ## Live streaming (7B — backend)
 
