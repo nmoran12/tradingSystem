@@ -29,4 +29,9 @@ if [[ ! -x "${BUILD_DIR}/matching_engine_benchmark" ]]; then
     echo "Missing expected benchmark target: ${BUILD_DIR}/matching_engine_benchmark" >&2
     exit 1
 fi
-"${BUILD_DIR}/matching_engine_benchmark" "${COMMAND_COUNT}" "${SEED}"
+ME_ARGS=("${COMMAND_COUNT}" "${SEED}")
+if [[ -n "${MATCHING_ENGINE_EXTRA_ARGS:-}" ]]; then
+    # shellcheck disable=SC2206
+    ME_ARGS+=( ${MATCHING_ENGINE_EXTRA_ARGS} )
+fi
+"${BUILD_DIR}/matching_engine_benchmark" "${ME_ARGS[@]}"

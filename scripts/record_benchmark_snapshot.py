@@ -42,6 +42,21 @@ METRIC_KEYS = (
     "matchingEngineP50Ns",
     "matchingEngineP95Ns",
     "matchingEngineP99Ns",
+    "matchingEngineThroughputOnlyCommandsPerSec",
+    "matchingEngineThroughputOnlyNsPerCommand",
+)
+
+LATENCY_METRIC_KEYS = (
+    "matchingEngineCommandsPerSec",
+    "matchingEngineAvgNs",
+    "matchingEngineP50Ns",
+    "matchingEngineP95Ns",
+    "matchingEngineP99Ns",
+)
+
+THROUGHPUT_ONLY_METRIC_KEYS = (
+    "matchingEngineThroughputOnlyCommandsPerSec",
+    "matchingEngineThroughputOnlyNsPerCommand",
 )
 
 PHASE_TO_KEYS = {
@@ -73,7 +88,7 @@ def run_text(command: list[str]) -> str:
     return completed.stdout.strip()
 
 
-def run_and_capture(command: list[str], output_path: Path) -> int:
+def run_and_capture(command: list[str], output_path: Path, env: dict[str, str] | None = None) -> int:
     with output_path.open("a", encoding="utf-8") as output:
         output.write(f"$ {' '.join(command)}\n\n")
         output.flush()
@@ -84,6 +99,7 @@ def run_and_capture(command: list[str], output_path: Path) -> int:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=env,
         )
         assert process.stdout is not None
         for line in process.stdout:
@@ -134,8 +150,24 @@ def parse_run(run_text: str) -> dict[str, int]:
             metrics[throughput_key] = int(match.group(1))
             metrics[ns_key] = int(match.group(2))
 
+    throughput_only_match = re.search(
+        r"Benchmark: MatchingEngine synthetic workload \(throughput-only mode\)"
+        r"(?P<body>.*?)(?:\n== |\Z)",
+        run_text,
+        flags=re.DOTALL,
+    )
+    if throughput_only_match:
+        body = throughput_only_match.group("body")
+        throughput = re.search(r"^Throughput:\s*([0-9]+) commands/sec$", body, re.MULTILINE)
+        if throughput:
+            metrics["matchingEngineThroughputOnlyCommandsPerSec"] = int(throughput.group(1))
+        avg_ns = re.search(r"^Average ns/command:\s*([0-9]+)$", body, re.MULTILINE)
+        if avg_ns:
+            metrics["matchingEngineThroughputOnlyNsPerCommand"] = int(avg_ns.group(1))
+        return metrics
+
     matching_block_match = re.search(
-        r"Benchmark: MatchingEngine synthetic workload(?P<body>.*?)(?:\n== |\Z)",
+        r"Benchmark: MatchingEngine synthetic workload\n(?P<body>.*?)(?:\n== |\Z)",
         run_text,
         flags=re.DOTALL,
     )
@@ -158,12 +190,18 @@ def parse_run(run_text: str) -> dict[str, int]:
     return metrics
 
 
-def parse_metrics(raw_text: str) -> dict[str, int | None]:
+def parse_metrics(raw_text: str, throughput_only: bool) -> dict[str, int | None]:
     runs = [parse_run(run) for run in split_runs(raw_text)]
-    return {
-        key: median_int(run[key] for run in runs if key in run)
-        for key in METRIC_KEYS
+    parsed: dict[str, int | None] = {
+        key: median_int(run[key] for run in runs if key in run) for key in METRIC_KEYS
     }
+    if throughput_only:
+        for key in LATENCY_METRIC_KEYS:
+            parsed[key] = None
+    else:
+        for key in THROUGHPUT_ONLY_METRIC_KEYS:
+            parsed[key] = None
+    return parsed
 
 
 def load_history() -> list[dict]:
@@ -191,7 +229,7 @@ def write_dashboard(entries: list[dict]) -> None:
     json_payload = json.dumps(entries, indent=2, sort_keys=True).replace("</", "<\\/")
     generated_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     DASHBOARD_FILE.write_text(
-        f"""<!doctype html>
+        f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -226,6 +264,10 @@ def write_dashboard(entries: list[dict]) -> None:
     .legend {{ display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }}
     .legend span {{ display: inline-flex; align-items: center; gap: 6px; color: #cbd5e1; }}
     .dot {{ width: 10px; height: 10px; border-radius: 999px; display: inline-block; }}
+    .dot-me-latency {{ background: #38bdf8; }}
+    .dot-me-throughput {{ background: #a78bfa; }}
+    .dot-buffered-apply {{ background: #22c55e; }}
+    .dot-streaming {{ background: #f59e0b; }}
     svg {{ width: 100%; height: 360px; display: block; }}
     table {{ width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }}
     th, td {{ padding: 8px 10px; border-bottom: 1px solid rgba(51, 65, 85, 0.7); text-align: right; }}
@@ -244,9 +286,10 @@ def write_dashboard(entries: list[dict]) -> None:
       <h2>Throughput Over Time</h2>
       <svg id="chart" viewBox="0 0 1000 360" role="img" aria-label="Benchmark throughput over time"></svg>
       <div class="legend">
-        <span><i class="dot" style="background:#38bdf8"></i> Matching engine</span>
-        <span><i class="dot" style="background:#22c55e"></i> Buffered engine apply</span>
-        <span><i class="dot" style="background:#f59e0b"></i> Streaming read/decode/apply</span>
+        <span><i class="dot dot-me-latency"></i> Matching engine (latency-sampling)</span>
+        <span><i class="dot dot-me-throughput"></i> Matching engine (throughput-only)</span>
+        <span><i class="dot dot-buffered-apply"></i> Buffered engine apply</span>
+        <span><i class="dot dot-streaming"></i> Streaming read/decode/apply</span>
       </div>
     </section>
 
@@ -256,14 +299,16 @@ def write_dashboard(entries: list[dict]) -> None:
       <table>
         <thead>
           <tr>
-            <th>Date/time</th>
-            <th>Commit</th>
-            <th>Commands / seed</th>
-            <th>ME cmd/s</th>
-            <th>p50</th>
-            <th>p95</th>
-            <th>p99</th>
-            <th>Buffered apply cmd/s</th>
+            <th scope="col">Date/time</th>
+            <th scope="col">Commit</th>
+            <th scope="col">Commands / seed</th>
+            <th scope="col">ME mode</th>
+            <th scope="col">ME cmd/s</th>
+            <th scope="col">ME TP-only cmd/s</th>
+            <th scope="col">p50</th>
+            <th scope="col">p95</th>
+            <th scope="col">p99</th>
+            <th scope="col">Buffered apply cmd/s</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -282,12 +327,15 @@ def write_dashboard(entries: list[dict]) -> None:
     }}
     for (const entry of data) {{
       const metrics = entry.metrics || {{}};
+      const mode = entry.matchingEngineMode || 'latency-sampling';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${{new Date(entry.timestamp).toLocaleString()}}</td>
         <td><code>${{entry.gitCommit || 'unknown'}}</code></td>
         <td>${{entry.commands?.toLocaleString?.() || entry.commands}} / ${{entry.seed}}</td>
+        <td>${{mode}}</td>
         <td>${{formatNumber(metrics.matchingEngineCommandsPerSec)}}</td>
+        <td>${{formatNumber(metrics.matchingEngineThroughputOnlyCommandsPerSec)}}</td>
         <td>${{formatNumber(metrics.matchingEngineP50Ns)}}</td>
         <td>${{formatNumber(metrics.matchingEngineP95Ns)}}</td>
         <td>${{formatNumber(metrics.matchingEngineP99Ns)}}</td>
@@ -299,6 +347,7 @@ def write_dashboard(entries: list[dict]) -> None:
     const svg = document.getElementById('chart');
     const series = [
       ['matchingEngineCommandsPerSec', '#38bdf8'],
+      ['matchingEngineThroughputOnlyCommandsPerSec', '#a78bfa'],
       ['bufferedEngineApplyCommandsPerSec', '#22c55e'],
       ['streamingReadDecodeApplyCommandsPerSec', '#f59e0b'],
     ];
@@ -358,10 +407,17 @@ def write_dashboard(entries: list[dict]) -> None:
     )
 
 
+def parse_cli(argv: list[str]) -> tuple[int, int, int, bool]:
+    throughput_only = "--throughput-only" in argv
+    positional = [arg for arg in argv[1:] if arg != "--throughput-only"]
+    run_count = int(positional[0]) if len(positional) > 0 else 5
+    commands = int(positional[1]) if len(positional) > 1 else 100_000
+    seed = int(positional[2]) if len(positional) > 2 else 42
+    return run_count, commands, seed, throughput_only
+
+
 def main(argv: list[str]) -> int:
-    run_count = int(argv[1]) if len(argv) > 1 else 5
-    commands = int(argv[2]) if len(argv) > 2 else 100_000
-    seed = int(argv[3]) if len(argv) > 3 else 42
+    run_count, commands, seed, throughput_only = parse_cli(argv)
 
     HISTORY_DIR.mkdir(exist_ok=True)
     RAW_DIR.mkdir(exist_ok=True)
@@ -370,7 +426,8 @@ def main(argv: list[str]) -> int:
     safe_timestamp = timestamp.replace(":", "").replace("+", "Z")
     git_commit = run_text(["git", "rev-parse", "--short", "HEAD"]) or "unknown"
     branch = run_text(["git", "branch", "--show-current"]) or "unknown"
-    raw_name = f"{safe_timestamp}_{git_commit}_benchmark.txt"
+    mode_suffix = "throughput_only" if throughput_only else "latency"
+    raw_name = f"{safe_timestamp}_{git_commit}_{mode_suffix}_benchmark.txt"
     raw_path = RAW_DIR / raw_name
 
     with raw_path.open("w", encoding="utf-8") as output:
@@ -380,18 +437,26 @@ def main(argv: list[str]) -> int:
         output.write(f"Branch: {branch}\n")
         output.write(f"Runs: {run_count}\n")
         output.write(f"Commands: {commands}\n")
-        output.write(f"Seed: {seed}\n\n")
+        output.write(f"Seed: {seed}\n")
+        output.write(
+            f"Matching engine mode: {'throughput-only' if throughput_only else 'latency-sampling'}\n\n"
+        )
+
+    capture_env = os.environ.copy()
+    if throughput_only:
+        capture_env["MATCHING_ENGINE_EXTRA_ARGS"] = "--throughput-only"
 
     return_code = run_and_capture(
         ["./scripts/benchmark_repeat.sh", str(run_count), str(commands), str(seed)],
         raw_path,
+        env=capture_env,
     )
     if return_code != 0:
         print(f"Benchmark run failed; raw output saved to {raw_path}", file=sys.stderr)
         return return_code
 
     raw_text = raw_path.read_text(encoding="utf-8")
-    metrics = parse_metrics(raw_text)
+    metrics = parse_metrics(raw_text, throughput_only)
     entry = {
         "timestamp": timestamp,
         "gitCommit": git_commit,
@@ -402,6 +467,7 @@ def main(argv: list[str]) -> int:
         "commands": commands,
         "seed": seed,
         "runCount": run_count,
+        "matchingEngineMode": "throughput-only" if throughput_only else "latency-sampling",
         "verifyPassed": True,
         "metrics": metrics,
         "rawOutput": str(raw_path.relative_to(ROOT)),

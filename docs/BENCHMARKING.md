@@ -30,6 +30,29 @@ This is **not** a production exchange benchmark. There is no networking, no lock
 - CSV parsing, CLI I/O, or `EngineEventPrinter`
 - Multi-threaded contention (single-threaded loop)
 
+### Throughput-only mode (`--throughput-only`)
+
+For cleaner aggregate throughput measurement, `matching_engine_benchmark` supports a benchmark-only flag that avoids per-command `steady_clock` calls:
+
+```bash
+./build-release/matching_engine_benchmark 100000 42 --throughput-only
+```
+
+Behaviour:
+
+- Same workload generation, `process_into` hot path, trade count, and book sanity checks as the default mode
+- Times the full apply loop once (aggregate wall clock)
+- Reports throughput, average ns/command derived from total runtime / command count, and a note that p50/p95/p99 are unavailable
+- Does **not** change production `MatchingEngine` code
+
+Use default mode when you need latency percentiles. Use throughput-only mode when comparing engine throughput before/after benchmark-only changes. Do not treat throughput-only numbers as proof the engine is faster than latency-sampling numbers on the same machine — the measurement method differs.
+
+Record throughput-only history:
+
+```bash
+./scripts/record_benchmark_snapshot.sh 5 100000 42 --throughput-only
+```
+
 ## What `binary_protocol_benchmark` measures
 
 **Scope:** deterministic command generation, OBK1 binary file write, buffered OBK1 file read/decode, buffered engine apply, and streaming read/decode/apply through `MatchingEngine`.

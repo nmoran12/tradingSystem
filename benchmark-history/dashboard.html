@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -33,6 +33,10 @@
     .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
     .legend span { display: inline-flex; align-items: center; gap: 6px; color: #cbd5e1; }
     .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+    .dot-me-latency { background: #38bdf8; }
+    .dot-me-throughput { background: #a78bfa; }
+    .dot-buffered-apply { background: #22c55e; }
+    .dot-streaming { background: #f59e0b; }
     svg { width: 100%; height: 360px; display: block; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
     th, td { padding: 8px 10px; border-bottom: 1px solid rgba(51, 65, 85, 0.7); text-align: right; }
@@ -44,16 +48,17 @@
 <body>
   <div class="wrap">
     <h1>Performance Baseline Dashboard</h1>
-    <div class="muted">Generated 2026-06-02T02:26:55+00:00. Data is embedded from <code>benchmark_history.jsonl</code>.</div>
+    <div class="muted">Generated 2026-06-02T02:31:01+00:00. Data is embedded from <code>benchmark_history.jsonl</code>.</div>
     <div class="warning">Local benchmark results are machine-dependent. Compare repeated runs on the same machine, build type, command count, and seed.</div>
 
     <section class="panel">
       <h2>Throughput Over Time</h2>
       <svg id="chart" viewBox="0 0 1000 360" role="img" aria-label="Benchmark throughput over time"></svg>
       <div class="legend">
-        <span><i class="dot" style="background:#38bdf8"></i> Matching engine</span>
-        <span><i class="dot" style="background:#22c55e"></i> Buffered engine apply</span>
-        <span><i class="dot" style="background:#f59e0b"></i> Streaming read/decode/apply</span>
+        <span><i class="dot dot-me-latency"></i> Matching engine (latency-sampling)</span>
+        <span><i class="dot dot-me-throughput"></i> Matching engine (throughput-only)</span>
+        <span><i class="dot dot-buffered-apply"></i> Buffered engine apply</span>
+        <span><i class="dot dot-streaming"></i> Streaming read/decode/apply</span>
       </div>
     </section>
 
@@ -63,14 +68,16 @@
       <table>
         <thead>
           <tr>
-            <th>Date/time</th>
-            <th>Commit</th>
-            <th>Commands / seed</th>
-            <th>ME cmd/s</th>
-            <th>p50</th>
-            <th>p95</th>
-            <th>p99</th>
-            <th>Buffered apply cmd/s</th>
+            <th scope="col">Date/time</th>
+            <th scope="col">Commit</th>
+            <th scope="col">Commands / seed</th>
+            <th scope="col">ME mode</th>
+            <th scope="col">ME cmd/s</th>
+            <th scope="col">ME TP-only cmd/s</th>
+            <th scope="col">p50</th>
+            <th scope="col">p95</th>
+            <th scope="col">p99</th>
+            <th scope="col">Buffered apply cmd/s</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -107,6 +114,38 @@
     "seed": 42,
     "timestamp": "2026-06-02T02:26:43+00:00",
     "verifyPassed": true
+  },
+  {
+    "branch": "feature/6f-memory-pool",
+    "buildType": "Release",
+    "commands": 100000,
+    "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+    "gitCommit": "09c8602",
+    "machine": "macOS-26.5-arm64-arm-64bit-Mach-O (arm64)",
+    "matchingEngineMode": "throughput-only",
+    "metrics": {
+      "binaryWriteCommandsPerSec": 15443121,
+      "binaryWriteNsPerCommand": 64,
+      "bufferedEngineApplyCommandsPerSec": 11480836,
+      "bufferedEngineApplyNsPerCommand": 87,
+      "bufferedReadDecodeCommandsPerSec": 19650708,
+      "bufferedReadDecodeNsPerCommand": 50,
+      "matchingEngineAvgNs": null,
+      "matchingEngineCommandsPerSec": null,
+      "matchingEngineP50Ns": null,
+      "matchingEngineP95Ns": null,
+      "matchingEngineP99Ns": null,
+      "matchingEngineThroughputOnlyCommandsPerSec": 11435105,
+      "matchingEngineThroughputOnlyNsPerCommand": 87,
+      "streamingReadDecodeApplyCommandsPerSec": 7564702,
+      "streamingReadDecodeApplyNsPerCommand": 132
+    },
+    "notes": "local machine-dependent result; not a production claim",
+    "rawOutput": "benchmark-history/raw/2026-06-02T023058Z0000_09c8602_throughput_only_benchmark.txt",
+    "runCount": 5,
+    "seed": 42,
+    "timestamp": "2026-06-02T02:30:58+00:00",
+    "verifyPassed": true
   }
 ]</script>
   <script>
@@ -119,12 +158,15 @@
     }
     for (const entry of data) {
       const metrics = entry.metrics || {};
+      const mode = entry.matchingEngineMode || 'latency-sampling';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${new Date(entry.timestamp).toLocaleString()}</td>
         <td><code>${entry.gitCommit || 'unknown'}</code></td>
         <td>${entry.commands?.toLocaleString?.() || entry.commands} / ${entry.seed}</td>
+        <td>${mode}</td>
         <td>${formatNumber(metrics.matchingEngineCommandsPerSec)}</td>
+        <td>${formatNumber(metrics.matchingEngineThroughputOnlyCommandsPerSec)}</td>
         <td>${formatNumber(metrics.matchingEngineP50Ns)}</td>
         <td>${formatNumber(metrics.matchingEngineP95Ns)}</td>
         <td>${formatNumber(metrics.matchingEngineP99Ns)}</td>
@@ -136,6 +178,7 @@
     const svg = document.getElementById('chart');
     const series = [
       ['matchingEngineCommandsPerSec', '#38bdf8'],
+      ['matchingEngineThroughputOnlyCommandsPerSec', '#a78bfa'],
       ['bufferedEngineApplyCommandsPerSec', '#22c55e'],
       ['streamingReadDecodeApplyCommandsPerSec', '#f59e0b'],
     ];

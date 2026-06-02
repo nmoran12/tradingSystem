@@ -13,7 +13,7 @@ This backlog records future optimisation ideas. It is intentionally conservative
 
 | Rank | Candidate | Suspected bottleneck | Current evidence | Extra measurement needed | Safe to implement now? | Required validation |
 |------|-----------|----------------------|------------------|--------------------------|------------------------|--------------------|
-| 1 | Add benchmark throughput-only mode | Per-command `steady_clock` timing adds noise when measuring aggregate throughput | `matching_engine_benchmark` currently records per-command latency inside the hot loop | Compare normal vs throughput-only mode on identical workloads; confirm semantics and book metrics match | **Yes, as a benchmark-only milestone** | `./scripts/verify.sh`; repeated Release runs; same trades/book totals |
+| 1 | Add benchmark throughput-only mode | Per-command `steady_clock` timing adds noise when measuring aggregate throughput | **Done** — `--throughput-only` on `matching_engine_benchmark`; snapshot script and dashboard support | Compare throughput-only medians before/after future engine changes | **Done (measurement infra)** | `./scripts/verify.sh`; repeated Release runs; same trades/book totals |
 | 2 | Improve benchmark parsing/reporting | Manual comparison is error-prone | New JSONL tracker parses existing output but benchmark binaries still print text only | Validate parser against several existing raw logs; consider optional machine-readable benchmark output later | **Yes, tooling only** | Parser fixture tests if added; `git diff --check`; dashboard generation |
 | 3 | Re-profile engine-only apply with 2M+ commands | Apply loop is short at 100k, hard to attach profilers reliably | 9B 2M run gave a longer apply window and mixed allocation signals | Fresh `sample`, Instruments Allocations, or Linux `heaptrack` on the same commit and workload | **Yes, measurement only** | No code changes; raw traces stay under gitignored `profiling/` |
 | 4 | Investigate `order_lookup_` hash tuning | Hash emplace remains visible after reserve | 9B samples showed hash emplace comparable to list node allocation | Byte/count-ranked allocation profile; try load factor/reserve experiments in an isolated branch | **Not yet** | Full tests; repeated Release medians; no order lookup behaviour changes |
@@ -23,21 +23,12 @@ This backlog records future optimisation ideas. It is intentionally conservative
 
 ## Next recommended optimisation milestone
 
-The next single optimisation milestone should be **benchmark throughput-only mode**.
+The next single optimisation milestone should be **re-profile engine-only apply with 2M+ commands** (measurement only).
 
 Why:
 
-- It is benchmark-only and low risk.
-- It improves the reliability of future comparisons before touching hot data structures.
-- It avoids repeating the premature container/allocation work that current evidence does not justify.
-- It can coexist with the existing latency benchmark path, preserving p50/p95/p99 reporting.
+- Throughput-only benchmark mode is now available for cleaner before/after throughput comparisons.
+- Current allocation evidence on `add_order_to_side` remains mixed; no container rewrite is justified yet.
+- A longer apply window makes profiler attachment and byte-ranked allocation tools more reliable.
 
-Suggested scope:
-
-1. Add a `--throughput-only` or similarly named flag to `matching_engine_benchmark`.
-2. Keep the default benchmark output unchanged.
-3. In throughput-only mode, time only the aggregate apply loop and still report trades/book sanity metrics.
-4. Add tests only if CLI parsing logic becomes non-trivial; otherwise validate through `./scripts/verify.sh` and repeated Release runs.
-5. Update benchmark docs with when to use latency mode vs throughput-only mode.
-
-Do **not** implement list pools, arenas, intrusive containers, map replacement, persistence, TCP, publisher, database, or live market data as part of that milestone.
+Do **not** implement list pools, arenas, intrusive containers, map replacement, persistence, TCP, publisher, database, or live market data without new byte-ranked evidence.

@@ -8,6 +8,7 @@ From the repository root:
 
 ```bash
 ./scripts/record_benchmark_snapshot.sh 5 100000 42
+./scripts/record_benchmark_snapshot.sh 5 100000 42 --throughput-only
 ```
 
 Arguments are:
@@ -15,6 +16,7 @@ Arguments are:
 1. run count, default `5`
 2. command count, default `100000`
 3. workload seed, default `42`
+4. optional `--throughput-only` — matching engine benchmark uses aggregate timing only (no per-command latency samples)
 
 The script:
 
@@ -39,6 +41,18 @@ benchmark-history/
 `benchmark_history.jsonl` is append-only. Do not rewrite older entries when adding a new snapshot. Raw logs are kept so parsed numbers can be checked against benchmark output later.
 
 The JSONL metrics are medians across the repeated runs when a metric is parsed successfully. Missing or unparseable metrics are stored as `null`.
+
+Each entry includes `matchingEngineMode`:
+
+- `latency-sampling` — default `matching_engine_benchmark` with per-command latency tracking
+- `throughput-only` — aggregate apply-loop timing only
+
+Throughput-only snapshots populate:
+
+- `matchingEngineThroughputOnlyCommandsPerSec`
+- `matchingEngineThroughputOnlyNsPerCommand`
+
+Latency percentiles (`matchingEngineP50Ns`, `p95`, `p99`) are `null` in throughput-only entries. Do not compare them across modes.
 
 ## Open the dashboard
 
@@ -71,6 +85,8 @@ Use the same:
 - run count
 
 Prefer repeated-run medians. Do not claim an improvement from one lucky run, especially if the before/after ranges overlap.
+
+Compare throughput-only results only against other throughput-only snapshots. Compare latency-sampling results only against other latency-sampling snapshots. Throughput-only mode improves measurement quality; it does not by itself prove the engine became faster.
 
 ## What not to claim
 

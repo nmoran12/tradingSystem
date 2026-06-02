@@ -14,6 +14,14 @@ For append-only benchmark history and the local dashboard, see [PERFORMANCE_TRAC
 
 This records raw output under `benchmark-history/raw/`, appends parsed medians to `benchmark-history/benchmark_history.jsonl`, and regenerates `benchmark-history/dashboard.html`.
 
+For matching-engine aggregate throughput (no per-command latency sampling):
+
+```bash
+./scripts/record_benchmark_snapshot.sh 5 100000 42 --throughput-only
+```
+
+See [PERFORMANCE_TRACKING.md](PERFORMANCE_TRACKING.md) for mode-specific comparison rules.
+
 ## Purpose
 
 - Establish a repeatable baseline before changing performance-sensitive code.

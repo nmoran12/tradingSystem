@@ -1,0 +1,343 @@
+Benchmark snapshot raw output
+Timestamp: 2026-06-02T02:30:58+00:00
+Git commit: 09c8602
+Branch: feature/6f-memory-pool
+Runs: 5
+Commands: 100000
+Seed: 42
+Matching engine mode: throughput-only
+
+$ ./scripts/benchmark_repeat.sh 5 100000 42
+
+== Repeated Release benchmarks ==
+Repetitions: 5
+Commands:    100000
+Seed:        42
+
+Compare typical or median results across runs — not one lucky run.
+
+========================================
+== Run 1 of 5 ==
+========================================
+== Configure Release build ==
+CMake Warning (dev) at /opt/homebrew/share/cmake/Modules/FetchContent.cmake:1383 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:38 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/noahmoran/tradingSystem/cpp-low-latency-orderbook/build-release
+
+== Build Release benchmark targets ==
+[ 86%] Built target orderbook_core
+[100%] Built target binary_protocol_benchmark
+[ 86%] Built target orderbook_core
+[100%] Built target matching_engine_benchmark
+
+== Binary protocol benchmark (100000 commands, seed 42) ==
+Benchmark: Binary protocol replay
+Commands: 100000
+Seed: 42
+Binary file: "/var/folders/37/q1nwyb4n7bn5xdynhv38sycc0000gn/T/cpp_low_latency_orderbook_binary_protocol_42.obk"
+Binary file size: 6400000 bytes
+Buffered trades: 56086
+Streaming trades: 56086
+Buffered active orders: 10070
+Streaming active orders: 10070
+Buffered resting quantity: 5039585
+Streaming resting quantity: 5039585
+Phases:
+  command generation: 0.0293761s
+  binary write: 0.00647538s (15443121 commands/sec, 64 ns/command)
+  buffered read/decode: 0.00507587s (19701036 commands/sec, 50 ns/command)
+  buffered engine apply: 0.008774s (11397310 commands/sec, 87 ns/command)
+  buffered read/decode + apply total: 0.0138499s (13849875 ns)
+  streaming read/decode/apply: 0.0128035s (7810364 commands/sec, 128 ns/command)
+  buffered total minus streaming total: 1046375 ns
+  total measured phases: 0.0625048s (62504833 ns)
+Note: metrics are local wall-clock timings; p50/p95/p99 are not reported because this benchmark measures phase totals, not per-command decode latencies. Positive buffered-minus-streaming means streaming was faster on this run; negative means buffered was faster.
+Note: this benchmark deletes the temp binary file when it exits. For demos, use ./scripts/demo-live-replay.sh (stable file under tmp/demo/).
+
+== Matching engine benchmark (100000 commands, seed 42) ==
+Benchmark: MatchingEngine synthetic workload (throughput-only mode)
+Commands: 100000
+Seed: 42
+Trades: 56086
+Runtime: 0.00856404s
+Throughput: 11676729 commands/sec
+Average ns/command: 85
+Active orders: 10070
+Resting quantity: 5039585
+Note: Per-command latency percentiles (p50/p95/p99) are not collected in throughput-only mode.
+
+========================================
+== Run 2 of 5 ==
+========================================
+== Configure Release build ==
+CMake Warning (dev) at /opt/homebrew/share/cmake/Modules/FetchContent.cmake:1383 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:38 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/noahmoran/tradingSystem/cpp-low-latency-orderbook/build-release
+
+== Build Release benchmark targets ==
+[ 86%] Built target orderbook_core
+[100%] Built target binary_protocol_benchmark
+[ 86%] Built target orderbook_core
+[100%] Built target matching_engine_benchmark
+
+== Binary protocol benchmark (100000 commands, seed 42) ==
+Benchmark: Binary protocol replay
+Commands: 100000
+Seed: 42
+Binary file: "/var/folders/37/q1nwyb4n7bn5xdynhv38sycc0000gn/T/cpp_low_latency_orderbook_binary_protocol_42.obk"
+Binary file size: 6400000 bytes
+Buffered trades: 56086
+Streaming trades: 56086
+Buffered active orders: 10070
+Streaming active orders: 10070
+Buffered resting quantity: 5039585
+Streaming resting quantity: 5039585
+Phases:
+  command generation: 0.0294443s
+  binary write: 0.00618892s (16157915 commands/sec, 61 ns/command)
+  buffered read/decode: 0.00881588s (11343173 commands/sec, 88 ns/command)
+  buffered engine apply: 0.00891275s (11219881 commands/sec, 89 ns/command)
+  buffered read/decode + apply total: 0.0177286s (17728625 ns)
+  streaming read/decode/apply: 0.0137166s (7290423 commands/sec, 137 ns/command)
+  buffered total minus streaming total: 4012000 ns
+  total measured phases: 0.0670785s (67078459 ns)
+Note: metrics are local wall-clock timings; p50/p95/p99 are not reported because this benchmark measures phase totals, not per-command decode latencies. Positive buffered-minus-streaming means streaming was faster on this run; negative means buffered was faster.
+Note: this benchmark deletes the temp binary file when it exits. For demos, use ./scripts/demo-live-replay.sh (stable file under tmp/demo/).
+
+== Matching engine benchmark (100000 commands, seed 42) ==
+Benchmark: MatchingEngine synthetic workload (throughput-only mode)
+Commands: 100000
+Seed: 42
+Trades: 56086
+Runtime: 0.008745s
+Throughput: 11435105 commands/sec
+Average ns/command: 87
+Active orders: 10070
+Resting quantity: 5039585
+Note: Per-command latency percentiles (p50/p95/p99) are not collected in throughput-only mode.
+
+========================================
+== Run 3 of 5 ==
+========================================
+== Configure Release build ==
+CMake Warning (dev) at /opt/homebrew/share/cmake/Modules/FetchContent.cmake:1383 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:38 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/noahmoran/tradingSystem/cpp-low-latency-orderbook/build-release
+
+== Build Release benchmark targets ==
+[ 86%] Built target orderbook_core
+[100%] Built target binary_protocol_benchmark
+[ 86%] Built target orderbook_core
+[100%] Built target matching_engine_benchmark
+
+== Binary protocol benchmark (100000 commands, seed 42) ==
+Benchmark: Binary protocol replay
+Commands: 100000
+Seed: 42
+Binary file: "/var/folders/37/q1nwyb4n7bn5xdynhv38sycc0000gn/T/cpp_low_latency_orderbook_binary_protocol_42.obk"
+Binary file size: 6400000 bytes
+Buffered trades: 56086
+Streaming trades: 56086
+Buffered active orders: 10070
+Streaming active orders: 10070
+Buffered resting quantity: 5039585
+Streaming resting quantity: 5039585
+Phases:
+  command generation: 0.0298251s
+  binary write: 0.00633838s (15776914 commands/sec, 63 ns/command)
+  buffered read/decode: 0.00474258s (21085551 commands/sec, 47 ns/command)
+  buffered engine apply: 0.00871017s (11480836 commands/sec, 87 ns/command)
+  buffered read/decode + apply total: 0.0134528s (13452751 ns)
+  streaming read/decode/apply: 0.0132193s (7564702 commands/sec, 132 ns/command)
+  buffered total minus streaming total: 233460 ns
+  total measured phases: 0.0628355s (62835542 ns)
+Note: metrics are local wall-clock timings; p50/p95/p99 are not reported because this benchmark measures phase totals, not per-command decode latencies. Positive buffered-minus-streaming means streaming was faster on this run; negative means buffered was faster.
+Note: this benchmark deletes the temp binary file when it exits. For demos, use ./scripts/demo-live-replay.sh (stable file under tmp/demo/).
+
+== Matching engine benchmark (100000 commands, seed 42) ==
+Benchmark: MatchingEngine synthetic workload (throughput-only mode)
+Commands: 100000
+Seed: 42
+Trades: 56086
+Runtime: 0.0115408s
+Throughput: 8664885 commands/sec
+Average ns/command: 115
+Active orders: 10070
+Resting quantity: 5039585
+Note: Per-command latency percentiles (p50/p95/p99) are not collected in throughput-only mode.
+
+========================================
+== Run 4 of 5 ==
+========================================
+== Configure Release build ==
+CMake Warning (dev) at /opt/homebrew/share/cmake/Modules/FetchContent.cmake:1383 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:38 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/noahmoran/tradingSystem/cpp-low-latency-orderbook/build-release
+
+== Build Release benchmark targets ==
+[ 86%] Built target orderbook_core
+[100%] Built target binary_protocol_benchmark
+[ 86%] Built target orderbook_core
+[100%] Built target matching_engine_benchmark
+
+== Binary protocol benchmark (100000 commands, seed 42) ==
+Benchmark: Binary protocol replay
+Commands: 100000
+Seed: 42
+Binary file: "/var/folders/37/q1nwyb4n7bn5xdynhv38sycc0000gn/T/cpp_low_latency_orderbook_binary_protocol_42.obk"
+Binary file size: 6400000 bytes
+Buffered trades: 56086
+Streaming trades: 56086
+Buffered active orders: 10070
+Streaming active orders: 10070
+Buffered resting quantity: 5039585
+Streaming resting quantity: 5039585
+Phases:
+  command generation: 0.0304143s
+  binary write: 0.00664113s (15057689 commands/sec, 66 ns/command)
+  buffered read/decode: 0.00508887s (19650708 commands/sec, 50 ns/command)
+  buffered engine apply: 0.00864979s (11560971 commands/sec, 86 ns/command)
+  buffered read/decode + apply total: 0.0137387s (13738667 ns)
+  streaming read/decode/apply: 0.0138494s (7220542 commands/sec, 138 ns/command)
+  buffered total minus streaming total: -110708 ns
+  total measured phases: 0.0646434s (64643417 ns)
+Note: metrics are local wall-clock timings; p50/p95/p99 are not reported because this benchmark measures phase totals, not per-command decode latencies. Positive buffered-minus-streaming means streaming was faster on this run; negative means buffered was faster.
+Note: this benchmark deletes the temp binary file when it exits. For demos, use ./scripts/demo-live-replay.sh (stable file under tmp/demo/).
+
+== Matching engine benchmark (100000 commands, seed 42) ==
+Benchmark: MatchingEngine synthetic workload (throughput-only mode)
+Commands: 100000
+Seed: 42
+Trades: 56086
+Runtime: 0.00871958s
+Throughput: 11468438 commands/sec
+Average ns/command: 87
+Active orders: 10070
+Resting quantity: 5039585
+Note: Per-command latency percentiles (p50/p95/p99) are not collected in throughput-only mode.
+
+========================================
+== Run 5 of 5 ==
+========================================
+== Configure Release build ==
+CMake Warning (dev) at /opt/homebrew/share/cmake/Modules/FetchContent.cmake:1383 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:38 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/noahmoran/tradingSystem/cpp-low-latency-orderbook/build-release
+
+== Build Release benchmark targets ==
+[ 86%] Built target orderbook_core
+[100%] Built target binary_protocol_benchmark
+[ 86%] Built target orderbook_core
+[100%] Built target matching_engine_benchmark
+
+== Binary protocol benchmark (100000 commands, seed 42) ==
+Benchmark: Binary protocol replay
+Commands: 100000
+Seed: 42
+Binary file: "/var/folders/37/q1nwyb4n7bn5xdynhv38sycc0000gn/T/cpp_low_latency_orderbook_binary_protocol_42.obk"
+Binary file size: 6400000 bytes
+Buffered trades: 56086
+Streaming trades: 56086
+Buffered active orders: 10070
+Streaming active orders: 10070
+Buffered resting quantity: 5039585
+Streaming resting quantity: 5039585
+Phases:
+  command generation: 0.0350473s
+  binary write: 0.00793321s (12605241 commands/sec, 79 ns/command)
+  buffered read/decode: 0.00524008s (19083663 commands/sec, 52 ns/command)
+  buffered engine apply: 0.008702s (11491611 commands/sec, 87 ns/command)
+  buffered read/decode + apply total: 0.0139421s (13942084 ns)
+  streaming read/decode/apply: 0.0127945s (7815832 commands/sec, 127 ns/command)
+  buffered total minus streaming total: 1147542 ns
+  total measured phases: 0.0697172s (69717168 ns)
+Note: metrics are local wall-clock timings; p50/p95/p99 are not reported because this benchmark measures phase totals, not per-command decode latencies. Positive buffered-minus-streaming means streaming was faster on this run; negative means buffered was faster.
+Note: this benchmark deletes the temp binary file when it exits. For demos, use ./scripts/demo-live-replay.sh (stable file under tmp/demo/).
+
+== Matching engine benchmark (100000 commands, seed 42) ==
+Benchmark: MatchingEngine synthetic workload (throughput-only mode)
+Commands: 100000
+Seed: 42
+Trades: 56086
+Runtime: 0.010314s
+Throughput: 9695598 commands/sec
+Average ns/command: 103
+Active orders: 10070
+Resting quantity: 5039585
+Note: Per-command latency percentiles (p50/p95/p99) are not collected in throughput-only mode.
+
+== All 5 runs complete ==
+Review the outputs above. Use median or typical phase metrics for before/after claims.
+Do not cite the fastest single run as a stable improvement.
+
+[exit_code] 0
