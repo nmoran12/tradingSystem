@@ -51,3 +51,7 @@ Why this one:
 **Stronger model?** Only if the next change touches book invariants, iterator stability, or custom hash/equivalence types beyond load factor and reserve — otherwise Auto is sufficient.
 
 Do **not** implement list pools, arenas, intrusive containers, map/list replacement, persistence, TCP, publisher, database, or live market data without new byte-ranked evidence.
+
+## Failed experiment: `experiment/vector-price-levels`
+
+Branch `experiment/vector-price-levels` (commit `379d75a`, pushed) tested vector/tombstone price levels as a replacement for per-price `std::list<Order>`. Correctness passed (172 tests; workload totals matched), but throughput regressed by about **15%** on local throughput-only benchmarks (~11.3M → ~9.6M cmd/s median). **Do not merge.** Full write-up: `docs/PERFORMANCE_EXPERIMENTS.md` on that branch. Future attempts would need an active-order queue or compaction strategy rather than scanning tombstones.
