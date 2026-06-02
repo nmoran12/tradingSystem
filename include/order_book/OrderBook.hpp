@@ -5,21 +5,39 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <list>
 #include <map>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 namespace order_book {
+
+/// Experimental contiguous price level (see branch experiment/vector-price-levels).
+struct OrderSlot {
+    Order order;
+    bool active{false};
+};
+
+struct PriceLevel {
+    std::vector<OrderSlot> orders;
+    std::size_t head{0};
+
+    std::size_t append(Order order);
+    void mark_inactive(std::size_t index);
+    void compact_head();
+    [[nodiscard]] bool has_active_orders() const;
+    [[nodiscard]] std::optional<Order> front_active() const;
+    [[nodiscard]] uint32_t total_active_quantity() const;
+    [[nodiscard]] std::size_t active_order_count() const;
+};
 
 class OrderBook {
 public:
     /// Pre-size @c order_lookup_ for at least @p expected_active_orders entries.
-    /// Does not reserve list/map nodes; safe to call on an empty or non-empty book.
-    /// Reduces rehash during growth when the peak active order count is known approximately.
+    /// Does not reserve per-price level vectors; safe on empty or non-empty book.
     void reserve_active_orders(size_t expected_active_orders);
 
     bool add_order(Order order);
@@ -52,14 +70,17 @@ private:
     struct OrderLocation {
         market_data::Side side{market_data::Side::UNKNOWN};
         int64_t price{};
-        std::list<Order>::iterator it;
+        std::size_t index{};
     };
 
-    using BuyBook = std::map<int64_t, std::list<Order>, std::greater<int64_t>>;
-    using SellBook = std::map<int64_t, std::list<Order>>;
+    using BuyBook = std::map<int64_t, PriceLevel, std::greater<int64_t>>;
+    using SellBook = std::map<int64_t, PriceLevel>;
 
     bool add_order_to_side(market_data::Side side, Order order);
     void remove_order_at_location(const OrderLocation& location);
+    [[nodiscard]] const PriceLevel* find_level(market_data::Side side, int64_t price) const;
+    PriceLevel* find_level_mut(market_data::Side side, int64_t price);
+    void erase_level_if_empty(market_data::Side side, int64_t price);
 
     BuyBook buy_book_;
     SellBook sell_book_;

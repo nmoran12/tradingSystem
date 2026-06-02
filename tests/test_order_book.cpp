@@ -115,3 +115,59 @@ TEST(OrderBookTest, SpreadRequiresBothSides) {
     ASSERT_TRUE(book.spread().has_value());
     EXPECT_EQ(*book.spread(), 5);
 }
+
+TEST(OrderBookTest, PeekBestAskSkipsCancelledHeadOrder) {
+    OrderBook book;
+    ASSERT_TRUE(book.add_order(make_order(1, Side::SELL, 10055, 100)));
+    ASSERT_TRUE(book.add_order(make_order(2, Side::SELL, 10055, 200)));
+    ASSERT_TRUE(book.cancel_order(1));
+
+    const auto front = book.peek_best_ask();
+    ASSERT_TRUE(front.has_value());
+    EXPECT_EQ(front->order_id, 2u);
+    EXPECT_TRUE(book.best_ask().has_value());
+}
+
+TEST(OrderBookTest, CancelMiddleOrderPreservesFifoForRemaining) {
+    OrderBook book;
+    ASSERT_TRUE(book.add_order(make_order(1, Side::SELL, 10055, 100)));
+    ASSERT_TRUE(book.add_order(make_order(2, Side::SELL, 10055, 200)));
+    ASSERT_TRUE(book.add_order(make_order(3, Side::SELL, 10055, 300)));
+    ASSERT_TRUE(book.cancel_order(2));
+
+    const auto front = book.peek_best_ask();
+    ASSERT_TRUE(front.has_value());
+    EXPECT_EQ(front->order_id, 1u);
+
+    ASSERT_TRUE(book.execute_order(1, 100));
+    const auto next = book.peek_best_ask();
+    ASSERT_TRUE(next.has_value());
+    EXPECT_EQ(next->order_id, 3u);
+}
+
+TEST(OrderBookTest, PartialFillThenCancelRemainder) {
+    OrderBook book;
+    ASSERT_TRUE(book.add_order(make_order(1, Side::BUY, 10050, 100)));
+    ASSERT_TRUE(book.execute_order(1, 40));
+    EXPECT_EQ(book.total_quantity_at_price(Side::BUY, 10050), 60u);
+    ASSERT_TRUE(book.cancel_order(1));
+    EXPECT_EQ(book.total_quantity_at_price(Side::BUY, 10050), 0u);
+    EXPECT_FALSE(book.best_bid().has_value());
+    EXPECT_EQ(book.active_order_count(), 0u);
+}
+
+TEST(OrderBookTest, PriceLevelRemovedWhenAllOrdersInactive) {
+    OrderBook book;
+    ASSERT_TRUE(book.add_order(make_order(1, Side::SELL, 10055, 50)));
+    ASSERT_TRUE(book.cancel_order(1));
+    EXPECT_FALSE(book.best_ask().has_value());
+    EXPECT_EQ(book.total_quantity_at_price(Side::SELL, 10055), 0u);
+    EXPECT_FALSE(book.validate_invariants().has_value());
+}
+
+TEST(OrderBookTest, DuplicateOrderIdRejected) {
+    OrderBook book;
+    ASSERT_TRUE(book.add_order(make_order(1, Side::BUY, 10050, 100)));
+    EXPECT_FALSE(book.add_order(make_order(1, Side::BUY, 10060, 50)));
+    EXPECT_EQ(book.active_order_count(), 1u);
+}

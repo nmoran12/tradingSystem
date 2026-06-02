@@ -51,3 +51,7 @@ Why this one:
 **Stronger model?** Only if the next change touches book invariants, iterator stability, or custom hash/equivalence types beyond load factor and reserve — otherwise Auto is sufficient.
 
 Do **not** implement list pools, arenas, intrusive containers, map/list replacement, persistence, TCP, publisher, database, or live market data without new byte-ranked evidence.
+
+## experiment/vector-price-levels (2026-06-02) — failed throughput
+
+Replaced `std::list<Order>` per price with `vector<OrderSlot>` + tombstones + index `OrderLocation`. **Correctness OK** (172 tests; workload totals match). **Throughput ~−15%** vs baseline (~9.6M vs ~11.3M cmd/s median). **Do not merge.** Details: [PERFORMANCE_EXPERIMENTS.md](PERFORMANCE_EXPERIMENTS.md).

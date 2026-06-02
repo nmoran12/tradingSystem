@@ -4,6 +4,62 @@
 #include <utility>
 
 namespace order_book {
+
+std::size_t PriceLevel::append(Order order) {
+    orders.push_back(OrderSlot{std::move(order), true});
+    return orders.size() - 1;
+}
+
+void PriceLevel::mark_inactive(std::size_t index) {
+    if (index < orders.size()) {
+        orders[index].active = false;
+    }
+}
+
+void PriceLevel::compact_head() {
+    while (head < orders.size() && !orders[head].active) {
+        ++head;
+    }
+}
+
+bool PriceLevel::has_active_orders() const {
+    for (std::size_t i = head; i < orders.size(); ++i) {
+        if (orders[i].active && orders[i].order.quantity > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::optional<Order> PriceLevel::front_active() const {
+    for (std::size_t i = head; i < orders.size(); ++i) {
+        if (orders[i].active && orders[i].order.quantity > 0) {
+            return orders[i].order;
+        }
+    }
+    return std::nullopt;
+}
+
+uint32_t PriceLevel::total_active_quantity() const {
+    uint32_t total = 0;
+    for (std::size_t i = head; i < orders.size(); ++i) {
+        if (orders[i].active) {
+            total += orders[i].order.quantity;
+        }
+    }
+    return total;
+}
+
+std::size_t PriceLevel::active_order_count() const {
+    std::size_t count = 0;
+    for (std::size_t i = head; i < orders.size(); ++i) {
+        if (orders[i].active && orders[i].order.quantity > 0) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 namespace {
 
 Order order_from_event(const market_data::MarketEvent& event) {
@@ -23,6 +79,38 @@ void OrderBook::reserve_active_orders(size_t expected_active_orders) {
     order_lookup_.reserve(expected_active_orders);
 }
 
+const PriceLevel* OrderBook::find_level(market_data::Side side, int64_t price) const {
+    if (side == market_data::Side::BUY) {
+        const auto it = buy_book_.find(price);
+        return it == buy_book_.end() ? nullptr : &it->second;
+    }
+    const auto it = sell_book_.find(price);
+    return it == sell_book_.end() ? nullptr : &it->second;
+}
+
+PriceLevel* OrderBook::find_level_mut(market_data::Side side, int64_t price) {
+    if (side == market_data::Side::BUY) {
+        const auto it = buy_book_.find(price);
+        return it == buy_book_.end() ? nullptr : &it->second;
+    }
+    const auto it = sell_book_.find(price);
+    return it == sell_book_.end() ? nullptr : &it->second;
+}
+
+void OrderBook::erase_level_if_empty(market_data::Side side, int64_t price) {
+    if (side == market_data::Side::BUY) {
+        const auto it = buy_book_.find(price);
+        if (it != buy_book_.end() && !it->second.has_active_orders()) {
+            buy_book_.erase(it);
+        }
+        return;
+    }
+    const auto it = sell_book_.find(price);
+    if (it != sell_book_.end() && !it->second.has_active_orders()) {
+        sell_book_.erase(it);
+    }
+}
+
 bool OrderBook::add_order(Order order) {
     if (order.side != market_data::Side::BUY && order.side != market_data::Side::SELL) {
         return false;
@@ -39,14 +127,14 @@ bool OrderBook::add_order_to_side(market_data::Side side, Order order) {
 
     if (side == market_data::Side::BUY) {
         auto& level = buy_book_[price];
-        level.push_back(std::move(order));
-        order_lookup_.emplace(order_id, OrderLocation{side, price, std::prev(level.end())});
+        const std::size_t index = level.append(std::move(order));
+        order_lookup_.emplace(order_id, OrderLocation{side, price, index});
         return true;
     }
 
     auto& level = sell_book_[price];
-    level.push_back(std::move(order));
-    order_lookup_.emplace(order_id, OrderLocation{side, price, std::prev(level.end())});
+    const std::size_t index = level.append(std::move(order));
+    order_lookup_.emplace(order_id, OrderLocation{side, price, index});
     return true;
 }
 
@@ -73,12 +161,19 @@ bool OrderBook::execute_order(uint64_t order_id, uint32_t quantity) {
     }
 
     auto location = location_it->second;
-    if (location.it->quantity < quantity) {
+    PriceLevel* level = find_level_mut(location.side, location.price);
+    if (level == nullptr || location.index >= level->orders.size() ||
+        !level->orders[location.index].active) {
         return false;
     }
 
-    location.it->quantity -= quantity;
-    if (location.it->quantity == 0) {
+    OrderSlot& slot = level->orders[location.index];
+    if (slot.order.quantity < quantity) {
+        return false;
+    }
+
+    slot.order.quantity -= quantity;
+    if (slot.order.quantity == 0) {
         remove_order_at_location(location);
         order_lookup_.erase(location_it);
     }
@@ -87,26 +182,14 @@ bool OrderBook::execute_order(uint64_t order_id, uint32_t quantity) {
 }
 
 void OrderBook::remove_order_at_location(const OrderLocation& location) {
-    if (location.side == market_data::Side::BUY) {
-        auto level_it = buy_book_.find(location.price);
-        if (level_it == buy_book_.end()) {
-            return;
-        }
-        level_it->second.erase(location.it);
-        if (level_it->second.empty()) {
-            buy_book_.erase(level_it);
-        }
+    PriceLevel* level = find_level_mut(location.side, location.price);
+    if (level == nullptr || location.index >= level->orders.size()) {
         return;
     }
 
-    auto level_it = sell_book_.find(location.price);
-    if (level_it == sell_book_.end()) {
-        return;
-    }
-    level_it->second.erase(location.it);
-    if (level_it->second.empty()) {
-        sell_book_.erase(level_it);
-    }
+    level->mark_inactive(location.index);
+    level->compact_head();
+    erase_level_if_empty(location.side, location.price);
 }
 
 bool OrderBook::contains_order(uint64_t order_id) const {
@@ -114,20 +197,20 @@ bool OrderBook::contains_order(uint64_t order_id) const {
 }
 
 std::optional<Order> OrderBook::peek_best_bid() const {
-    for (const auto& [price, orders] : buy_book_) {
+    for (const auto& [price, level] : buy_book_) {
         (void)price;
-        if (!orders.empty()) {
-            return orders.front();
+        if (const auto front = level.front_active()) {
+            return front;
         }
     }
     return std::nullopt;
 }
 
 std::optional<Order> OrderBook::peek_best_ask() const {
-    for (const auto& [price, orders] : sell_book_) {
+    for (const auto& [price, level] : sell_book_) {
         (void)price;
-        if (!orders.empty()) {
-            return orders.front();
+        if (const auto front = level.front_active()) {
+            return front;
         }
     }
     return std::nullopt;
@@ -146,8 +229,8 @@ bool OrderBook::apply_event(const market_data::MarketEvent& event) {
 }
 
 std::optional<int64_t> OrderBook::best_bid() const {
-    for (const auto& [price, orders] : buy_book_) {
-        if (!orders.empty()) {
+    for (const auto& [price, level] : buy_book_) {
+        if (level.has_active_orders()) {
             return price;
         }
     }
@@ -155,8 +238,8 @@ std::optional<int64_t> OrderBook::best_bid() const {
 }
 
 std::optional<int64_t> OrderBook::best_ask() const {
-    for (const auto& [price, orders] : sell_book_) {
-        if (!orders.empty()) {
+    for (const auto& [price, level] : sell_book_) {
+        if (level.has_active_orders()) {
             return price;
         }
     }
@@ -173,22 +256,11 @@ std::optional<int64_t> OrderBook::spread() const {
 }
 
 uint32_t OrderBook::total_quantity_at_price(market_data::Side side, int64_t price) const {
-    auto accumulate_level = [](const auto& book, int64_t level_price) -> uint32_t {
-        const auto level_it = book.find(level_price);
-        if (level_it == book.end()) {
-            return 0;
-        }
-        uint32_t total = 0;
-        for (const auto& order : level_it->second) {
-            total += order.quantity;
-        }
-        return total;
-    };
-
-    if (side == market_data::Side::BUY) {
-        return accumulate_level(buy_book_, price);
+    const PriceLevel* level = find_level(side, price);
+    if (level == nullptr) {
+        return 0;
     }
-    return accumulate_level(sell_book_, price);
+    return level->total_active_quantity();
 }
 
 std::optional<Order> OrderBook::get_order(uint64_t order_id) const {
@@ -196,7 +268,18 @@ std::optional<Order> OrderBook::get_order(uint64_t order_id) const {
     if (location_it == order_lookup_.end()) {
         return std::nullopt;
     }
-    return *(location_it->second.it);
+
+    const OrderLocation& location = location_it->second;
+    const PriceLevel* level = find_level(location.side, location.price);
+    if (level == nullptr || location.index >= level->orders.size()) {
+        return std::nullopt;
+    }
+
+    const OrderSlot& slot = level->orders[location.index];
+    if (!slot.active) {
+        return std::nullopt;
+    }
+    return slot.order;
 }
 
 size_t OrderBook::active_order_count() const { return order_lookup_.size(); }
@@ -204,11 +287,9 @@ size_t OrderBook::active_order_count() const { return order_lookup_.size(); }
 uint64_t OrderBook::total_resting_quantity() const {
     auto sum_book = [](const auto& book) -> uint64_t {
         uint64_t total = 0;
-        for (const auto& [price, orders] : book) {
+        for (const auto& [price, level] : book) {
             (void)price;
-            for (const auto& order : orders) {
-                total += order.quantity;
-            }
+            total += level.total_active_quantity();
         }
         return total;
     };
@@ -216,16 +297,16 @@ uint64_t OrderBook::total_resting_quantity() const {
 }
 
 std::optional<std::string_view> OrderBook::validate_invariants() const {
-    size_t book_order_count = 0;
-    for (const auto& [price, orders] : buy_book_) {
+    size_t active_in_book = 0;
+    for (const auto& [price, level] : buy_book_) {
         (void)price;
-        book_order_count += orders.size();
+        active_in_book += level.active_order_count();
     }
-    for (const auto& [price, orders] : sell_book_) {
+    for (const auto& [price, level] : sell_book_) {
         (void)price;
-        book_order_count += orders.size();
+        active_in_book += level.active_order_count();
     }
-    if (book_order_count != order_lookup_.size()) {
+    if (active_in_book != order_lookup_.size()) {
         return "order lookup mismatch";
     }
 
@@ -236,12 +317,16 @@ std::optional<std::string_view> OrderBook::validate_invariants() const {
     }
 
     auto validate_book = [](const auto& book) -> std::optional<std::string_view> {
-        for (const auto& [price, orders] : book) {
-            for (const auto& order : orders) {
-                if (order.quantity == 0) {
+        for (const auto& [price, level] : book) {
+            for (std::size_t i = level.head; i < level.orders.size(); ++i) {
+                const OrderSlot& slot = level.orders[i];
+                if (!slot.active) {
+                    continue;
+                }
+                if (slot.order.quantity == 0) {
                     return "non-positive resting quantity";
                 }
-                if (order.price != price) {
+                if (slot.order.price != price) {
                     return "order price mismatch at level";
                 }
             }
@@ -268,14 +353,11 @@ void OrderBook::print_depth(std::ostream& out, size_t levels) const {
     out << "Bids:\n";
 
     size_t bid_levels = 0;
-    for (const auto& [price, orders] : buy_book_) {
+    for (const auto& [price, level] : buy_book_) {
         if (bid_levels >= levels) {
             break;
         }
-        uint32_t total = 0;
-        for (const auto& order : orders) {
-            total += order.quantity;
-        }
+        const uint32_t total = level.total_active_quantity();
         if (total > 0) {
             out << price << " x " << total << '\n';
             ++bid_levels;
@@ -284,14 +366,11 @@ void OrderBook::print_depth(std::ostream& out, size_t levels) const {
 
     out << "Asks:\n";
     size_t ask_levels = 0;
-    for (const auto& [price, orders] : sell_book_) {
+    for (const auto& [price, level] : sell_book_) {
         if (ask_levels >= levels) {
             break;
         }
-        uint32_t total = 0;
-        for (const auto& order : orders) {
-            total += order.quantity;
-        }
+        const uint32_t total = level.total_active_quantity();
         if (total > 0) {
             out << price << " x " << total << '\n';
             ++ask_levels;
