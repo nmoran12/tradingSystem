@@ -120,13 +120,13 @@ Each line is one `schemaVersion: 1` step (command + shallow book + trades). See 
 ./scripts/demo-live-replay.sh
 ```
 
-Options: `--force` (regenerate `.obk`), `--commands N`, `--seed N`. Default file: `tmp/demo/live_demo_5000_42.obk`.
+Options: `--force` (regenerate `.obk`), `--commands N`, `--seed N`. Default file: `tmp/demo/live_demo_5000_42.obk`. Default pacing: `STREAM_DELAY_MS=10` between streamed steps (override, e.g. `STREAM_DELAY_MS=20 ./scripts/demo-live-replay.sh`).
 
 **Terminal 2 — UI:**
 
 ```bash
 cd ui/replay-visualiser
-npm install   # first time only
+npm install
 npm run dev
 ```
 
@@ -138,7 +138,8 @@ In the **Live stream** section: URL `http://127.0.0.1:9000/stream` → **Connect
 ./build/write_demo_obk tmp/demo/live_demo_5000_42.obk 5000 42
 ./build/cpp-low-latency-orderbook \
   --binary-engine tmp/demo/live_demo_5000_42.obk \
-  --stream-visualisation 127.0.0.1:9000
+  --stream-visualisation 127.0.0.1:9000 \
+  --stream-delay-ms 10
 ```
 
 **Terminal 2 alternative — debug without UI:**

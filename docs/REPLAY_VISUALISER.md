@@ -131,7 +131,8 @@ npm run dev
 Live mode limitations:
 
 - **Localhost only** — same as the backend stream endpoint
-- **No reconnect/backpressure** — disconnect on error; connect again manually
+- **Normal completion** — when the backend finishes, the UI shows **Complete** (not an error); loaded steps are kept
+- **No reconnect/backpressure** — connect again manually after completion or error
 - **Process launcher** — optional `./scripts/demo-live-replay.sh` for the stream server only (UI still started separately)
 - File upload and bundled scenarios remain available; loading a file disconnects the live stream
 
@@ -200,6 +201,17 @@ The **Run summary** section aggregates metrics from every replay step currently 
   --binary-engine /path/to/order_commands.obk \
   --stream-visualisation 127.0.0.1:9000
 ```
+
+For a **visible** live demo (steps arrive over time), add pacing (default stream mode has no delay):
+
+```bash
+./build/cpp-low-latency-orderbook \
+  --binary-engine /path/to/order_commands.obk \
+  --stream-visualisation 127.0.0.1:9000 \
+  --stream-delay-ms 10
+```
+
+`./scripts/demo-live-replay.sh` uses a small default delay (`STREAM_DELAY_MS`, default `10`).
 
 Debug without the UI:
 

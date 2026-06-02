@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -28,7 +29,25 @@ void print_usage(const char* program) {
               << "  " << program
               << " --binary-engine <order-commands.obk> --export-visualisation <replay.ndjson>\n"
               << "  " << program
-              << " --binary-engine <order-commands.obk> --stream-visualisation <host:port>\n";
+              << " --binary-engine <order-commands.obk> --stream-visualisation <host:port>\n"
+              << "  " << program
+              << " --binary-engine <order-commands.obk> --stream-visualisation <host:port>"
+              << " --stream-delay-ms <milliseconds>\n";
+}
+
+std::optional<unsigned> parse_stream_delay_ms(const char* value) {
+    if (value == nullptr || *value == '\0') {
+        return std::nullopt;
+    }
+    try {
+        const unsigned long parsed = std::stoul(value);
+        if (parsed > 3'600'000UL) {
+            return std::nullopt;
+        }
+        return static_cast<unsigned>(parsed);
+    } catch (const std::exception&) {
+        return std::nullopt;
+    }
 }
 
 void print_optional_price(const char* label, const std::optional<int64_t>& price) {
@@ -130,7 +149,7 @@ enum class BinaryVisualisationMode { None, FileExport, Stream };
 int run_binary_engine_with_visualisation(
     const std::string& binary_path, BinaryVisualisationMode mode,
     const std::optional<std::string>& export_path,
-    const std::optional<std::string>& stream_endpoint) {
+    const std::optional<std::string>& stream_endpoint, unsigned stream_delay_ms) {
     const auto decoded_commands = protocol::read_order_commands_binary(binary_path);
     std::vector<matching_engine::OrderCommand> commands;
     commands.reserve(decoded_commands.size());
@@ -188,6 +207,9 @@ int run_binary_engine_with_visualisation(
         } else if (mode == BinaryVisualisationMode::Stream) {
             stream_server->send_sse_record(viz::ReplayVisualisationWriter::format_record(
                 i, command, event_scratch, engine.book()));
+            if (stream_delay_ms > 0 && i + 1 < commands.size()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(stream_delay_ms));
+            }
         }
     }
 
@@ -221,18 +243,94 @@ int run_binary_engine_with_visualisation(
 int run_binary_engine(const std::string& binary_path,
                       const std::optional<std::string>& export_path) {
     return run_binary_engine_with_visualisation(
-        binary_path, BinaryVisualisationMode::FileExport, export_path, std::nullopt);
+        binary_path, BinaryVisualisationMode::FileExport, export_path, std::nullopt, 0);
 }
 
 int run_binary_engine_stream(const std::string& binary_path,
-                             const std::string& stream_endpoint) {
+                             const std::string& stream_endpoint,
+                             unsigned stream_delay_ms) {
     return run_binary_engine_with_visualisation(
-        binary_path, BinaryVisualisationMode::Stream, std::nullopt, stream_endpoint);
+        binary_path, BinaryVisualisationMode::Stream, std::nullopt, stream_endpoint,
+        stream_delay_ms);
 }
 
 int run_binary_engine(const std::string& binary_path) {
     return run_binary_engine_with_visualisation(binary_path, BinaryVisualisationMode::None,
-                                                std::nullopt, std::nullopt);
+                                                std::nullopt, std::nullopt, 0);
+}
+
+int run_binary_engine_visualisation_cli(int argc, char* argv[]) {
+    const std::string binary_path = argv[2];
+
+    std::optional<std::string> export_path;
+    std::optional<std::string> stream_endpoint;
+    unsigned stream_delay_ms = 0;
+
+    for (int i = 3; i < argc;) {
+        const std::string_view flag = argv[i];
+        if (flag == "--export-visualisation") {
+            if (export_path || stream_endpoint) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            export_path = argv[i + 1];
+            i += 2;
+            continue;
+        }
+        if (flag == "--stream-visualisation") {
+            if (export_path || stream_endpoint) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            stream_endpoint = argv[i + 1];
+            i += 2;
+            continue;
+        }
+        if (flag == "--stream-delay-ms") {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            const auto parsed = parse_stream_delay_ms(argv[i + 1]);
+            if (!parsed) {
+                std::cerr << "Error: invalid --stream-delay-ms value: " << argv[i + 1]
+                          << '\n';
+                return 1;
+            }
+            stream_delay_ms = *parsed;
+            i += 2;
+            continue;
+        }
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    if (export_path && stream_endpoint) {
+        print_usage(argv[0]);
+        return 1;
+    }
+    if (stream_delay_ms > 0 && !stream_endpoint) {
+        std::cerr << "Error: --stream-delay-ms requires --stream-visualisation\n";
+        return 1;
+    }
+
+    if (export_path) {
+        return run_binary_engine(binary_path, *export_path);
+    }
+    if (stream_endpoint) {
+        return run_binary_engine_stream(binary_path, *stream_endpoint, stream_delay_ms);
+    }
+
+    print_usage(argv[0]);
+    return 1;
 }
 
 }  // namespace
@@ -271,18 +369,8 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if (argc == 5) {
-            const std::string_view mode = argv[1];
-            const std::string path = argv[2];
-            const std::string_view flag = argv[3];
-            const std::string option_value = argv[4];
-
-            if (mode == "--binary-engine" && flag == "--export-visualisation") {
-                return run_binary_engine(path, option_value);
-            }
-            if (mode == "--binary-engine" && flag == "--stream-visualisation") {
-                return run_binary_engine_stream(path, option_value);
-            }
+        if (argc >= 5 && std::string_view(argv[1]) == "--binary-engine") {
+            return run_binary_engine_visualisation_cli(argc, argv);
         }
 
         // Backward-compatible default: single path argument replays market events.

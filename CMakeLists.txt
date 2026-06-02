@@ -54,6 +54,7 @@ add_executable(orderbook_tests
     tests/test_workload_generator.cpp
     tests/test_binary_command_reader.cpp
     tests/test_cli_binary_engine.cpp
+    tests/test_cli_stream_delay.cpp
     tests/test_cli_visualisation_export.cpp
     tests/test_replay_visualisation_writer.cpp
     tests/test_replay_visualisation_stream.cpp

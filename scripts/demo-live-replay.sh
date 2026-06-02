@@ -10,6 +10,7 @@ BUILD_DIR="build"
 COMMANDS=5000
 SEED=42
 STREAM_ADDR="127.0.0.1:9000"
+STREAM_DELAY_MS="${STREAM_DELAY_MS:-10}"
 FORCE=0
 
 usage() {
@@ -25,6 +26,9 @@ Options:
   --seed N             Workload seed (default: 42)
   --build-dir DIR      CMake build directory (default: build)
   -h, --help           Show this help
+
+Environment:
+  STREAM_DELAY_MS      Milliseconds between streamed steps (default: 10)
 
 UI (separate terminal):
   cd ui/replay-visualiser && npm install && npm run dev
@@ -88,12 +92,13 @@ STREAM_URL="http://${STREAM_ADDR}/stream"
 cat <<EOF
 
 == Live replay stream server ==
-Binary file: ${OBK}
-Stream URL:  ${STREAM_URL}
+Binary file:   ${OBK}
+Stream URL:    ${STREAM_URL}
+Stream delay:  ${STREAM_DELAY_MS} ms between steps
 
 == Next: start the UI in another terminal ==
   cd ui/replay-visualiser
-  npm install    # first time only
+  npm install
   npm run dev
 
 Open the Vite dev URL, go to Live stream, paste:
@@ -107,4 +112,5 @@ Press Ctrl+C here to stop the stream server.
 
 EOF
 
-exec "${CLI}" --binary-engine "${OBK}" --stream-visualisation "${STREAM_ADDR}"
+exec "${CLI}" --binary-engine "${OBK}" --stream-visualisation "${STREAM_ADDR}" \
+  --stream-delay-ms "${STREAM_DELAY_MS}"

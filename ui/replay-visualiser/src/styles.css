@@ -142,8 +142,42 @@ body {
   background: #22c55e;
 }
 
+.live-status.streaming::before {
+  background: #38bdf8;
+  animation: live-pulse 1s ease-in-out infinite;
+}
+
+.live-status.complete::before {
+  background: #22c55e;
+}
+
 .live-status.error::before {
   background: #ef4444;
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.pill.live-message {
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
+.panel.live-complete {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.live-complete-text {
+  color: #bbf7d0;
+  font-size: 0.9rem;
 }
 
 .btn {

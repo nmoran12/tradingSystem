@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   appendReplayStep,
+  classifyLiveStreamClose,
   DEFAULT_STREAM_URL,
   parseLiveReplayStep,
   type LiveConnectionStatus,
@@ -86,19 +87,37 @@ export const App: React.FC = () => {
   const [source, setSource] = useState<Source>({ kind: 'none' });
   const [streamUrl, setStreamUrl] = useState(DEFAULT_STREAM_URL);
   const [liveStatus, setLiveStatus] = useState<LiveConnectionStatus>('disconnected');
+  const [liveMessage, setLiveMessage] = useState<string | null>(null);
   const [followLive, setFollowLive] = useState(true);
   const [malformedLiveEvents, setMalformedLiveEvents] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const followLiveRef = useRef(followLive);
+  const liveRecordsReceivedRef = useRef(0);
+  const malformedLiveEventsRef = useRef(0);
+  const suppressLiveCloseErrorRef = useRef(false);
 
   React.useEffect(() => {
     followLiveRef.current = followLive;
   }, [followLive]);
 
   const disconnectLive = useCallback(() => {
+    const recordsReceived = liveRecordsReceivedRef.current;
+    suppressLiveCloseErrorRef.current = true;
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
-    setLiveStatus('disconnected');
+
+    setLiveStatus((previous) => {
+      if (previous === 'complete') {
+        return 'complete';
+      }
+      return 'disconnected';
+    });
+    if (recordsReceived > 0) {
+      setLoadError(null);
+      setLiveMessage(`Disconnected after ${recordsReceived} steps loaded.`);
+    } else {
+      setLiveMessage(null);
+    }
   }, []);
 
   React.useEffect(() => () => disconnectLive(), [disconnectLive]);
@@ -110,6 +129,10 @@ export const App: React.FC = () => {
     setIsPlaying(false);
     setFollowLive(true);
     setMalformedLiveEvents(0);
+    malformedLiveEventsRef.current = 0;
+    liveRecordsReceivedRef.current = 0;
+    suppressLiveCloseErrorRef.current = false;
+    setLiveMessage(null);
     setLoadError(null);
     setSource({ kind: 'live', url: streamUrl });
     setLiveStatus('connecting');
@@ -120,14 +143,19 @@ export const App: React.FC = () => {
     eventSource.onopen = () => {
       setLiveStatus('connected');
       setLoadError(null);
+      setLiveMessage(null);
     };
 
     eventSource.onmessage = (event) => {
       const step = parseLiveReplayStep(event.data);
       if (!step) {
-        setMalformedLiveEvents((count) => count + 1);
+        malformedLiveEventsRef.current += 1;
+        setMalformedLiveEvents(malformedLiveEventsRef.current);
         return;
       }
+
+      liveRecordsReceivedRef.current += 1;
+      setLiveStatus('streaming');
 
       setSteps((previous) => {
         const next = appendReplayStep(previous, step);
@@ -139,14 +167,37 @@ export const App: React.FC = () => {
     };
 
     eventSource.onerror = () => {
-      setLiveStatus('error');
-      setLoadError(
-        'Live stream disconnected or failed. Start the C++ backend with --stream-visualisation, then connect again.',
-      );
+      if (suppressLiveCloseErrorRef.current) {
+        return;
+      }
+
+      const recordsReceived = liveRecordsReceivedRef.current;
+      const malformedEvents = malformedLiveEventsRef.current;
+      const closeReason = classifyLiveStreamClose(recordsReceived, malformedEvents);
+
       eventSource.close();
       if (eventSourceRef.current === eventSource) {
         eventSourceRef.current = null;
       }
+
+      if (closeReason === 'complete') {
+        setLiveStatus('complete');
+        setLoadError(null);
+        setLiveMessage(`Live replay completed. ${recordsReceived} steps loaded.`);
+        return;
+      }
+
+      setLiveStatus('error');
+      setLiveMessage(null);
+      if (malformedEvents > 0) {
+        setLoadError(
+          'Live stream failed: received malformed events and no valid replay steps. Check the backend export format.',
+        );
+        return;
+      }
+      setLoadError(
+        'Live stream disconnected or failed. Start the C++ backend with --stream-visualisation, then connect again.',
+      );
     };
   }, [disconnectLive, streamUrl]);
 
@@ -295,7 +346,29 @@ export const App: React.FC = () => {
           ? `Live: ${source.url}`
           : `File: ${source.name}`;
 
-  const liveConnected = liveStatus === 'connected' || liveStatus === 'connecting';
+  const liveStreamBusy =
+    liveStatus === 'connecting' ||
+    liveStatus === 'connected' ||
+    liveStatus === 'streaming';
+
+  const liveStatusLabel = (() => {
+    switch (liveStatus) {
+      case 'disconnected':
+        return 'Disconnected';
+      case 'connecting':
+        return 'Connecting…';
+      case 'connected':
+        return 'Connected — waiting for data';
+      case 'streaming':
+        return 'Streaming';
+      case 'complete':
+        return 'Complete — stream finished';
+      case 'error':
+        return 'Error';
+      default:
+        return liveStatus;
+    }
+  })();
 
   return (
     <div className="app">
@@ -359,7 +432,7 @@ export const App: React.FC = () => {
             type="url"
             value={streamUrl}
             onChange={(e) => setStreamUrl(e.target.value)}
-            disabled={liveConnected}
+            disabled={liveStreamBusy}
             spellCheck={false}
           />
         </label>
@@ -367,7 +440,7 @@ export const App: React.FC = () => {
           type="button"
           className="btn btn-primary"
           onClick={connectLive}
-          disabled={liveConnected}
+          disabled={liveStreamBusy}
         >
           Connect
         </button>
@@ -379,12 +452,17 @@ export const App: React.FC = () => {
         >
           Disconnect
         </button>
-        <span className={`live-status ${liveStatus}`}>
-          {liveStatus === 'disconnected' && 'Disconnected'}
-          {liveStatus === 'connecting' && 'Connecting…'}
-          {liveStatus === 'connected' && 'Connected'}
-          {liveStatus === 'error' && 'Error'}
-        </span>
+        <span className={`live-status ${liveStatus}`}>{liveStatusLabel}</span>
+        {source.kind === 'live' && steps.length > 0 && (
+          <span className="pill">
+            {liveStatus === 'complete' ? 'Loaded' : 'Received'} {steps.length} record
+            {steps.length === 1 ? '' : 's'}
+            {liveStatus === 'streaming' || liveStatus === 'connected'
+              ? ` · step ${safeIndex + 1}`
+              : ''}
+          </span>
+        )}
+        {liveMessage && <span className="pill live-message">{liveMessage}</span>}
         {liveStatus === 'connected' && !followLive && (
           <button type="button" className="btn" onClick={() => setFollowLive(true)}>
             Follow live
@@ -461,8 +539,16 @@ export const App: React.FC = () => {
       <main className="dashboard">
         {loadError && (
           <section className="panel error">
-            <div className="panel-title">Load error</div>
+            <div className="panel-title">
+              {source.kind === 'live' ? 'Live stream error' : 'Load error'}
+            </div>
             <div className="error-text">{loadError}</div>
+          </section>
+        )}
+        {!loadError && liveMessage && source.kind === 'live' && (
+          <section className="panel live-complete">
+            <div className="panel-title">Live stream</div>
+            <div className="live-complete-text">{liveMessage}</div>
           </section>
         )}
         <section className="cards">
