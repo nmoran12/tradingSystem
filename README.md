@@ -49,9 +49,13 @@ cmake --build build
 # UI demo (offline — no .obk needed)
 cd ui/replay-visualiser && npm install && npm run dev
 # Open dev URL → load a bundled scenario (e.g. sample-replay)
+
+# UI demo (live SSE — two terminals)
+./scripts/demo-live-replay.sh          # terminal 1: stream server
+cd ui/replay-visualiser && npm run dev # terminal 2 → Connect http://127.0.0.1:9000/stream
 ```
 
-**Full demo walkthrough** (binary file, NDJSON export, live SSE, fixture notes): **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**
+**Full demo walkthrough** (stable `.obk`, NDJSON export, live SSE, fixture notes): **[docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**
 
 **Requirements:** C++20, CMake 3.20+, Node.js/npm for the optional UI. First CMake configure may fetch GoogleTest over the network.
 
@@ -114,12 +118,14 @@ CI runs on push/PR via [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (U
 | Command engine | `./build/cpp-low-latency-orderbook --engine data/sample_commands.csv` |
 | Binary engine | `./build/cpp-low-latency-orderbook --binary-engine /path/to/commands.obk` |
 
-**Generate a local `.obk`** (not committed):
+**Generate a local `.obk`** (not committed; stable path for demos):
 
 ```bash
-./build/binary_protocol_benchmark 5000 42
-# Use the "Binary file:" path printed in the output
+./build/write_demo_obk tmp/demo/commands.obk 5000 42
+# Or: ./scripts/demo-live-replay.sh (writes tmp/demo/live_demo_5000_42.obk and starts the stream server)
 ```
+
+`binary_protocol_benchmark` deletes its temp `.obk` on exit — use `write_demo_obk` or the demo script instead.
 
 Protocol layout: [docs/BINARY_PROTOCOL.md](docs/BINARY_PROTOCOL.md).
 
@@ -141,10 +147,9 @@ React + Vite under `ui/replay-visualiser/`:
   --binary-engine /path/to/commands.obk \
   --export-visualisation /tmp/replay.ndjson
 
-# Live stream (see docs/DEMO_GUIDE.md for two-terminal flow)
-./build/cpp-low-latency-orderbook \
-  --binary-engine /path/to/commands.obk \
-  --stream-visualisation 127.0.0.1:9000
+# Live stream (terminal 1 — see docs/DEMO_GUIDE.md)
+./scripts/demo-live-replay.sh
+# terminal 2: cd ui/replay-visualiser && npm run dev → Connect http://127.0.0.1:9000/stream
 ```
 
 Bundled scenarios may show **richer depth** than the C++ exporter (BBO-only). See [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md).

@@ -1,6 +1,6 @@
 # Demo guide
 
-Step-by-step instructions to build, test, and demonstrate `cpp-low-latency-orderbook` from a fresh clone. This is **documentation only** — no automation script is required for the demo (a future `scripts/demo-live-replay.sh` is **planned**, not shipped).
+Step-by-step instructions to build, test, and demonstrate `cpp-low-latency-orderbook` from a fresh clone. For the **live SSE visualiser demo**, use `./scripts/demo-live-replay.sh` (stable repo-local `.obk`, no temp-file copy step).
 
 **Related:** [README.md](../README.md) · [REPLAY_VISUALISER.md](REPLAY_VISUALISER.md) · [BINARY_PROTOCOL.md](BINARY_PROTOCOL.md)
 
@@ -33,6 +33,13 @@ cd ui/replay-visualiser
 npm install
 npm run dev
 # Open the dev URL; choose a bundled scenario (e.g. sample-replay)
+
+# 4d. Demo with UI — live SSE stream (recommended)
+# Terminal 1:
+./scripts/demo-live-replay.sh
+# Terminal 2:
+cd ui/replay-visualiser && npm run dev
+# Connect to http://127.0.0.1:9000/stream
 ```
 
 **Optional UI production build:** `npm run build` (output in `ui/replay-visualiser/dist/`).
@@ -41,17 +48,26 @@ npm run dev
 
 ## Generate a local `.obk` file (OBK1)
 
-The repo does **not** commit `.obk` command files (`*.obk` is typically gitignored). For binary-engine, export, or live-stream demos you need a local file.
+The repo does **not** commit `.obk` command files (`*.obk` and `tmp/` are gitignored). For binary-engine, export, or live-stream demos you need a local file.
 
-**Easiest path after a Release/Debug build:**
+**Recommended for demos (stable path under the repo):**
+
+```bash
+cmake -S . -B build && cmake --build build --target write_demo_obk
+./build/write_demo_obk tmp/demo/my_demo.obk 5000 42
+```
+
+Or let `./scripts/demo-live-replay.sh` create `tmp/demo/live_demo_5000_42.obk` automatically.
+
+**Do not use `binary_protocol_benchmark` output for demos.** It writes under the system temp directory (e.g. `/var/folders/...`) and **deletes the file when the benchmark exits**, so the path printed mid-run often disappears before you can use it.
+
+**Benchmark-only** (throughput measurement, not demo input):
 
 ```bash
 ./build/binary_protocol_benchmark 5000 42
 ```
 
-The benchmark prints a line like `Binary file: /tmp/cpp_low_latency_orderbook_binary_protocol_42.obk` (exact path is platform-specific). Use that path in the commands below.
-
-**Alternative:** run GoogleTest binary protocol / file writer tests — they create temporary `.obk` files under the test harness. See [BINARY_PROTOCOL.md](BINARY_PROTOCOL.md) and `tests/test_binary_command_file.cpp`.
+**Alternative:** `write_demo_obk` or GoogleTest binary writer tests. See [BINARY_PROTOCOL.md](BINARY_PROTOCOL.md).
 
 ---
 
@@ -79,7 +95,8 @@ When validating export behaviour, always compare against CLI-generated NDJSON, n
 ## Export NDJSON from binary replay
 
 ```bash
-OBK=/tmp/cpp_low_latency_orderbook_binary_protocol_42.obk   # adjust to your path
+./build/write_demo_obk tmp/demo/export_demo.obk 5000 42
+OBK=tmp/demo/export_demo.obk
 
 ./build/cpp-low-latency-orderbook \
   --binary-engine "$OBK" \
@@ -97,24 +114,32 @@ Each line is one `schemaVersion: 1` step (command + shallow book + trades). See 
 
 **Order matters:** start the C++ stream server first, then connect the UI (or `curl`).
 
-**Terminal 1 — backend (blocks until a client connects):**
+**Terminal 1 — backend** (builds if needed, writes a stable OBK under `tmp/demo/`, starts the server):
 
 ```bash
-OBK=/tmp/cpp_low_latency_orderbook_binary_protocol_42.obk   # adjust
-
-./build/cpp-low-latency-orderbook \
-  --binary-engine "$OBK" \
-  --stream-visualisation 127.0.0.1:9000
+./scripts/demo-live-replay.sh
 ```
+
+Options: `--force` (regenerate `.obk`), `--commands N`, `--seed N`. Default file: `tmp/demo/live_demo_5000_42.obk`.
 
 **Terminal 2 — UI:**
 
 ```bash
 cd ui/replay-visualiser
+npm install   # first time only
 npm run dev
 ```
 
 In the **Live stream** section: URL `http://127.0.0.1:9000/stream` → **Connect**. Steps append as replay runs; **Run summary** updates as steps arrive (client-side metrics only — not Release benchmarks).
+
+**Manual equivalent** (if you prefer not to use the script):
+
+```bash
+./build/write_demo_obk tmp/demo/live_demo_5000_42.obk 5000 42
+./build/cpp-low-latency-orderbook \
+  --binary-engine tmp/demo/live_demo_5000_42.obk \
+  --stream-visualisation 127.0.0.1:9000
+```
 
 **Terminal 2 alternative — debug without UI:**
 
@@ -144,7 +169,7 @@ Screenshots and GIFs are **not required** in the repository for the project to f
 - [ ] Redact machine-specific paths if desired.
 - [ ] Keep file sizes reasonable for git (prefer PNG; compress GIFs).
 
-**Planned automation (not implemented):** `scripts/demo-live-replay.sh` — see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md).
+**Live demo script:** `./scripts/demo-live-replay.sh` — see [Live SSE visualisation demo](#live-sse-visualisation-demo) above.
 
 ---
 

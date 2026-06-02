@@ -127,7 +127,7 @@ Also **avoid** unless profiler evidence justifies it:
 
 ### Live replay demo script
 
-- **Description:** `scripts/demo-live-replay.sh` documenting start order: C++ `--stream-visualisation`, then UI `npm run dev`, Connect. **Not yet implemented.**
+- **Description:** ~~`scripts/demo-live-replay.sh`~~ **Done** — see [DEMO_GUIDE.md](DEMO_GUIDE.md) §Live SSE visualisation demo.
 - **Why:** Two-terminal flow is easy to get wrong ([REPLAY_VISUALISER.md](REPLAY_VISUALISER.md)).
 - **Priority:** now · **Difficulty:** small · **Resume:** high
 

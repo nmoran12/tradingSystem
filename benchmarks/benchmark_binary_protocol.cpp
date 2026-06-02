@@ -219,6 +219,9 @@ int main(int argc, char* argv[]) {
                      "because this benchmark measures phase totals, not per-command decode "
                      "latencies. Positive buffered-minus-streaming means streaming was faster "
                      "on this run; negative means buffered was faster.\n";
+        std::cout << "Note: this benchmark deletes the temp binary file when it exits. "
+                     "For demos, use ./scripts/demo-live-replay.sh (stable file under "
+                     "tmp/demo/).\n";
 
         std::error_code ignored;
         std::filesystem::remove(path, ignored);

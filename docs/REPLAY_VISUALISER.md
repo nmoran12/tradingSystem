@@ -106,10 +106,10 @@ Proof-of-concept **live mode** uses the browser `EventSource` API to append `sch
 **1. Start the backend** (blocks until a client connects):
 
 ```bash
-./build/cpp-low-latency-orderbook \
-  --binary-engine /path/to/order_commands.obk \
-  --stream-visualisation 127.0.0.1:9000
+./scripts/demo-live-replay.sh
 ```
+
+This writes a stable demo file under `tmp/demo/` (not a deleted benchmark temp path) and starts the CLI with `--stream-visualisation 127.0.0.1:9000`. Manual alternative: `write_demo_obk` then `cpp-low-latency-orderbook` — [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
 **2. Start the UI** (separate terminal):
 
@@ -132,7 +132,7 @@ Live mode limitations:
 
 - **Localhost only** — same as the backend stream endpoint
 - **No reconnect/backpressure** — disconnect on error; connect again manually
-- **No process launcher** — you start the C++ CLI yourself
+- **Process launcher** — optional `./scripts/demo-live-replay.sh` for the stream server only (UI still started separately)
 - File upload and bundled scenarios remain available; loading a file disconnects the live stream
 
 ### Bundled UI samples (demo fixtures)
@@ -236,7 +236,7 @@ data: {"schemaVersion":1,"index":0,...}
 - C++ export depth is **shallow (BBO only)** — one aggregated level per side at the best price. Full book depth would require additional introspection APIs and exporter changes.
 - Bundled multi-level NDJSON in `public/` is for UI demonstration; align or regenerate from CLI export when closing 7A.
 - NDJSON schema may evolve as the visualiser grows (keep `schemaVersion` stable and bump it when fields change).
-- **Planned (not implemented):** `scripts/demo-live-replay.sh`, playback speed, metrics-at-current-step toggle — see [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md). Screenshot/GIF **checklist** (assets optional): [DEMO_GUIDE.md](DEMO_GUIDE.md).
+- **Live demo script:** `./scripts/demo-live-replay.sh` — [DEMO_GUIDE.md](DEMO_GUIDE.md). **Planned UI:** playback speed, metrics-at-current-step toggle — [FUTURE_IMPROVEMENTS.md](FUTURE_IMPROVEMENTS.md). Screenshot/GIF **checklist** (assets optional): [DEMO_GUIDE.md](DEMO_GUIDE.md).
 
 ## Repository hygiene
 

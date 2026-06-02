@@ -29,6 +29,9 @@ target_include_directories(orderbook_core
 add_executable(cpp-low-latency-orderbook src/main.cpp)
 target_link_libraries(cpp-low-latency-orderbook PRIVATE orderbook_core)
 
+add_executable(write_demo_obk tools/write_demo_obk.cpp)
+target_link_libraries(write_demo_obk PRIVATE orderbook_core)
+
 enable_testing()
 
 include(FetchContent)
