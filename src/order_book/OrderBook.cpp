@@ -1,6 +1,7 @@
 #include "order_book/OrderBook.hpp"
 
 #include <iostream>
+#include <utility>
 
 namespace order_book {
 namespace {
@@ -22,27 +23,30 @@ void OrderBook::reserve_active_orders(size_t expected_active_orders) {
     order_lookup_.reserve(expected_active_orders);
 }
 
-bool OrderBook::add_order(const Order& order) {
+bool OrderBook::add_order(Order order) {
     if (order.side != market_data::Side::BUY && order.side != market_data::Side::SELL) {
         return false;
     }
     if (order_lookup_.contains(order.order_id)) {
         return false;
     }
-    return add_order_to_side(order.side, order);
+    return add_order_to_side(order.side, std::move(order));
 }
 
-bool OrderBook::add_order_to_side(market_data::Side side, const Order& order) {
+bool OrderBook::add_order_to_side(market_data::Side side, Order order) {
+    const uint64_t order_id = order.order_id;
+    const int64_t price = order.price;
+
     if (side == market_data::Side::BUY) {
-        auto& level = buy_book_[order.price];
-        level.push_back(order);
-        order_lookup_[order.order_id] = OrderLocation{side, order.price, std::prev(level.end())};
+        auto& level = buy_book_[price];
+        level.push_back(std::move(order));
+        order_lookup_.emplace(order_id, OrderLocation{side, price, std::prev(level.end())});
         return true;
     }
 
-    auto& level = sell_book_[order.price];
-    level.push_back(order);
-    order_lookup_[order.order_id] = OrderLocation{side, order.price, std::prev(level.end())};
+    auto& level = sell_book_[price];
+    level.push_back(std::move(order));
+    order_lookup_.emplace(order_id, OrderLocation{side, price, std::prev(level.end())});
     return true;
 }
 

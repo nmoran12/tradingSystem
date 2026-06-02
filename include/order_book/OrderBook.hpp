@@ -22,7 +22,7 @@ public:
     /// Reduces rehash during growth when the peak active order count is known approximately.
     void reserve_active_orders(size_t expected_active_orders);
 
-    bool add_order(const Order& order);
+    bool add_order(Order order);
     bool cancel_order(uint64_t order_id);
     bool execute_order(uint64_t order_id, uint32_t quantity);
     bool apply_event(const market_data::MarketEvent& event);
@@ -58,7 +58,7 @@ private:
     using BuyBook = std::map<int64_t, std::list<Order>, std::greater<int64_t>>;
     using SellBook = std::map<int64_t, std::list<Order>>;
 
-    bool add_order_to_side(market_data::Side side, const Order& order);
+    bool add_order_to_side(market_data::Side side, Order order);
     void remove_order_at_location(const OrderLocation& location);
 
     BuyBook buy_book_;

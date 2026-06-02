@@ -8,6 +8,7 @@ This backlog records future optimisation ideas. It is intentionally conservative
 - Single benchmark runs are noisy; repeated-run medians matter.
 - Completed work already removed duplicate cancel lookup, added caller-owned `process_into` event buffer reuse, reserved `order_lookup_`, and measured SPSC as slower for single-thread throughput.
 - Allocation profiling around `OrderBook::add_order_to_side` is mixed: hash emplace, list `push_back`, and map inserts all appear. There is not enough evidence for a list pool, arena, `std::list` replacement, `std::map` replacement, or broad container rewrite.
+- **Done (no clear win):** resting `Order` move into `std::list` via `add_order(Order)` + `push_back(std::move)` — throughput-only median ~11.30M vs ~11.44M cmd/s before (noise).
 
 ## Ranked candidates
 

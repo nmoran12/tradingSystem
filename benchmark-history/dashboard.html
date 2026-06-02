@@ -48,7 +48,7 @@
 <body>
   <div class="wrap">
     <h1>Performance Baseline Dashboard</h1>
-    <div class="muted">Generated 2026-06-02T02:31:01+00:00. Data is embedded from <code>benchmark_history.jsonl</code>.</div>
+    <div class="muted">Generated 2026-06-02T02:38:29+00:00. Data is embedded from <code>benchmark_history.jsonl</code>.</div>
     <div class="warning">Local benchmark results are machine-dependent. Compare repeated runs on the same machine, build type, command count, and seed.</div>
 
     <section class="panel">
@@ -145,6 +145,70 @@
     "runCount": 5,
     "seed": 42,
     "timestamp": "2026-06-02T02:30:58+00:00",
+    "verifyPassed": true
+  },
+  {
+    "branch": "feature/6f-memory-pool",
+    "buildType": "Release",
+    "commands": 100000,
+    "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+    "gitCommit": "09c8602",
+    "machine": "macOS-26.5-arm64-arm-64bit-Mach-O (arm64)",
+    "matchingEngineMode": "throughput-only",
+    "metrics": {
+      "binaryWriteCommandsPerSec": 16499948,
+      "binaryWriteNsPerCommand": 60,
+      "bufferedEngineApplyCommandsPerSec": 11502791,
+      "bufferedEngineApplyNsPerCommand": 86,
+      "bufferedReadDecodeCommandsPerSec": 21323098,
+      "bufferedReadDecodeNsPerCommand": 46,
+      "matchingEngineAvgNs": null,
+      "matchingEngineCommandsPerSec": null,
+      "matchingEngineP50Ns": null,
+      "matchingEngineP95Ns": null,
+      "matchingEngineP99Ns": null,
+      "matchingEngineThroughputOnlyCommandsPerSec": 11820737,
+      "matchingEngineThroughputOnlyNsPerCommand": 84,
+      "streamingReadDecodeApplyCommandsPerSec": 7921288,
+      "streamingReadDecodeApplyNsPerCommand": 126
+    },
+    "notes": "local machine-dependent result; not a production claim",
+    "rawOutput": "benchmark-history/raw/2026-06-02T023434Z0000_09c8602_throughput_only_benchmark.txt",
+    "runCount": 5,
+    "seed": 42,
+    "timestamp": "2026-06-02T02:34:34+00:00",
+    "verifyPassed": true
+  },
+  {
+    "branch": "feature/6f-memory-pool",
+    "buildType": "Release",
+    "commands": 100000,
+    "compiler": "Apple clang version 17.0.0 (clang-1700.6.3.2)",
+    "gitCommit": "0ccaf70",
+    "machine": "macOS-26.5-arm64-arm-64bit-Mach-O (arm64)",
+    "matchingEngineMode": "throughput-only",
+    "metrics": {
+      "binaryWriteCommandsPerSec": 15484471,
+      "binaryWriteNsPerCommand": 64,
+      "bufferedEngineApplyCommandsPerSec": 11611087,
+      "bufferedEngineApplyNsPerCommand": 86,
+      "bufferedReadDecodeCommandsPerSec": 19956594,
+      "bufferedReadDecodeNsPerCommand": 50,
+      "matchingEngineAvgNs": null,
+      "matchingEngineCommandsPerSec": null,
+      "matchingEngineP50Ns": null,
+      "matchingEngineP95Ns": null,
+      "matchingEngineP99Ns": null,
+      "matchingEngineThroughputOnlyCommandsPerSec": 11295872,
+      "matchingEngineThroughputOnlyNsPerCommand": 88,
+      "streamingReadDecodeApplyCommandsPerSec": 7866582,
+      "streamingReadDecodeApplyNsPerCommand": 127
+    },
+    "notes": "local machine-dependent result; not a production claim",
+    "rawOutput": "benchmark-history/raw/2026-06-02T023819Z0000_0ccaf70_throughput_only_benchmark.txt",
+    "runCount": 5,
+    "seed": 42,
+    "timestamp": "2026-06-02T02:38:19+00:00",
     "verifyPassed": true
   }
 ]</script>

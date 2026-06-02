@@ -309,3 +309,16 @@ Raw `benchmark_release.sh` excerpt:
 Throughput: 9386842 commands/sec  (matching engine, single run in script)
 Latency p50: 83
 ```
+
+## Resting-order move into book (throughput-only benchmark)
+
+**Local, machine-dependent numbers only.** **Date:** 2026-06-02. Compare using `./scripts/record_benchmark_snapshot.sh 5 100000 42 --throughput-only` and `benchmark-history/benchmark_history.jsonl`.
+
+**Code change:** `OrderBook::add_order` takes `Order` by value; `add_order_to_side` uses `push_back(std::move(order))` and `order_lookup_.emplace`. `MatchingEngine` passes a resting `Order` rvalue directly into `add_order` (no named temporary). Semantics unchanged (167/167 tests).
+
+| When | Matching engine throughput-only (5-run median) | Notes |
+|------|-----------------------------------------------|--------|
+| Before move (throughput-only mode baseline) | **11,435,105** cmd/s (88 ns/cmd) | `benchmark-history` entry `09c8602`, 2026-06-02 |
+| After move (this change) | **11,295,872** cmd/s (88 ns/cmd) | Same machine/session; uncommitted on `feature/6f-memory-pool` |
+
+**Conclusion:** **No clear throughput improvement** — delta is within normal repeated-run noise (~1–2%). The change removes an extra `Order` copy into the per-price `std::list` on the engine resting path; list-node and hash/map allocation remain. Do not claim a perf win from this run.

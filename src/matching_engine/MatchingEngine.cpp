@@ -126,9 +126,8 @@ void MatchingEngine::execute_new_order(uint64_t order_id, market_data::Side side
     }
 
     if (remaining > 0) {
-        const auto resting =
-            make_resting_order(order_id, side, price, static_cast<uint32_t>(remaining));
-        if (!book_.add_order(resting)) {
+        if (!book_.add_order(make_resting_order(order_id, side, price,
+                                               static_cast<uint32_t>(remaining)))) {
             reject_into(events, order_id, "failed to rest order");
             return;
         }

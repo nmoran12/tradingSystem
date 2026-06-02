@@ -258,6 +258,12 @@ sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
 
 **Slice 2 decision:** **Not justified.** List nodes do **not** clearly dominate; hash and map allocations remain material. **Do not** implement a list node pool/arena from this evidence. Optional follow-ups (future milestones / Linux `heaptrack`): workload-shaped hash tuning, benchmark throughput mode, or byte-ranked Instruments on a repeated apply loop.
 
+## Resting-order copy removal (2026-06-02)
+
+**Change:** `OrderBook::add_order(Order)` by value; list insert uses `push_back(std::move(order))`; engine path passes resting rvalue into `add_order`.
+
+**Throughput-only median (5×100k, seed 42):** ~11.44M → ~11.30M cmd/s on one local session — **within noise**, not a measured win. List-node allocation on insert remains; next step remains byte-ranked profiling (see [PERFORMANCE_OPTIMISATION_BACKLOG.md](PERFORMANCE_OPTIMISATION_BACKLOG.md)).
+
 Local summary (not in git): `profiling/9b/allocation_summary.txt`.
 
 ## Future optimisation work
