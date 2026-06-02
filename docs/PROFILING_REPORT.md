@@ -258,6 +258,59 @@ sample <pid> 10 -file profiling/6g/post_reserve_engine_only_sample.txt
 
 **Slice 2 decision:** **Not justified.** List nodes do **not** clearly dominate; hash and map allocations remain material. **Do not** implement a list node pool/arena from this evidence. Optional follow-ups (future milestones / Linux `heaptrack`): workload-shaped hash tuning, benchmark throughput mode, or byte-ranked Instruments on a repeated apply loop.
 
+## 2M engine-only profiling refresh (2026-06-02, commit `5b639d0`)
+
+**Scope:** Measurement and documentation only — **no** production or container changes.
+
+| Item | Value |
+|------|--------|
+| Command | `./build-release/matching_engine_benchmark 2000000 42 --profile-engine-only` |
+| Commands / seed | 2 000 000 / 42 |
+| Mode | `--profile-engine-only` (generate once, 10s countdown, apply loop only) |
+| Build | Release (`build-release`) |
+| Profiler | macOS `sample` (time samples, **not** byte-ranked) |
+| Apply runtime | ~0.24–0.28s (~7.1–8.3M cmd/s this session) |
+| Peak active orders | 195 873 |
+
+**Raw traces (gitignored, uncommitted):**
+
+| File | Notes |
+|------|--------|
+| `profiling/current/engine_only_2m_apply_sample.txt` | **Valid** — `sample` started when log shows `  1...` (last countdown second + apply) |
+| `profiling/current/engine_only_2m_sample.txt` | **Invalid** — captured `WorkloadGenerator::generate` / `memmove` (attached too early) |
+| `profiling/current/benchmark_2m_apply.log` | Harness stdout |
+| `profiling/current/profiling_summary.txt` | Local notes |
+
+**Suggested attach (macOS):**
+
+```bash
+./build-release/matching_engine_benchmark 2000000 42 --profile-engine-only > profiling/current/run.log 2>&1 &
+BPID=$!
+while ! grep -q '^  1\.\.\.$' profiling/current/run.log; do sleep 0.02; done
+sample "$BPID" 3 -file profiling/current/engine_only_2m_apply_sample.txt
+wait "$BPID"
+```
+
+**Top hotspots (apply window, directional sample counts in call tree):**
+
+| Area | What showed up | Interpretation |
+|------|----------------|----------------|
+| Resting add | `execute_new_order` → `add_order` → `add_order_to_side` | Still central hot path |
+| Hash | `order_lookup_` `__emplace_unique_key_args` + `operator new` (e.g. +540, +268) | **Material** on every new resting order |
+| List | `push_back` paths + `operator new` (+212, +444) | **Material** list-node alloc |
+| Map | `operator[]` / tree insert / `__tree_balance_after_insert` (+128, +408, +424) | **Material** on new price levels |
+| Match / fill | `match_*_limit` → `execute_order` → `remove_order_at_location` | Teardown + map erase + hash remove on fills |
+| Cancel | `process_cancel` → `cancel_order` → `remove_order_at_location` | Visible; hash remove + frees |
+| Engine checks | `process_new_order` → `contains_order` | Duplicate-ID hash lookup before add |
+| Events | `process_into` / `EngineEvent` vector | Present but **not** top alloc stack in this capture |
+| Harness | Command vector generation | Outside apply loop; dominates if `sample` attaches too early |
+
+**Compared to 9B slice 1 (2026-06-01, same 2M harness):** Conclusion unchanged — **mixed** hash + list + map on adds; match/cancel teardown hot. Resting `Order` move (`5b639d0`) did not remove list-node `operator new` under `push_back`.
+
+**Confidence:** **Medium** for mixed add-path allocation families and teardown on match/cancel; **low** for byte-ranked ranking or claiming one site wins (no Instruments/`heaptrack` bytes this pass).
+
+**Next single optimisation milestone (recommended):** **Bounded `order_lookup_` hash tuning** (reserve/load-factor experiments on an isolated branch) — hash emplace + `operator new` remain prominent on every rest; list-node pool / container swap still **not** justified. Validate with repeated throughput-only medians + optional byte-ranked alloc tool before claiming a win.
+
 ## Resting-order copy removal (2026-06-02)
 
 **Change:** `OrderBook::add_order(Order)` by value; list insert uses `push_back(std::move(order))`; engine path passes resting rvalue into `add_order`.
