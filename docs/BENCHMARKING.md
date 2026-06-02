@@ -247,6 +247,16 @@ Outputs are written under `benchmark-results/` as:
 
 **Avoid overclaiming:** Document machine, compiler, command count, seed, and build type. Do not present local synthetic benchmark throughput as production exchange latency. See [PROFILING_REPORT.md](PROFILING_REPORT.md) for profiling tools and next optimisation candidates.
 
+## Benchmark history dashboard
+
+For append-only structured history and a local static dashboard, use:
+
+```bash
+./scripts/record_benchmark_snapshot.sh 5 100000 42
+```
+
+This runs `./scripts/verify.sh`, records repeated Release benchmark output, appends parsed median metrics to `benchmark-history/benchmark_history.jsonl`, and regenerates `benchmark-history/dashboard.html`. See [PERFORMANCE_TRACKING.md](PERFORMANCE_TRACKING.md).
+
 ## Sample results (machine-dependent)
 
 Observed on a local **Apple Clang / Release-style** build (not a guarantee on your hardware):

@@ -6,6 +6,14 @@ Clone-to-demo (no benchmark claims required): [DEMO_GUIDE.md](DEMO_GUIDE.md). Me
 
 For profiler-backed **future optimisation candidates** (not yet implemented), see [PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md).
 
+For append-only benchmark history and the local dashboard, see [PERFORMANCE_TRACKING.md](PERFORMANCE_TRACKING.md):
+
+```bash
+./scripts/record_benchmark_snapshot.sh 5 100000 42
+```
+
+This records raw output under `benchmark-history/raw/`, appends parsed medians to `benchmark-history/benchmark_history.jsonl`, and regenerates `benchmark-history/dashboard.html`.
+
 ## Purpose
 
 - Establish a repeatable baseline before changing performance-sensitive code.
