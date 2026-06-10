@@ -1,67 +1,79 @@
-# Active Milestone: A2 Challenge Definition Schema
+# Active Milestone: A3 Local `execution_v1` Evaluator Skeleton
 
-**Status:** Ready for review
+**Status:** Complete
 
 ## Previous Milestone
 
-A1, Product and Documentation Alignment, was approved and committed as
-`33bc197` with commit message:
+A2, Challenge Definition Schema, was committed as `e5074ab` with commit
+message:
 
 ```text
-docs: align orderbook arena product direction
+docs: define beat market order challenge schema
 ```
 
 ## Goal
 
-Define the smallest challenge contract needed for the first Arena task:
-`execution_v1`.
+Prove the deterministic local evaluation loop for **Beat the Market Order**
+before adding external Python or C++ strategy execution.
 
-The example challenge, **Beat the Market Order**, asks a Python or C++ strategy
-to buy a target quantity during a fixed deterministic episode while improving
-on an immediate market-order baseline.
+A3 loads the `execution_v1` challenge, generates deterministic episodes,
+evaluates built-in strategies, compares them with the immediate-market
+baseline, and writes result JSON and replay JSONL.
 
-This milestone defines documentation and example JSON only. It does not
-implement parsing, scenario generation, scoring, replay export, or strategy
-execution.
+## Implemented Scope
 
-## Tasks
+- [x] Challenge config loading and focused validation.
+- [x] Explicit SplitMix64 PRNG with unsigned 64-bit arithmetic.
+- [x] Deterministic single-symbol level-book episode generation.
+- [x] Immediate market-order baseline.
+- [x] Simple limit-then-market-cleanup reference strategy.
+- [x] Strict action validation: any invalid action invalidates the episode.
+- [x] Full-completion requirement with zero score otherwise.
+- [x] Aggregate scoring across every local evaluation seed.
+- [x] Versioned result JSON and replay JSONL output.
+- [x] Focused standard-library tests.
+- [x] Minimal evaluator run documentation.
 
-- [x] Define the `execution_v1` challenge scope and non-goals.
-- [x] Define equivalent function-based Python and C++ callbacks.
-- [x] Define the minimal `BookView`, `Portfolio`, and `Action` contract.
-- [x] Define market, task, episode seed, limit, scoring, and output fields.
-- [x] Document that local evaluation seeds are inspectable.
-- [x] Define the immediate-market baseline and full-completion scoring rule.
-- [x] Add one valid example challenge JSON.
-- [x] Link the schema documentation from the README.
-- [x] Validate the example with `python3 -m json.tool`.
-- [ ] Review and approve the A2 diff.
-- [ ] Commit the approved A2 changes.
+## Boundaries
+
+A3 does not:
+
+- execute user-provided Python or C++;
+- provide process isolation, timeouts, or sandboxing;
+- invoke the C++ matching engine;
+- implement networking, historical data, multiple assets, accounts, UI, or
+  leaderboards.
+
+The result and replay metadata identify the simulation as
+`python_level_book_skeleton_v1` and state that the C++ matching engine is not
+used. A later milestone must replace or adapt this model without silently
+claiming parity.
 
 ## Acceptance Criteria
 
-- the example challenge type is exactly `execution_v1`;
-- Python and C++ use one small function-based decision interface;
-- user code owns only strategy decisions;
-- the platform owns the engine, book state, portfolio, scoring, result, and
-  replay generation;
-- the action set is limited to market order, limit order, and cancel order;
-- the task is single-symbol, buy-only, and requires full completion;
-- deterministic seed groups and their local visibility are explicit;
-- the scoring rule compares strategy VWAP with an immediate-market baseline;
-- no runner, website, hosted execution, account, or leaderboard code is added;
-- the example file is valid JSON and `git diff --check` passes.
+- the example challenge loads and validates;
+- baseline and reference strategies are deterministic;
+- every configured local evaluation seed contributes to the aggregate;
+- invalid actions produce an invalid, incomplete, zero-score episode;
+- incomplete episodes receive zero;
+- the CLI writes valid result JSON and replay JSONL;
+- generated artifacts are ignored by Git;
+- tests and repository checks pass.
 
 ## Checks
 
 ```bash
 python3 -m json.tool arena/challenges/beat_market_order.v1.json
+python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy simple_reference \
+  --results-out arena/results/beat_market_order.sample.result.json \
+  --replay-out arena/replays/beat_market_order.sample.replay.jsonl
 git diff --check
-git status --short --branch
 ```
 
 ## Exit Condition
 
-The user approves the schema and example challenge, then the A2 documentation
-changes are committed. A3 may then implement the local Python runner against
-this contract.
+A3 is committed separately from A2. Do not start external Python strategy
+execution or the C++ runner as part of this milestone.

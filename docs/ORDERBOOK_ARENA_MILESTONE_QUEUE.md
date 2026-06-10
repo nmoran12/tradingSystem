@@ -64,32 +64,36 @@ local runner.
 **Why it matters:** A stable challenge contract is the foundation for both
 languages, the website, scoring, and hosted judging.
 
-## A3. Local Python Strategy Runner
+## A3. Local `execution_v1` Evaluator Skeleton
 
-**Goal:** Run an untrusted-by-contract Python strategy locally without embedding
-it in the C++ judge process.
+**Goal:** Prove deterministic challenge evaluation before running external user
+code.
 
 **Deliverables**
 
-- Python starter API and example strategy;
-- child-process adapter using the versioned strategy protocol;
-- deadlines, message limits, and structured failures;
-- deterministic single-challenge CLI command.
+- challenge loading and validation;
+- explicit SplitMix64 scenario generation;
+- built-in immediate-market and reference strategies;
+- strict action handling, scoring, result JSON, and replay JSONL;
+- deterministic single-challenge CLI and focused tests.
 
 **Acceptance criteria**
 
-- a Python baseline completes the example challenge;
-- timeout, crash, malformed output, and illegal action cases fail cleanly;
-- repeated runs with the same seed match.
+- both built-in strategies complete the example challenge;
+- repeated runs with the same seed match;
+- invalid and incomplete episodes receive zero;
+- every local evaluation seed contributes to the aggregate;
+- no external strategy process or sandbox is added.
 
 **Tests/checks**
 
-- protocol conformance tests;
-- failure-mode integration tests;
-- deterministic replay hash or normalized event comparison.
+- config loading and deterministic episode tests;
+- invalid-action and incomplete-episode tests;
+- local seed aggregation test;
+- evaluator CLI smoke test.
 
-**Why it matters:** Python is the most accessible target language and the first
-candidate for later hosted execution.
+**Why it matters:** It validates the challenge, scoring, and artifact contracts
+before process execution adds another failure boundary.
 
 ## A4. Local C++ Strategy Runner
 

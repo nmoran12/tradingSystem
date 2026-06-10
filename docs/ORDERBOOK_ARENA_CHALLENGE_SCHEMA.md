@@ -186,7 +186,8 @@ That field is disabled in the example and does not imply hosted execution
 exists.
 
 Determinism requires the generator name, generator version, challenge schema
-version, engine version, and seed to be recorded in result and replay output.
+version, PRNG name and version, engine or simulation model version, and seed to
+be recorded in result and replay output.
 
 ## Limits
 

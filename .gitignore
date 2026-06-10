@@ -5,6 +5,8 @@ build-release/
 # Local tooling and caches
 .cursor/
 .cache/
+__pycache__/
+*.py[cod]
 
 # IDE and OS
 .idea/
@@ -33,3 +35,7 @@ benchmark-results/
 # UI spike build artifacts
 ui/replay-visualiser/node_modules/
 ui/replay-visualiser/dist/
+
+# OrderBook Arena generated artifacts
+arena/results/*.json
+arena/replays/*.jsonl

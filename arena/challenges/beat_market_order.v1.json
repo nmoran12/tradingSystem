@@ -43,6 +43,10 @@
     "scenario_generator": {
       "name": "seeded_execution_market_v1",
       "version": 1,
+      "prng": {
+        "name": "splitmix64",
+        "version": 1
+      },
       "event_count": 100,
       "event_interval_ms": 100,
       "initial_mid_price_ticks": 10000,
