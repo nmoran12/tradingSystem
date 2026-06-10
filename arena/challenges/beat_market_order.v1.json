@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "challenge_id": "beat_market_order",
+  "title": "Beat the Market Order",
+  "difficulty": "easy",
+  "tags": [
+    "execution",
+    "slippage",
+    "limit-order-book"
+  ],
+  "prompt": "Buy the target quantity before the episode ends. Complete the full order while achieving a lower average execution price than the immediate market-order baseline.",
+  "challenge_type": "execution_v1",
+  "strategy": {
+    "supported_languages": [
+      "python",
+      "cpp"
+    ],
+    "api_version": "1.0",
+    "callbacks": {
+      "python": "on_book_update",
+      "cpp": "onBookUpdate"
+    },
+    "inputs": [
+      "book",
+      "portfolio"
+    ],
+    "return_type": "list[Action]",
+    "book_view": {
+      "visible_depth_levels": 5,
+      "price_unit": "integer_ticks",
+      "quantity_unit": "integer_units"
+    }
+  },
+  "allowed_actions": [
+    "market_order",
+    "limit_order",
+    "cancel_order"
+  ],
+  "market": {
+    "symbol": "ARENA",
+    "engine_version": "matching_engine_v1",
+    "price_tick_size": 1,
+    "scenario_generator": {
+      "name": "seeded_execution_market_v1",
+      "version": 1,
+      "event_count": 100,
+      "event_interval_ms": 100,
+      "initial_mid_price_ticks": 10000,
+      "initial_spread_ticks": 2,
+      "initial_depth_levels": 5,
+      "level_spacing_ticks": 1,
+      "initial_quantity_per_level": 200,
+      "minimum_level_quantity": 50,
+      "maximum_level_quantity": 300,
+      "price_move_probability_bps": 1500,
+      "liquidity_refresh_probability_bps": 3000
+    }
+  },
+  "task": {
+    "side": "buy",
+    "target_quantity": 500,
+    "start_event_index": 0,
+    "end_event_index": 99,
+    "require_full_completion": true
+  },
+  "episodes": {
+    "public": [
+      7,
+      42,
+      101
+    ],
+    "development": [
+      202,
+      303,
+      404
+    ],
+    "local_evaluation": [
+      901,
+      902,
+      903
+    ],
+    "local_evaluation_note": "These seeds are bundled with the local runner and are inspectable. They provide repeatable held-out checks, not secret evaluation.",
+    "private_evaluation_set": {
+      "enabled": false,
+      "reference": null,
+      "note": "Reserved for future hosted judging. No private evaluation service exists yet."
+    }
+  },
+  "limits": {
+    "max_orders_per_episode": 100,
+    "max_open_orders": 8,
+    "max_actions_per_event": 4,
+    "max_total_actions_per_episode": 200,
+    "max_order_quantity": 500,
+    "local_callback_timeout_ms": 1000,
+    "hosted_callback_timeout_ms": null
+  },
+  "scoring": {
+    "version": "1.0",
+    "baseline_strategy": "immediate_market_order_v1",
+    "completion_policy": "full_target_required",
+    "completed_episode_score_metric": "vwap_improvement_ticks",
+    "incomplete_or_invalid_episode_score": 0,
+    "aggregate": "arithmetic_mean",
+    "higher_is_better": true,
+    "reported_metrics": [
+      "completion_ratio",
+      "filled_quantity",
+      "remaining_quantity",
+      "strategy_vwap_ticks",
+      "baseline_vwap_ticks",
+      "arrival_midpoint_ticks",
+      "strategy_slippage_ticks",
+      "baseline_slippage_ticks",
+      "execution_cost_improvement_ticks",
+      "submitted_order_count",
+      "submitted_action_count",
+      "maximum_open_orders"
+    ]
+  },
+  "outputs": {
+    "result": {
+      "format": "json",
+      "schema_version": "1.0",
+      "default_filename": "result.json"
+    },
+    "replay": {
+      "format": "jsonl",
+      "schema_version": "1.0",
+      "default_filename": "replay.jsonl"
+    }
+  }
+}

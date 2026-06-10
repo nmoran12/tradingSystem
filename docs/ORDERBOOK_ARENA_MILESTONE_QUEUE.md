@@ -35,29 +35,31 @@ from being built around different product assumptions.
 
 ## A2. Challenge Definition Schema
 
-**Goal:** Define one versioned format consumed by local and future hosted
-runners.
+**Goal:** Define the smallest versioned challenge contract needed by the first
+local runner.
 
 **Deliverables**
 
-- challenge schema and validation;
-- prompt, engine, scenario, risk, scoring, and strategy API fields;
-- public sample seeds, bundled development seeds, and future private evaluation
-  references;
-- one minimal example challenge.
+- `execution_v1` schema documentation;
+- one valid **Beat the Market Order** example challenge;
+- function-based Python and C++ callback signatures;
+- minimal book, portfolio, action, seed, limit, scoring, and output fields.
 
 **Acceptance criteria**
 
-- malformed definitions fail with useful errors;
-- the example round-trips through the parser;
-- schema and engine versions are explicit;
-- deterministic inputs are fully identified.
+- the example is valid JSON;
+- schema, engine, generator, strategy API, scoring, and output versions are
+  explicit;
+- local seed sets are identified as inspectable;
+- full-completion execution scoring is defined against an immediate-market
+  baseline;
+- no parser, runner, or strategy execution code is added.
 
 **Tests/checks**
 
-- valid and invalid schema fixtures;
-- parser round-trip test;
-- repeated seed-generation test.
+- `python3 -m json.tool arena/challenges/beat_market_order.v1.json`;
+- `git diff --check`;
+- documentation review against the A2 acceptance criteria.
 
 **Why it matters:** A stable challenge contract is the foundation for both
 languages, the website, scoring, and hosted judging.

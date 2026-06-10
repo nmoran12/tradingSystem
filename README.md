@@ -46,6 +46,7 @@ post-MVP work. This project does not support live trading. See
 | [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md) | Six-week MVP and post-MVP sandbox work |
 | [docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md](docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md) | Twelve small, testable Arena milestones |
 | [docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md](docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md) | Current Arena documentation milestone |
+| [docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md](docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md) | Initial `execution_v1` challenge contract |
 
 ## Architecture
 

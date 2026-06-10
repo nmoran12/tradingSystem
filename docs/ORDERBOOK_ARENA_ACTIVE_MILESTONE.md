@@ -1,53 +1,67 @@
-# Active Milestone: A1 Product and Documentation Alignment
+# Active Milestone: A2 Challenge Definition Schema
 
-**Status:** Review complete, awaiting approval
+**Status:** Ready for review
+
+## Previous Milestone
+
+A1, Product and Documentation Alignment, was approved and committed as
+`33bc197` with commit message:
+
+```text
+docs: align orderbook arena product direction
+```
 
 ## Goal
 
-Align the planning documents around one product direction:
+Define the smallest challenge contract needed for the first Arena task:
+`execution_v1`.
 
-- a LeetCode-style website for trading and market-structure challenges;
-- Python and C++ as the strategy languages;
-- the existing C++ matching engine as the judge;
-- local Python and C++ runners as an early development bridge;
-- hosted sandboxed execution as the long-term Run/Submit path.
+The example challenge, **Beat the Market Order**, asks a Python or C++ strategy
+to buy a target quantity during a fixed deterministic episode while improving
+on an immediate market-order baseline.
 
-This milestone is documentation-only. It does not add runners, website code, or
-server-side execution.
+This milestone defines documentation and example JSON only. It does not
+implement parsing, scenario generation, scoring, replay export, or strategy
+execution.
 
 ## Tasks
 
-- [x] Update the Arena overview with the final and early-MVP user flows.
-- [x] Separate local and hosted execution paths in the architecture.
-- [x] State that JavaScript or TypeScript is frontend technology only.
-- [x] Explain why hosted Python should be investigated before hosted C++.
-- [x] Reorder the roadmap and milestone queue around both target languages.
-- [x] Document sandbox requirements without claiming they are implemented.
-- [x] Align the README with the same scope and limitations.
-- [x] Review the documentation diff against the acceptance criteria.
-- [ ] Obtain user approval for the documentation diff.
-- [ ] Commit the approved documentation changes.
+- [x] Define the `execution_v1` challenge scope and non-goals.
+- [x] Define equivalent function-based Python and C++ callbacks.
+- [x] Define the minimal `BookView`, `Portfolio`, and `Action` contract.
+- [x] Define market, task, episode seed, limit, scoring, and output fields.
+- [x] Document that local evaluation seeds are inspectable.
+- [x] Define the immediate-market baseline and full-completion scoring rule.
+- [x] Add one valid example challenge JSON.
+- [x] Link the schema documentation from the README.
+- [x] Validate the example with `python3 -m json.tool`.
+- [ ] Review and approve the A2 diff.
+- [ ] Commit the approved A2 changes.
 
 ## Acceptance Criteria
 
-- every Arena planning document names Python and C++ as target strategy
-  languages;
-- the website is consistently described as the main product surface;
-- the local runner is consistently described as temporary;
-- local result files are not treated as trusted leaderboard submissions;
-- hosted execution is described as unimplemented and security-sensitive;
-- the first implementation milestones contain no hosted execution work;
-- no source code changes are included in this milestone.
+- the example challenge type is exactly `execution_v1`;
+- Python and C++ use one small function-based decision interface;
+- user code owns only strategy decisions;
+- the platform owns the engine, book state, portfolio, scoring, result, and
+  replay generation;
+- the action set is limited to market order, limit order, and cancel order;
+- the task is single-symbol, buy-only, and requires full completion;
+- deterministic seed groups and their local visibility are explicit;
+- the scoring rule compares strategy VWAP with an immediate-market baseline;
+- no runner, website, hosted execution, account, or leaderboard code is added;
+- the example file is valid JSON and `git diff --check` passes.
 
 ## Checks
 
-- inspect the six requested documents for contradictions;
-- search for stale local-first or Python-only strategy language;
-- run `git diff --check`;
-- confirm only documentation and README files changed;
-- review `git status` before committing.
+```bash
+python3 -m json.tool arena/challenges/beat_market_order.v1.json
+git diff --check
+git status --short --branch
+```
 
 ## Exit Condition
 
-The user approves the revised plan and the documentation is committed. The next
-milestone is A2, Challenge Definition Schema.
+The user approves the schema and example challenge, then the A2 documentation
+changes are committed. A3 may then implement the local Python runner against
+this contract.
