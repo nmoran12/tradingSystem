@@ -873,6 +873,219 @@ dd {
   font-size: 0.72rem;
 }
 
+.result-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.75fr);
+  gap: 2rem;
+  align-items: center;
+  padding: 2rem;
+  border: 1px solid rgba(75, 99, 132, 0.5);
+  border-radius: 16px;
+  background:
+    linear-gradient(120deg, rgba(15, 37, 63, 0.95), rgba(8, 24, 42, 0.92)),
+    #091426;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.24);
+}
+
+.result-hero h1 {
+  margin-top: 0.4rem;
+}
+
+.result-hero > div > p:last-child {
+  max-width: 760px;
+  margin-top: 0.85rem;
+  color: #afbed0;
+  line-height: 1.65;
+}
+
+.artifact-import-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.artifact-import-card,
+.result-heading,
+.result-summary-grid,
+.result-metadata-grid,
+.episode-section,
+.linked-replay-section {
+  border: 1px solid rgba(75, 99, 132, 0.5);
+  border-radius: 12px;
+  background: rgba(9, 20, 36, 0.9);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+}
+
+.artifact-import-card {
+  padding: 1.25rem;
+}
+
+.artifact-import-card h2 {
+  margin: 0.35rem 0 0.5rem;
+}
+
+.artifact-import-card > p:not(.eyebrow) {
+  margin-bottom: 0.9rem;
+  color: #9dadbf;
+}
+
+.artifact-ok,
+.artifact-error {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.artifact-ok {
+  color: #6fe3b5;
+}
+
+.artifact-error,
+.episode-error {
+  color: #ffaaaa;
+}
+
+.disabled-control {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.result-empty {
+  text-align: center;
+}
+
+.result-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.result-heading h2 {
+  margin-top: 0.75rem;
+  font-size: 1.45rem;
+}
+
+.result-heading p {
+  margin-top: 0.35rem;
+  color: #9dadbf;
+}
+
+.unverified-pill {
+  flex: 0 0 auto;
+  border: 1px solid rgba(224, 171, 73, 0.55);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: #f2c979;
+  background: rgba(224, 171, 73, 0.08);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.result-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 1rem;
+  background: rgba(75, 99, 132, 0.5);
+}
+
+.result-summary-grid article {
+  padding: 1rem;
+  background: #091424;
+}
+
+.result-summary-grid span {
+  display: block;
+  color: #8fa4bc;
+  font-size: 0.7rem;
+}
+
+.result-summary-grid strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.episode-section,
+.linked-replay-section {
+  margin-top: 1rem;
+  padding: 1.25rem;
+}
+
+.compact-heading {
+  margin-top: 0;
+}
+
+.episode-table-wrap {
+  overflow-x: auto;
+}
+
+.episode-table {
+  min-width: 980px;
+}
+
+.episode-table th,
+.episode-table td {
+  text-align: left;
+}
+
+.episode-table tbody tr {
+  cursor: pointer;
+}
+
+.episode-table tbody tr:hover,
+.episode-table .selected-row {
+  background: rgba(39, 82, 122, 0.22);
+}
+
+.episode-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.episode-status.completed {
+  color: #6fe3b5;
+  background: rgba(37, 174, 125, 0.13);
+}
+
+.episode-status.incomplete {
+  color: #e7c36f;
+  background: rgba(202, 155, 50, 0.13);
+}
+
+.episode-status.invalid {
+  color: #ffaaaa;
+  background: rgba(220, 70, 70, 0.14);
+}
+
+.episode-error {
+  margin-top: 1rem;
+}
+
+.embedded-replay {
+  width: 100%;
+  padding: 0;
+}
+
 @media (max-width: 1050px) {
   .content-layout {
     grid-template-columns: 1fr;
@@ -884,6 +1097,10 @@ dd {
 
   .summary-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .result-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .dashboard {
@@ -917,6 +1134,7 @@ dd {
 
   .product-hero,
   .challenge-hero,
+  .result-hero,
   .challenge-card {
     grid-template-columns: 1fr;
   }
@@ -952,9 +1170,16 @@ dd {
   }
 
   .summary-grid,
+  .result-summary-grid,
+  .result-metadata-grid,
+  .artifact-import-grid,
   .dashboard,
   .book-grid {
     grid-template-columns: 1fr;
+  }
+
+  .result-heading {
+    flex-direction: column;
   }
 
   .book-panel,

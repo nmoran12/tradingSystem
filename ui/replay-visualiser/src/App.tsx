@@ -7,6 +7,7 @@ import {
   formatMetric,
 } from './challenge';
 import { ReplayPage } from './ReplayPage';
+import { ResultPage } from './ResultPage';
 
 
 const CPP_TEMPLATE = `#include "execution_v1_strategy.hpp"
@@ -60,11 +61,13 @@ npm run dev`;
 type Route =
   | { page: 'challenges' }
   | { page: 'challenge'; challengeId: string }
+  | { page: 'results' }
   | { page: 'replay' };
 
 function parseRoute(): Route {
   const route = window.location.hash.replace(/^#/, '') || '/challenges';
   if (route === '/replay') return { page: 'replay' };
+  if (route === '/results') return { page: 'results' };
   if (route.startsWith('/challenges/')) {
     return {
       page: 'challenge',
@@ -126,6 +129,7 @@ function SiteHeader() {
       </a>
       <nav aria-label="Primary navigation">
         <a href="#/challenges">Challenges</a>
+        <a href="#/results">Results</a>
         <a href="#/replay">Replay viewer</a>
       </nav>
       <span className="local-badge">Local execution only</span>
@@ -148,8 +152,8 @@ function ChallengeBrowser() {
         <aside className="status-callout">
           <strong>Current product boundary</strong>
           <p>
-            The website explains challenges and reads replay artifacts. It does
-            not execute, upload, or submit strategy code.
+            The website explains challenges and reads local result/replay
+            artifacts. It does not execute, upload, or submit strategy code.
           </p>
         </aside>
       </section>
@@ -330,8 +334,8 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
               <li><span>1</span><div><strong>Build the C++ example strategy</strong><CodeBlock label="Build" code={CPP_BUILD_COMMAND} /></div></li>
               <li><span>2</span><div><strong>Evaluate a built-in or C++ strategy</strong><CodeBlock label="Built-in mode" code={BUILTIN_COMMAND} /><CodeBlock label="C++ process mode" code={CPP_EVALUATE_COMMAND} /></div></li>
               <li><span>3</span><div><strong>Generate result JSON and replay JSONL</strong><p>The evaluator writes both artifacts to the paths above.</p></div></li>
-              <li><span>4</span><div><strong>Open the replay visualiser</strong><CodeBlock label="Viewer" code={VIEWER_COMMAND} /></div></li>
-              <li><span>5</span><div><strong>Import the replay file</strong><p>Open <code>builtin.replay.jsonl</code> or <code>cpp.replay.jsonl</code> in the local viewer.</p><a className="text-link" href="#/replay">Open replay viewer</a></div></li>
+              <li><span>4</span><div><strong>Open the local website</strong><CodeBlock label="Website" code={VIEWER_COMMAND} /></div></li>
+              <li><span>5</span><div><strong>Import the result and replay</strong><p>Open the result JSON first, then attach <code>builtin.replay.jsonl</code> or <code>cpp.replay.jsonl</code>.</p><a className="text-link" href="#/results">Open result viewer</a></div></li>
             </ol>
           </article>
 
@@ -381,6 +385,8 @@ export const App: React.FC = () => {
   let page: React.ReactNode;
   if (route.page === 'replay') {
     page = <ReplayPage />;
+  } else if (route.page === 'results') {
+    page = <ResultPage />;
   } else if (route.page === 'challenge') {
     const challenge = challenges.find(
       (item) => item.challenge_id === route.challengeId,

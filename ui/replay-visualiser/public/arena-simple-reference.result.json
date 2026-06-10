@@ -1,0 +1,152 @@
+{
+  "aggregate_metrics": {
+    "completed_episode_count": 1,
+    "episode_count": 1,
+    "incomplete_episode_count": 0,
+    "invalid_episode_count": 0,
+    "mean_completed_improvement_ticks": 1.8,
+    "mean_fill_rate": 1.0,
+    "score": 1.8,
+    "valid_episode_count": 1
+  },
+  "challenge": {
+    "challenge_id": "beat_market_order",
+    "challenge_type": "execution_v1",
+    "id": "beat_market_order",
+    "schema_version": "1.0",
+    "source": "arena/challenges/beat_market_order.v1.json",
+    "title": "Beat the Market Order",
+    "type": "execution_v1",
+    "version": "1.0"
+  },
+  "episodes": [
+    {
+      "actions_submitted": 1,
+      "arrival_midpoint_ticks": 10000.0,
+      "average_fill_price_ticks": 10000.0,
+      "baseline_average_fill_price_ticks": 10001.8,
+      "baseline_slippage_bps": 1.8,
+      "baseline_slippage_ticks": 1.8,
+      "baseline_vwap_ticks": 10001.8,
+      "cash_spent_ticks": 5000000,
+      "completed": true,
+      "completion_ratio": 1.0,
+      "error": null,
+      "error_reason": null,
+      "events_processed": 10,
+      "execution_cost_improvement_ticks": 1.8,
+      "fill_count": 3,
+      "fill_rate": 1.0,
+      "filled_quantity": 500,
+      "improvement_bps": 1.799676,
+      "improvement_ticks": 1.8,
+      "invalid_reason": null,
+      "maximum_open_orders": 1,
+      "orders_submitted": 1,
+      "remaining_quantity": 0,
+      "reproduction": {
+        "challenge_id": "beat_market_order",
+        "challenge_schema_version": "1.0",
+        "challenge_version": "1.0",
+        "scenario_generator": {
+          "name": "seeded_execution_market_v1",
+          "prng": {
+            "name": "splitmix64",
+            "version": 1
+          },
+          "version": 1
+        },
+        "score_version": "1.0",
+        "seed": 7,
+        "simulator_model": "python_level_book_skeleton_v1"
+      },
+      "score": 1.8,
+      "seed": 7,
+      "slippage_bps": 0.0,
+      "slippage_ticks": 0.0,
+      "status": "completed",
+      "strategy_slippage_ticks": 0.0,
+      "strategy_vwap_ticks": 10000.0,
+      "submitted_action_count": 1,
+      "submitted_order_count": 1,
+      "target_quantity": 500,
+      "valid": true
+    }
+  ],
+  "evaluation": {
+    "all_completed": true,
+    "all_valid": true,
+    "completed_episode_count": 1,
+    "episode_count": 1,
+    "incomplete_episode_count": 0,
+    "invalid_episode_count": 0,
+    "seed_set": "public",
+    "seeds": [
+      7
+    ],
+    "valid_episode_count": 1
+  },
+  "replay": {
+    "artifact_name": "arena-simple-reference.replay.jsonl",
+    "format": "jsonl",
+    "record_count": 36,
+    "schema_version": "1.0",
+    "seeds": [
+      7
+    ]
+  },
+  "reproduction": {
+    "challenge_source": "arena/challenges/beat_market_order.v1.json",
+    "deterministic": true,
+    "result_generator_version": "1.0",
+    "runner_version": "execution_v1_evaluator_v2",
+    "score_version": "1.0",
+    "seed_set": "public",
+    "seeds": [
+      7
+    ],
+    "simulator_model": "python_level_book_skeleton_v1",
+    "timestamp_policy": "none"
+  },
+  "result_generator": {
+    "name": "arena_execution_result",
+    "timestamp_policy": "none",
+    "version": "1.0"
+  },
+  "result_schema_version": "1.1",
+  "runner_version": "execution_v1_evaluator_v2",
+  "schema_version": "1.1",
+  "scoring": {
+    "aggregate": "arithmetic_mean",
+    "aggregate_formula": "mean(all episode scores)",
+    "aggregate_score": 1.8,
+    "baseline_strategy": "immediate_market_order_v1",
+    "episode_formula": "baseline_average_fill_price_ticks - average_fill_price_ticks",
+    "higher_is_better": true,
+    "incomplete_episode_score": 0,
+    "invalid_episode_score": 0,
+    "metric": "vwap_improvement_ticks",
+    "score_version": "1.0",
+    "version": "1.0"
+  },
+  "simulation": {
+    "configured_engine_version": "matching_engine_v1",
+    "model": "python_level_book_skeleton_v1",
+    "scenario_generator": {
+      "name": "seeded_execution_market_v1",
+      "prng": {
+        "name": "splitmix64",
+        "version": 1
+      },
+      "version": 1
+    },
+    "uses_cpp_matching_engine": false
+  },
+  "strategy": {
+    "api_version": "1.0",
+    "identifier": "simple_reference_limit_then_market_cleanup",
+    "kind": "built_in",
+    "mode": "built_in",
+    "name": "simple_reference_limit_then_market_cleanup"
+  }
+}

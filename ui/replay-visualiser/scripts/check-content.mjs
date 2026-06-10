@@ -17,6 +17,14 @@ const challenge = JSON.parse(
 );
 const appSource = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const replaySource = fs.readFileSync(path.join(root, 'src/ReplayPage.tsx'), 'utf8');
+const resultPageSource = fs.readFileSync(
+  path.join(root, 'src/ResultPage.tsx'),
+  'utf8',
+);
+const resultParserSource = fs.readFileSync(
+  path.join(root, 'src/result.ts'),
+  'utf8',
+);
 const bundle = fs
   .readdirSync(path.join(root, 'dist/assets'))
   .filter((file) => file.endsWith('.js'))
@@ -36,7 +44,11 @@ for (const expected of [
   'Available challenges',
   'Local execution only',
   'External Python execution and hosted judging are not implemented',
-  'Open replay viewer',
+  'Replay viewer',
+  'Result and replay viewer',
+  'Unverified local result',
+  'Per-episode results',
+  'Replay reference',
 ]) {
   requireCondition(
     bundle.includes(expected),
@@ -47,6 +59,7 @@ for (const expected of [
 for (const route of [
   '/challenges',
   `/challenges/${challenge.challenge_id}`,
+  '/results',
   '/replay',
 ]) {
   requireCondition(
@@ -64,8 +77,26 @@ requireCondition(
   'Replay visualiser parser is no longer connected.',
 );
 requireCondition(
-  !/<button[^>]*>\s*(Run|Submit)\s*<\/button>/i.test(appSource),
+  resultPageSource.includes('parseArenaResult'),
+  'Result parser is no longer connected.',
+);
+requireCondition(
+  resultPageSource.includes('validateResultReplay'),
+  'Result/replay compatibility validation is no longer connected.',
+);
+requireCondition(
+  resultPageSource.includes('<ReplayPage'),
+  'Result page no longer reuses the replay visualiser.',
+);
+requireCondition(
+  resultParserSource.includes("RESULT_SCHEMA_VERSION = '1.1'"),
+  'Result parser must explicitly support result schema 1.1.',
+);
+requireCondition(
+  !/<button[^>]*>\s*(Run|Submit)\s*<\/button>/i.test(
+    `${appSource}\n${resultPageSource}`,
+  ),
   'Hosted Run or Submit controls must not be present.',
 );
 
-console.log('Arena challenge browser content checks passed.');
+console.log('Arena website route and content checks passed.');

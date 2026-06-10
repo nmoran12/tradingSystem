@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "npm run build && node scripts/check-content.mjs",
+    "test": "npm run build && npm run test:artifacts && node scripts/check-content.mjs",
+    "test:artifacts": "node --import tsx scripts/test-artifacts.ts",
     "preview": "vite preview",
     "lint": "echo \"no lint configured\""
   },
@@ -17,6 +18,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.3",
     "@vitejs/plugin-react-swc": "^3.7.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.0",
     "vite": "^5.2.0"
   }

@@ -55,7 +55,7 @@ python3 arena/tools/evaluate_execution_v1.py \
 The C++ process is not sandboxed, and this evaluator still uses the Python
 simulation skeleton rather than the C++ matching engine.
 
-Inspect either generated replay locally:
+Inspect generated result and replay artifacts locally:
 
 ```bash
 cd ui/replay-visualiser
@@ -65,8 +65,9 @@ npm run dev
 
 The site opens on the challenge browser. Use
 `#/challenges/beat_market_order` for the prompt and local workflow, or
-`#/replay` to import a replay JSONL file. It does not run or submit strategy
-code.
+`#/results` to import result JSON followed by its matching replay JSONL.
+`#/replay` remains available for replay-only inspection. Local artifacts are
+unverified, and the site does not run or submit strategy code.
 
 ## Project documentation
 

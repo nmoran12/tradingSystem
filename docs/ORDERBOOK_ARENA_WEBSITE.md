@@ -8,6 +8,7 @@ The current website is a local React and Vite application for:
 - reading the **Beat the Market Order** prompt and rules;
 - viewing Python and C++ callback surfaces;
 - following the local evaluator workflow;
+- inspecting result JSON score and per-episode metrics;
 - inspecting replay JSONL artifacts.
 
 It does not run, upload, or submit strategy code. Hosted judging, sandboxing,
@@ -29,6 +30,7 @@ Open the Vite URL. The application uses hash routes:
 |---|---|
 | `#/challenges` | Challenge browser |
 | `#/challenges/beat_market_order` | Challenge prompt and local workflow |
+| `#/results` | A8 local result and linked replay viewer |
 | `#/replay` | A6 local replay visualiser |
 
 Hash routing keeps the first website milestone deployable as static files
@@ -81,9 +83,27 @@ The challenge page explains this flow:
 2. Evaluate either the built-in reference or the compiled C++ process.
 3. Generate result JSON and replay JSONL locally.
 4. Start the website.
-5. Open `#/replay` and import the replay file.
+5. Open `#/results` and import the result JSON.
+6. Import the matching replay JSONL and inspect a selected episode.
 
 No page presents a hosted Run or Submit control.
+
+## Result and Replay Compatibility
+
+The result viewer accepts result schema `1.1`. It shows challenge and strategy
+identity, simulator and generator versions, aggregate metrics, replay metadata,
+and a selectable per-episode breakdown.
+
+After a result is loaded, the matching replay may be imported. The viewer
+checks:
+
+- replay schema version;
+- exact replay record count;
+- ordered episode seeds.
+
+A compatible replay opens in the existing A6 inspector at the selected result
+seed. These checks detect obvious file mismatches only. Local artifacts remain
+unverified and are not evidence of leaderboard eligibility.
 
 ## Checks
 
@@ -96,8 +116,11 @@ npm test
 `npm test` builds the production bundle and runs focused content checks for:
 
 - challenge list and detail content;
+- valid and invalid result parsing;
+- result/replay seed and record-count compatibility;
+- aggregate and per-episode result surfaces;
 - local-only execution messaging;
-- challenge and replay routes;
+- challenge, result, and replay routes;
 - versioned challenge adapter usage;
 - replay parser preservation;
 - absence of hosted Run or Submit buttons.
@@ -109,4 +132,5 @@ npm test
 - There is no online editor or strategy execution.
 - External Python execution is not implemented.
 - The evaluator still uses `python_level_book_skeleton_v1`.
+- Compatibility checks do not prove that a local result was produced honestly.
 - Local seeds, results, and replays are inspectable and unverified.

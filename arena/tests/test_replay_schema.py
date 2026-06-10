@@ -12,6 +12,7 @@ from arena.tools.evaluate_execution_v1 import (
     load_challenge,
     main,
     simple_reference_limit_then_market_cleanup,
+    write_result,
     write_replay,
 )
 from arena.tools.replay_schema import (
@@ -32,6 +33,11 @@ VIEWER_SAMPLE = (
     ROOT
     / "ui/replay-visualiser/public"
     / "arena-simple-reference.replay.jsonl"
+)
+VIEWER_RESULT_SAMPLE = (
+    ROOT
+    / "ui/replay-visualiser/public"
+    / "arena-simple-reference.result.json"
 )
 
 
@@ -125,6 +131,24 @@ class ReplaySchemaTest(unittest.TestCase):
         self.assertEqual(
             VIEWER_SAMPLE.read_bytes(), BUILTIN_REPLAY_FIXTURE.read_bytes()
         )
+
+    def test_viewer_result_sample_matches_evaluator(self):
+        challenge = copy.deepcopy(self.challenge)
+        challenge["episodes"]["public"] = [7]
+        result, _ = evaluate_challenge(
+            challenge,
+            simple_reference_limit_then_market_cleanup,
+            "simple_reference_limit_then_market_cleanup",
+            seed_set="public",
+        )
+        result["replay"]["artifact_name"] = VIEWER_SAMPLE.name
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            actual_path = Path(temp_dir) / "actual.result.json"
+            write_result(actual_path, result)
+            self.assertEqual(
+                actual_path.read_bytes(), VIEWER_RESULT_SAMPLE.read_bytes()
+            )
 
     def test_replay_serialization_is_byte_stable(self):
         _, first = evaluate_challenge(
