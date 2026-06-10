@@ -6,6 +6,7 @@ import copy
 import json
 import selectors
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -15,6 +16,18 @@ PROTOCOL_VERSION = "1.0"
 
 class StrategyProcessError(RuntimeError):
     """Raised when a local strategy process violates the JSONL contract."""
+
+
+def _portable_strategy_label(command: str | Path) -> str:
+    path = Path(command)
+    if not path.is_absolute():
+        return path.as_posix()
+
+    cwd = Path.cwd().resolve()
+    try:
+        return path.resolve().relative_to(cwd).as_posix()
+    except (OSError, ValueError):
+        return path.name
 
 
 def build_book_update_message(
@@ -54,15 +67,18 @@ def build_book_update_message(
     }
 
 
-class CppStrategyProcess:
-    """One trusted local child process used for a complete evaluation."""
+class JsonlStrategyProcess:
+    """Trusted local JSONL strategy process used for a complete evaluation."""
 
-    strategy_kind = "external_cpp_process"
+    strategy_kind = "external_process"
 
     def __init__(
         self,
         command: str | Path | Sequence[str],
         timeout_ms: int,
+        *,
+        strategy_name: str | None = None,
+        strategy_kind: str | None = None,
     ):
         if isinstance(command, (str, Path)):
             self.command = [str(command)]
@@ -76,6 +92,8 @@ class CppStrategyProcess:
         self.timeout_seconds = timeout_ms / 1000
         self.current_seed: int | None = None
         self._closed = False
+        self._strategy_name = strategy_name or Path(self.command[0]).name
+        self.strategy_kind = strategy_kind or self.strategy_kind
         try:
             self.process = subprocess.Popen(
                 self.command,
@@ -96,7 +114,7 @@ class CppStrategyProcess:
 
     @property
     def strategy_name(self) -> str:
-        return Path(self.command[0]).name
+        return self._strategy_name
 
     def begin_episode(self, seed: int) -> None:
         self._require_running()
@@ -248,3 +266,44 @@ class CppStrategyProcess:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         del exc_type, exc_value, traceback
         self.close()
+
+
+class CppStrategyProcess(JsonlStrategyProcess):
+    """Trusted local C++ child process used for a complete evaluation."""
+
+    strategy_kind = "external_cpp_process"
+
+    def __init__(
+        self,
+        command: str | Path | Sequence[str],
+        timeout_ms: int,
+    ):
+        if isinstance(command, (str, Path)):
+            command_list = [str(command)]
+        else:
+            command_list = [str(part) for part in command]
+        super().__init__(
+            command_list,
+            timeout_ms,
+            strategy_name=Path(command_list[0]).name,
+            strategy_kind=self.strategy_kind,
+        )
+
+
+class PythonStrategyProcess(JsonlStrategyProcess):
+    """Trusted local Python file used for a complete evaluation."""
+
+    strategy_kind = "python_file"
+
+    def __init__(
+        self,
+        script_path: str | Path,
+        timeout_ms: int,
+    ):
+        script = Path(script_path)
+        super().__init__(
+            [sys.executable, str(script)],
+            timeout_ms,
+            strategy_name=_portable_strategy_label(script),
+            strategy_kind=self.strategy_kind,
+        )

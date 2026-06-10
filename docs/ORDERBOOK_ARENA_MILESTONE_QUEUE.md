@@ -254,14 +254,15 @@ fresh checkout before hosted-execution work begins.
 
 - one command validates, tests, builds, evaluates, and builds the website;
 - generated result/replay files remain ignored;
-- docs distinguish implemented C++ local execution from planned Python and
-  hosted execution;
+- docs distinguish implemented local execution from hosted execution;
 - no page or document implies local results are verified.
 
 **Why it matters:** It makes the existing MVP demonstrable without increasing
 product scope or weakening the hosted-execution security boundary.
 
 ## A8.6. Local Python Strategy Runner
+
+**Status:** Implemented
 
 **Goal:** Run local Python strategy files through the same JSONL protocol used
 by the trusted local C++ strategy runner.

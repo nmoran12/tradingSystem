@@ -16,14 +16,15 @@ trading and market-structure problems. The current MVP includes:
 
 - one versioned challenge, **Beat the Market Order**;
 - deterministic built-in strategy evaluation;
+- local Python strategy-file evaluation over JSON Lines;
 - a trusted local C++ strategy process over JSON Lines;
 - versioned score/result and replay artifacts;
 - challenge, result, and replay pages in a React/Vite website.
 
 The evaluator currently uses `python_level_book_skeleton_v1`; it does not yet
-invoke the repository's C++ matching engine. External Python strategy execution,
-hosted judging, sandboxing, accounts, submissions, and leaderboards are not
-implemented. Local files and seeds are inspectable, so results are unverified.
+invoke the repository's C++ matching engine. Hosted judging, sandboxing,
+accounts, submissions, and leaderboards are not implemented. Local files and
+seeds are inspectable, so results are unverified.
 
 ### Current architecture
 
@@ -34,6 +35,8 @@ Challenge JSON
 Local Python evaluator
       |
       +--> built-in reference strategy
+      |
+      +--> local Python strategy file
       |
       +--> trusted local C++ strategy process
       |
@@ -56,7 +59,7 @@ From the repository root:
 ```
 
 This validates the challenge, runs Arena tests, builds the C++ strategy,
-generates both built-in and C++ artifacts, and builds/tests the frontend.
+generates built-in, Python, and C++ artifacts, and builds/tests the frontend.
 Generated runtime artifacts remain ignored by Git.
 
 Requirements: Python 3, CMake, a C++20 compiler, and Node.js/npm. A fresh
@@ -74,6 +77,16 @@ python3 arena/tools/evaluate_execution_v1.py \
   --replay-out arena/replays/builtin.replay.jsonl
 ```
 
+Local Python strategy file:
+
+```bash
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy-file arena/python/examples/simple_reference_strategy.py \
+  --results-out arena/results/python.result.json \
+  --replay-out arena/replays/python.replay.jsonl
+```
+
 Trusted local C++ strategy:
 
 ```bash
@@ -88,8 +101,10 @@ python3 arena/tools/evaluate_execution_v1.py \
 ```
 
 The C++ process runs with your local user permissions and is not sandboxed.
+The Python file mode uses the same trusted-local boundary.
 
-The next planned step is a local Python strategy runner, followed by strategy
+The current local MVP now includes built-in strategies, local Python strategy
+files, and the trusted local C++ process. The next planned steps are strategy
 authoring docs/templates and dogfooding the local MVP before any hosted
 sandboxing work begins.
 

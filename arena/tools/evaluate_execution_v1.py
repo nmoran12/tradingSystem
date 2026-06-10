@@ -14,6 +14,7 @@ from typing import Any, Callable
 try:
     from arena.tools.cpp_strategy_process import (
         CppStrategyProcess,
+        PythonStrategyProcess,
         StrategyProcessError,
     )
     from arena.tools.scoring_results import (
@@ -26,7 +27,11 @@ try:
         validate_replay_records,
     )
 except ModuleNotFoundError:
-    from cpp_strategy_process import CppStrategyProcess, StrategyProcessError
+    from cpp_strategy_process import (
+        CppStrategyProcess,
+        PythonStrategyProcess,
+        StrategyProcessError,
+    )
     from scoring_results import (
         build_result_document,
         calculate_episode_metrics,
@@ -949,6 +954,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--strategy-process",
         help="Trusted local C++ strategy executable",
     )
+    strategy_group.add_argument(
+        "--strategy-file",
+        help="Trusted local Python strategy file",
+    )
     parser.add_argument(
         "--seed-set",
         default="local_evaluation",
@@ -966,6 +975,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.strategy_process:
             strategy = CppStrategyProcess(
                 args.strategy_process,
+                challenge["limits"]["local_callback_timeout_ms"],
+            )
+            strategy_name = strategy.strategy_name
+        elif args.strategy_file:
+            strategy = PythonStrategyProcess(
+                args.strategy_file,
                 challenge["limits"]["local_callback_timeout_ms"],
             )
             strategy_name = strategy.strategy_name

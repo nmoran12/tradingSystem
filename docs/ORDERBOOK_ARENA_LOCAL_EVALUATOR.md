@@ -7,9 +7,9 @@ The local evaluator is a deterministic Python simulation skeleton for the first
 generation, strategy callbacks, baseline comparison, scoring, and
 result/replay output.
 
-It supports built-in evaluator strategies and a separately compiled C++
-strategy process. It does not provide sandboxing, run external Python
-strategies, call the C++ matching engine, or implement the website.
+It supports built-in evaluator strategies, local Python strategy files, and a
+separately compiled C++ strategy process. It does not provide sandboxing,
+call the C++ matching engine, or implement the website.
 
 ## Built-In Strategy
 
@@ -26,6 +26,21 @@ python3 arena/tools/evaluate_execution_v1.py \
 Use `--strategy baseline` to evaluate the immediate-market baseline. The
 default seed set is `local_evaluation`; every seed in that set contributes to
 the aggregate score.
+
+## Python Strategy File
+
+Run a local Python strategy file through the same JSONL protocol:
+
+```bash
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy-file arena/python/examples/simple_reference_strategy.py \
+  --results-out arena/results/python.result.json \
+  --replay-out arena/replays/python.replay.jsonl
+```
+
+This mode is trusted local execution only. It is not sandboxed and is not a
+hosted or leaderboard-verified runner.
 
 ## C++ Strategy Process
 
@@ -144,7 +159,7 @@ python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
 ```
 
 The tests cover config loading, seed determinism, strict invalid-action
-handling, full-completion scoring, local seed aggregation, C++ compilation,
-protocol fixtures, C++ repeatability, invalid JSON, malformed responses,
-process exit, timeout handling, hand-calculated metrics, byte stability, and
-golden result fixtures.
+handling, full-completion scoring, local seed aggregation, Python file runs,
+C++ compilation, protocol fixtures, C++ repeatability, invalid JSON, malformed
+responses, process exit, timeout handling, hand-calculated metrics, byte
+stability, and golden result fixtures.

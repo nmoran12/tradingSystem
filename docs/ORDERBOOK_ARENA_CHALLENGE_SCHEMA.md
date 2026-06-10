@@ -11,7 +11,7 @@ deliberately limited to one task:
 > Buy a target quantity during a fixed deterministic episode while reducing
 > execution cost relative to an immediate market-order baseline.
 
-The format is shared by future Python and C++ local runners. It does not define
+The format is shared by the local Python and C++ runners. It does not define
 accounts, leaderboards, hosted execution, multiple assets, historical data,
 market making, or a general plugin system.
 

@@ -68,19 +68,17 @@ challenge page uses `execution_v1_strategy.hpp` and the existing
 
 ### Python
 
-The page shows the planned function-based
-`on_book_update(book, portfolio)` contract. It explicitly labels Python as
-contract-only because external Python strategy execution is not implemented.
-
-The built-in Python evaluator strategies remain internal reference strategies;
-they are not a user Python process runner.
+Trusted local Python strategy-file execution is available. The page shows the
+function-based `on_book_update(book, portfolio)` contract and the local CLI
+command for running it.
 
 ## Local Workflow
 
 The challenge page explains this flow:
 
 1. Build the included C++ example strategy.
-2. Evaluate either the built-in reference or the compiled C++ process.
+2. Evaluate the built-in reference, a local Python strategy file, or the
+   compiled C++ process.
 3. Generate result JSON and replay JSONL locally.
 4. Start the website.
 5. Open `#/results` and import the result JSON.
@@ -129,8 +127,10 @@ npm test
 
 - Only one `execution_v1` challenge exists.
 - The frontend has no backend or persistence.
-- There is no online editor or strategy execution.
-- External Python execution is not implemented.
+- There is no online editor or hosted strategy execution.
+- Hosted Python execution is not implemented.
+- Local Python strategy files are available and trusted only on the user'"'"'s
+  machine.
 - The evaluator still uses `python_level_book_skeleton_v1`.
 - Compatibility checks do not prove that a local result was produced honestly.
 - Local seeds, results, and replays are inspectable and unverified.

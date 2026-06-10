@@ -42,7 +42,7 @@ Reproduction metadata records:
 | `result_generator` | Generator name, version, and timestamp policy. |
 | `runner_version` | Evaluator implementation version. |
 | `challenge` | Challenge identity, version, type, title, and source path. |
-| `strategy` | Built-in or external-process mode and strategy identifier. |
+| `strategy` | Built-in, local Python file, or trusted local C++ process mode and strategy identifier. |
 | `simulation` | Simulator model and deterministic generator details. |
 | `reproduction` | Inputs and versions required to repeat the run. |
 | `evaluation` | Seed list and valid, completed, incomplete, and invalid counts. |

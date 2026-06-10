@@ -25,6 +25,8 @@ Local evaluator (`python_level_book_skeleton_v1`)
       |
       +--> built-in strategy callback
       |
+      +--> local Python strategy file over JSONL
+      |
       +--> trusted local C++ strategy process over JSONL
       |
       v
@@ -42,9 +44,10 @@ artifacts into the browser. The website does not execute or upload code.
 
 Current boundaries:
 
-- external Python strategy execution is not implemented;
+- hosted Python execution is not implemented;
 - the repository's C++ matching engine is not used by Arena yet;
-- the C++ child process is trusted local code, not sandboxed code;
+- the local Python and C++ child processes are trusted local code, not
+  sandboxed code;
 - bundled seeds and local artifacts are inspectable and unverified;
 - there is no backend, hosted judge, account system, or leaderboard.
 
@@ -114,15 +117,15 @@ Determinism should be tested across repeated runs on supported platforms.
 
 ### Strategy Interfaces
 
-Python and C++ strategies should implement equivalent callbacks and receive the
-same normalized events. A language-neutral process protocol is preferable so
-the judge does not embed a Python interpreter or load untrusted native plugins
-into its own process.
+Python and C++ strategies implement equivalent callbacks and receive the same
+normalized events. A language-neutral process protocol keeps the judge from
+embedding a Python interpreter or loading untrusted native plugins into its
+own process.
 
-The intended adapters are:
+The implemented local adapters are:
 
-- a local compiled C++ strategy process, which is implemented;
-- a Python strategy process, which is still planned.
+- a local Python strategy file runner;
+- a local compiled C++ strategy process.
 
 Each adapter needs explicit message framing, protocol versions, deadlines,
 error reporting, and deterministic handling of invalid output.
@@ -132,7 +135,8 @@ error reporting, and deterministic handling of invalid output.
 The local CLI is the early execution bridge. It currently:
 
 - loads and validates a challenge;
-- runs built-in reference strategies or launches a compiled C++ strategy;
+- runs built-in reference strategies, local Python strategy files, or launches
+  a compiled C++ strategy;
 - runs deterministic public or bundled development episodes locally;
 - enforces a per-response timeout for the C++ process;
 - produces result JSON and replay files;
@@ -224,7 +228,7 @@ deployment model are documented.
 
 ## Open Decisions
 
-- external Python strategy process design and protocol parity;
+- hosted Python strategy process design and protocol parity;
 - migration from the Python simulator to the C++ matching engine;
 - sandbox technology and deployment boundary for the Python spike;
 - how hidden scenarios remain private once hosted judging exists;

@@ -6,15 +6,14 @@ The target product is a website where users solve trading and market-structure
 challenges by writing Python or C++ strategies. The C++ order book is the core
 judge. The website presents prompts, an editor, results, metrics, and replays.
 
-The implemented local bridge currently supports built-in strategies and a
-trusted C++ process. External Python strategy execution remains planned. Hosted
-code execution is deferred until the challenge and strategy contracts are
-stable and a credible sandbox design exists.
+The implemented local bridge currently supports built-in strategies, local
+Python strategy files, and a trusted C++ process. Hosted code execution is
+deferred until the challenge and strategy contracts are stable and a credible
+sandbox design exists.
 
-The near-term sequence is: finish the local MVP, add local Python execution,
-ship strategy authoring docs/templates, dogfood the product with 2-3 custom
-strategies, then write the hosted Python threat model before any hosted
-implementation begins.
+The near-term sequence is: continue improving the local MVP, ship strategy
+authoring docs/templates, dogfood the product with 2-3 custom strategies, then
+write the hosted Python threat model before any hosted implementation begins.
 
 ## First Six Weeks
 
@@ -34,15 +33,15 @@ hosted execution.
 Outcome: one validated challenge definition and a stable enough interface to
 start both language runners.
 
-### Week 2: Local Python Runner (Deferred)
+### Week 2: Local Python Runner (Implemented)
 
 - run a Python strategy in a child process;
 - exchange normalized market events and actions over the strategy protocol;
 - enforce deadlines, message limits, and clear failure results;
 - prove repeated runs produce the same engine events and result data.
 
-Planned outcome: a Python strategy can complete one deterministic challenge
-locally. This adapter has not been implemented.
+Current outcome: a Python strategy can complete one deterministic challenge
+locally through the trusted local file adapter.
 
 ### Week 3: Local C++ Runner (Implemented)
 
@@ -51,8 +50,9 @@ locally. This adapter has not been implemented.
 - reuse the same framing, validation, and failure semantics;
 - add parity tests showing Python and C++ baselines receive equivalent inputs.
 
-Current outcome: the trusted local C++ process is implemented. Python remains
-contract-only, so the language-parity outcome is still open.
+Current outcome: the trusted local C++ process is implemented. The local
+Python file runner is also implemented, so the language-parity outcome is now
+closed for the local MVP.
 
 ### Week 4: Scoring and Result JSON
 
@@ -91,20 +91,18 @@ the local runner honestly.
 The completed local MVP includes milestones A1 through A8:
 
 - versioned challenges;
-- built-in and trusted local C++ execution;
+- built-in, local Python, and trusted local C++ execution;
 - deterministic scoring and results;
 - replay export and browser viewing;
 - website challenge, prompt, result, and replay pages.
 
-The MVP does not include external Python strategy execution, C++ matching-engine
-integration, secure hosted execution, accounts, trusted public submissions, or
-a leaderboard. The week-by-week plan above records the original intended
-sequence; implementation prioritized the evaluator skeleton and C++ process
-before an external Python adapter.
+The MVP does not include C++ matching-engine integration, secure hosted
+execution, accounts, trusted public submissions, or a leaderboard. The
+week-by-week plan above records the original intended sequence; implementation
+now includes the local Python adapter before any hosted sandbox work.
 
-The revised post-A8 sequence is A8.6 local Python, A8.7 authoring docs and
-templates, A8.8 dogfooding, A9.1 hosted Python threat model, and A9.2 hosted
-Python prototype.
+The revised post-A8 sequence is A8.7 authoring docs and templates, A8.8
+dogfooding, A9.1 hosted Python threat model, and A9.2 hosted Python prototype.
 
 ## Post-MVP Hosted Execution
 

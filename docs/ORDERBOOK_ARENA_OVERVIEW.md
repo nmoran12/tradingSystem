@@ -7,8 +7,9 @@ market-structure coding challenges.
 
 The target product lets users browse a challenge, write a strategy in Python or
 C++, and run it against deterministic market scenarios. The current local MVP
-supports built-in evaluator strategies and a trusted compiled C++ process. It
-produces a score, metrics, and a replay that explains what happened.
+supports built-in evaluator strategies, local Python strategy files, and a
+trusted compiled C++ process. It produces a score, metrics, and a replay that
+explains what happened.
 
 JavaScript or TypeScript may power the website frontend. They are not planned
 as strategy languages.
@@ -35,15 +36,17 @@ The website remains the product direction, while the implemented MVP uses a
 local runner as a development bridge:
 
 1. The user opens a challenge on the website.
-2. The user uses a built-in strategy or compiles the C++ starter strategy.
+2. The user uses a built-in strategy, a local Python strategy file, or
+   compiles the C++ starter strategy.
 3. A local CLI runs it against the versioned challenge definition using
    `python_level_book_skeleton_v1`.
 4. The CLI writes a result JSON file and replay file.
 5. The user opens those files in the website result and replay viewer.
 
-External Python strategy execution and C++ matching-engine integration are not
-implemented. The C++ process is trusted local code and is not sandboxed. Local
-seeds and artifacts are inspectable, so results are not server-verified.
+Hosted execution and C++ matching-engine integration are not implemented. The
+local Python and C++ process runners are trusted local code and are not
+sandboxed. Local seeds and artifacts are inspectable, so results are not
+server-verified.
 
 ## Why Build It
 
@@ -68,17 +71,18 @@ The current MVP provides:
 - one versioned challenge definition;
 - deterministic public scenarios and a format that can later reference private
   hosted evaluation episodes;
-- built-in strategies and a local C++ strategy process;
+- built-in strategies, local Python strategy files, and a local C++ strategy
+  process;
 - baseline strategies for validating challenge difficulty;
 - result JSON containing score and supporting metrics;
 - replay export and a browser-based replay viewer;
 - website pages for browsing challenges and reading prompts.
 
-Planned work next is local Python strategy execution, strategy authoring
-docs/templates, and dogfooding with a few custom strategies. Only after that
-should the project move to hosted Python threat modeling and prototype work.
-Hosted C++ execution follows later because compiling and running native code
-safely adds more operational and security complexity.
+Planned work next is strategy authoring docs/templates and dogfooding with a
+few custom strategies. Only after that should the project move to hosted
+Python threat modeling and prototype work. Hosted C++ execution follows later
+because compiling and running native code safely adds more operational and
+security complexity.
 
 ## What It Is Not
 

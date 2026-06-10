@@ -35,9 +35,15 @@ const PYTHON_TEMPLATE = `def on_book_update(book, portfolio):
     if portfolio["remaining_quantity"] == 0:
         return []
 
-    # Planned Python callback contract.
-    # External Python process execution is not implemented yet.
+    # Local Python callback contract.
+    # The evaluator runs this file through a trusted local process.
     return []`;
+
+const PYTHON_FILE_COMMAND = `python3 arena/tools/evaluate_execution_v1.py \\
+  --challenge arena/challenges/beat_market_order.v1.json \\
+  --strategy-file arena/python/examples/simple_reference_strategy.py \\
+  --results-out arena/results/python.result.json \\
+  --replay-out arena/replays/python.replay.jsonl`;
 
 const BUILTIN_COMMAND = `python3 arena/tools/evaluate_execution_v1.py \\
   --challenge arena/challenges/beat_market_order.v1.json \\
@@ -236,9 +242,9 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
         <aside className="status-callout">
           <strong>Execution status</strong>
           <p>
-            Built-in and trusted local C++ strategies work today. External
-            Python execution, hosted judging, and verified submissions are not
-            implemented.
+            Built-in strategies, local Python strategy files, and trusted local
+            C++ strategies work today. Hosted judging and verified submissions
+            are not implemented.
           </p>
         </aside>
       </section>
@@ -318,15 +324,15 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
               </div>
               <div>
                 <strong>Python</strong>
-                <span className="support-planned">Contract only</span>
+                <span className="support-ready">Available locally</span>
                 <p>
-                  The function shape is documented, but external Python
-                  strategy execution is a later milestone.
+                  The local runner accepts a Python file through the same
+                  JSONL protocol as the C++ process.
                 </p>
               </div>
             </div>
             <CodeBlock label="C++ starter" code={CPP_TEMPLATE} />
-            <CodeBlock label="Python callback contract (not executable yet)" code={PYTHON_TEMPLATE} />
+            <CodeBlock label="Python starter" code={PYTHON_TEMPLATE} />
           </article>
 
           <article className="content-card">
@@ -334,10 +340,10 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
             <h2>Evaluate, export, inspect</h2>
             <ol className="workflow-list">
               <li><span>1</span><div><strong>Build the C++ example strategy</strong><CodeBlock label="Build" code={CPP_BUILD_COMMAND} /></div></li>
-              <li><span>2</span><div><strong>Evaluate a built-in or C++ strategy</strong><CodeBlock label="Built-in mode" code={BUILTIN_COMMAND} /><CodeBlock label="C++ process mode" code={CPP_EVALUATE_COMMAND} /></div></li>
+              <li><span>2</span><div><strong>Evaluate a built-in, Python, or C++ strategy</strong><CodeBlock label="Built-in mode" code={BUILTIN_COMMAND} /><CodeBlock label="Python file mode" code={PYTHON_FILE_COMMAND} /><CodeBlock label="C++ process mode" code={CPP_EVALUATE_COMMAND} /></div></li>
               <li><span>3</span><div><strong>Generate result JSON and replay JSONL</strong><p>The evaluator writes both artifacts to the paths above.</p></div></li>
               <li><span>4</span><div><strong>Open the local website</strong><CodeBlock label="Website" code={VIEWER_COMMAND} /></div></li>
-              <li><span>5</span><div><strong>Import the result and replay</strong><p>Open the result JSON first, then attach <code>builtin.replay.jsonl</code> or <code>cpp.replay.jsonl</code>.</p><a className="text-link" href="#/results">Open result viewer</a></div></li>
+              <li><span>5</span><div><strong>Import the result and replay</strong><p>Open the result JSON first, then attach <code>python.replay.jsonl</code>, <code>builtin.replay.jsonl</code>, or <code>cpp.replay.jsonl</code>.</p><a className="text-link" href="#/results">Open result viewer</a></div></li>
             </ol>
           </article>
 
@@ -347,7 +353,7 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
             <ul>
               <li>No online code execution or submission.</li>
               <li>No sandboxing, accounts, leaderboard, or hidden hosted seeds.</li>
-              <li>No external Python strategy runner yet.</li>
+              <li>No hosted Python strategy runner yet.</li>
               <li>No C++ matching-engine integration yet.</li>
               <li>Local results are inspectable and unverified.</li>
             </ul>
