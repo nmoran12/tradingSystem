@@ -5,10 +5,10 @@
 OrderBook Arena is a planned LeetCode-style website for trading and
 market-structure coding challenges.
 
-Users will browse a challenge, write a strategy in Python or C++, and run it
-against deterministic market scenarios judged by the existing C++ order book.
-The result should include a score, trading metrics, and a replay that explains
-what happened.
+The target product lets users browse a challenge, write a strategy in Python or
+C++, and run it against deterministic market scenarios. The current local MVP
+supports built-in evaluator strategies and a trusted compiled C++ process. It
+produces a score, metrics, and a replay that explains what happened.
 
 JavaScript or TypeScript may power the website frontend. They are not planned
 as strategy languages.
@@ -29,21 +29,21 @@ The intended final flow is:
 This seamless flow requires secure hosted execution. That capability does not
 exist yet.
 
-## Early MVP
+## Current Local MVP
 
-The website remains the product direction, but the first implementation may use
-a local runner as a development bridge:
+The website remains the product direction, while the implemented MVP uses a
+local runner as a development bridge:
 
 1. The user opens a challenge on the website.
-2. The user downloads or checks out starter code for Python or C++.
-3. A local CLI runs the strategy against the same challenge definition and C++
-   simulation engine.
+2. The user uses a built-in strategy or compiles the C++ starter strategy.
+3. A local CLI runs it against the versioned challenge definition using
+   `python_level_book_skeleton_v1`.
 4. The CLI writes a result JSON file and replay file.
 5. The user opens those files in the website result and replay viewer.
 
-The local runner avoids exposing a server to arbitrary user code while the
-challenge format, strategy API, scoring, and replay contracts are still being
-developed. It is not the final user experience.
+External Python strategy execution and C++ matching-engine integration are not
+implemented. The C++ process is trusted local code and is not sandboxed. Local
+seeds and artifacts are inspectable, so results are not server-verified.
 
 ## Why Build It
 
@@ -53,7 +53,8 @@ product use:
 
 - challenges define repeatable market situations;
 - Python and C++ strategies react to the same event model;
-- the engine applies orders and produces an auditable event stream;
+- once integrated, the C++ engine will apply orders and produce the event
+  stream;
 - scoring turns each run into comparable results;
 - replays make strategy behaviour visible instead of reducing it to one number.
 
@@ -62,21 +63,21 @@ without pretending the project is a live trading platform.
 
 ## First Useful Scope
 
-The first useful version should provide:
+The current MVP provides:
 
-- a small set of versioned challenge definitions;
+- one versioned challenge definition;
 - deterministic public scenarios and a format that can later reference private
   hosted evaluation episodes;
-- local Python and C++ strategy runners using the same contract;
-- the existing C++ matching engine as the simulation judge;
+- built-in strategies and a local C++ strategy process;
 - baseline strategies for validating challenge difficulty;
 - result JSON containing score and supporting metrics;
 - replay export and a browser-based replay viewer;
 - website pages for browsing challenges and reading prompts.
 
-Hosted execution should begin only as a separate Python sandbox spike. C++
-hosted execution follows later because compiling and running native code safely
-adds more operational and security complexity.
+Planned work includes an external Python strategy runner, C++ matching-engine
+integration, and eventually a separate hosted Python sandbox spike. Hosted C++
+execution follows later because compiling and running native code safely adds
+more operational and security complexity.
 
 ## What It Is Not
 

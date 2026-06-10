@@ -139,7 +139,8 @@ export const ResultPage: React.FC = () => {
           <h1>Result and replay viewer</h1>
           <p>
             Import result JSON from the local evaluator, inspect aggregate and
-            per-episode metrics, then attach the matching replay JSONL.
+            per-episode metrics, then attach the matching replay JSONL. Run
+            strategies separately with the repository CLI.
           </p>
         </div>
         <aside className="status-callout">

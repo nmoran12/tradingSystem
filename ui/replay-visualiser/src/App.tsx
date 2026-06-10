@@ -124,7 +124,7 @@ function SiteHeader() {
         <span className="brand-mark">OA</span>
         <span>
           <strong>OrderBook Arena</strong>
-          <small>Local challenge preview</small>
+          <small>Local MVP artifact viewer</small>
         </span>
       </a>
       <nav aria-label="Primary navigation">
@@ -145,15 +145,16 @@ function ChallengeBrowser() {
           <p className="eyebrow">Deterministic market challenges</p>
           <h1>Learn execution by writing strategy decisions</h1>
           <p>
-            Browse versioned challenges, understand the rules, then evaluate
-            built-in or compiled C++ strategies on your own machine.
+            Browse versioned challenges, then use the CLI on your machine to
+            evaluate a built-in or trusted compiled C++ strategy.
           </p>
         </div>
         <aside className="status-callout">
           <strong>Current product boundary</strong>
           <p>
             The website explains challenges and reads local result/replay
-            artifacts. It does not execute, upload, or submit strategy code.
+            artifacts. Strategy code runs only from the local CLI; this site
+            does not execute, upload, or submit it.
           </p>
         </aside>
       </section>
@@ -236,7 +237,8 @@ function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
           <strong>Execution status</strong>
           <p>
             Built-in and trusted local C++ strategies work today. External
-            Python execution and hosted judging are not implemented.
+            Python execution, hosted judging, and verified submissions are not
+            implemented.
           </p>
         </aside>
       </section>

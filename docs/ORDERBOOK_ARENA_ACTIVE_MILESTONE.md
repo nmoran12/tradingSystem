@@ -1,71 +1,70 @@
-# Active Milestone: A8 Website Result and Replay Viewer
+# Active Milestone: A8.5 Local MVP Polish and Demo Hardening
 
 **Status:** Complete
 
 ## Previous Milestone
 
-A7, Website Challenge Browser and Prompt Pages, was committed as `2a0a983`:
+A8, Website Result and Replay Viewer, was committed as `8168277`:
 
 ```text
-feat: add arena challenge browser
+feat: add arena result viewer
 ```
 
 ## Goal
 
-Close the local MVP loop by letting users inspect evaluator result JSON and
-its matching replay JSONL in the website.
+Make the local-only Arena MVP easy to understand, reproduce, and demonstrate
+from a fresh checkout before any hosted sandbox work begins.
 
 ## Implemented Scope
 
-- [x] Result viewer at `#/results`.
-- [x] Local result JSON import with result schema `1.1` validation.
-- [x] Aggregate score, fill rate, improvement, identity, and version display.
-- [x] Selectable per-episode metric table and invalid-reason display.
-- [x] Replay artifact name, schema, record count, and seed display.
-- [x] Matching replay JSONL import after a result is loaded.
-- [x] Replay schema, record count, and ordered seed compatibility checks.
-- [x] A6 replay inspector reused for the selected result episode.
-- [x] Deterministic result/replay sample pair.
-- [x] Focused parser, compatibility, route, content, and build checks.
-- [x] Challenge browser and standalone replay routes preserved.
-- [x] Local, unverified status visible with no hosted Run or Submit controls.
+- [x] One-command local MVP check at
+  `scripts/arena_local_demo_check.sh`.
+- [x] Reviewer-oriented README with current features, boundaries, architecture,
+  evaluator commands, website workflow, and checks.
+- [x] Current architecture separated from future hosted and C++ engine work.
+- [x] Documentation corrected to state that external Python strategy execution
+  is not implemented.
+- [x] Documentation corrected to state that Arena still uses
+  `python_level_book_skeleton_v1`.
+- [x] Website copy reviewed for local CLI, trusted C++, planned Python, and
+  unverified artifact boundaries.
+- [x] Deterministic UI samples kept under
+  `ui/replay-visualiser/public/`.
+- [x] Generated `arena/results/*.json` and `arena/replays/*.jsonl` remain
+  ignored.
 
-## Artifact Boundary
+## Local MVP Flow
 
-The browser reads files from the user's machine. It does not upload results,
-verify how they were produced, execute strategy code, or grant leaderboard
-eligibility.
+```text
+Challenge JSON
+      |
+      v
+Local evaluator
+      |
+      +--> built-in strategy
+      +--> trusted local C++ strategy process
+      |
+      v
+Result JSON + replay JSONL
+      |
+      v
+Website result/replay viewer
+```
 
-Compatibility checks catch obvious accidental mismatches. They are not
-cryptographic verification.
+The website does not execute code. Local results are inspectable and
+unverified. Hosted judging, sandboxing, accounts, leaderboards, external Python
+execution, and C++ matching-engine integration remain outside this milestone.
 
-## Checks
+## Check
 
 ```bash
-python3 -m json.tool arena/challenges/beat_market_order.v1.json
-python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
-cmake -S arena/cpp -B build/arena-cpp
-cmake --build build/arena-cpp
-python3 arena/tools/evaluate_execution_v1.py \
-  --challenge arena/challenges/beat_market_order.v1.json \
-  --strategy simple_reference \
-  --results-out arena/results/builtin.result.json \
-  --replay-out arena/replays/builtin.replay.jsonl
-python3 arena/tools/evaluate_execution_v1.py \
-  --challenge arena/challenges/beat_market_order.v1.json \
-  --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
-  --results-out arena/results/cpp.result.json \
-  --replay-out arena/replays/cpp.replay.jsonl
-cd ui/replay-visualiser
-npx tsc --noEmit
-npm test
-cd ../..
-./scripts/verify.sh
-git diff --check
+./scripts/arena_local_demo_check.sh
 ```
+
+The script validates the challenge, runs Arena tests, builds the C++ example,
+generates both evaluator artifact pairs, installs locked frontend dependencies,
+type-checks the frontend, and runs its production build/tests.
 
 ## Exit Condition
 
-A8 is committed separately. Hosted execution, trusted result verification,
-accounts, leaderboards, online submission, and C++ matching-engine integration
-remain outside this milestone.
+A8.5 is committed separately. A9 hosted Python sandboxing has not started.

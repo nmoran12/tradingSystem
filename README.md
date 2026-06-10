@@ -5,31 +5,66 @@ A C++20 low-latency market data and order book engine that processes exchange-st
 This project focuses on core market data infrastructure: parsing simulated exchange messages, maintaining a price-time priority order book, matching client orders, and measuring per-event processing latency. It is not a trading bot and does not connect to live exchanges.
 
 **Status:** Existing order-book engine with replay, engine CLI, binary replay,
-benchmarks, and an experimental OrderBook Arena planning track.
+benchmarks, and a working local-only OrderBook Arena MVP.
 
 Run all commands from this directory (`cpp-low-latency-orderbook/`), not the parent workspace folder.
 
-## OrderBook Arena direction
+## OrderBook Arena local MVP
 
-This repository is being extended experimentally toward **OrderBook Arena**: a
-LeetCode-style challenge website for Python and C++ trading strategies. The
-target experience is to read a prompt, write a strategy in an online editor,
-click Run or Submit, and inspect deterministic scores, trading metrics, and
-replays produced by the existing C++ matching engine. JavaScript or TypeScript
-may power the frontend; it is not a target strategy language.
+**OrderBook Arena** is a LeetCode-style challenge interface for deterministic
+trading and market-structure problems. The current MVP includes:
 
-Secure hosted execution is not implemented. Early versions will use local
-Python and C++ runners as a temporary bridge, producing result and replay files
-that the website can open. The long-term no-download experience requires
-isolated server-side execution with strict resource limits and other security
-controls. Hosted Python will be investigated before hosted C++, and both remain
-post-MVP work. This project does not support live trading. See
-[docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) and
-[docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md).
+- one versioned challenge, **Beat the Market Order**;
+- deterministic built-in strategy evaluation;
+- a trusted local C++ strategy process over JSON Lines;
+- versioned score/result and replay artifacts;
+- challenge, result, and replay pages in a React/Vite website.
 
-### Local Arena evaluator
+The evaluator currently uses `python_level_book_skeleton_v1`; it does not yet
+invoke the repository's C++ matching engine. External Python strategy execution,
+hosted judging, sandboxing, accounts, submissions, and leaderboards are not
+implemented. Local files and seeds are inspectable, so results are unverified.
 
-Built-in strategy mode:
+### Current architecture
+
+```text
+Challenge JSON
+      |
+      v
+Local Python evaluator
+      |
+      +--> built-in reference strategy
+      |
+      +--> trusted local C++ strategy process
+      |
+      v
+Scoring + result JSON
+      |
+      v
+Replay JSONL
+      |
+      v
+Website result/replay viewer
+```
+
+### Quick demo check
+
+From the repository root:
+
+```bash
+./scripts/arena_local_demo_check.sh
+```
+
+This validates the challenge, runs Arena tests, builds the C++ strategy,
+generates both built-in and C++ artifacts, and builds/tests the frontend.
+Generated runtime artifacts remain ignored by Git.
+
+Requirements: Python 3, CMake, a C++20 compiler, and Node.js/npm. A fresh
+frontend install requires access to the npm registry.
+
+### Run the evaluator
+
+Built-in reference:
 
 ```bash
 python3 arena/tools/evaluate_execution_v1.py \
@@ -39,7 +74,7 @@ python3 arena/tools/evaluate_execution_v1.py \
   --replay-out arena/replays/builtin.replay.jsonl
 ```
 
-Trusted local C++ strategy mode:
+Trusted local C++ strategy:
 
 ```bash
 cmake -S arena/cpp -B build/arena-cpp
@@ -52,10 +87,9 @@ python3 arena/tools/evaluate_execution_v1.py \
   --replay-out arena/replays/cpp.replay.jsonl
 ```
 
-The C++ process is not sandboxed, and this evaluator still uses the Python
-simulation skeleton rather than the C++ matching engine.
+The C++ process runs with your local user permissions and is not sandboxed.
 
-Inspect generated result and replay artifacts locally:
+### Open the website
 
 ```bash
 cd ui/replay-visualiser
@@ -68,6 +102,20 @@ The site opens on the challenge browser. Use
 `#/results` to import result JSON followed by its matching replay JSONL.
 `#/replay` remains available for replay-only inspection. Local artifacts are
 unverified, and the site does not run or submit strategy code.
+
+### Arena checks
+
+```bash
+python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
+
+cd ui/replay-visualiser
+npx tsc --noEmit
+npm test
+```
+
+See [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) and
+[docs/ORDERBOOK_ARENA_ARCHITECTURE.md](docs/ORDERBOOK_ARENA_ARCHITECTURE.md)
+for the current boundary and future direction.
 
 ## Project documentation
 
@@ -94,7 +142,7 @@ unverified, and the site does not run or submit strategy code.
 | [docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md](docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md) | Versioned Arena replay JSONL contract |
 | [docs/ORDERBOOK_ARENA_WEBSITE.md](docs/ORDERBOOK_ARENA_WEBSITE.md) | Challenge browser, prompt routes, and local-only workflow |
 
-## Architecture
+## Core Engine Architecture
 
 **Replay path (Milestone 1):**
 

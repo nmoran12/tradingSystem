@@ -43,7 +43,7 @@ for (const expected of [
   challenge.challenge_type,
   'Available challenges',
   'Local execution only',
-  'External Python execution and hosted judging are not implemented',
+  'External Python execution, hosted judging, and verified submissions are not',
   'Replay viewer',
   'Result and replay viewer',
   'Unverified local result',

@@ -7,38 +7,46 @@ keeping challenge execution deterministic and auditable. Python and C++ are the
 strategy languages. JavaScript or TypeScript is limited to the website
 frontend.
 
-The architecture should support two execution paths:
+The planned architecture supports two execution paths:
 
 - an early local runner used while the product contracts are being developed;
 - a later hosted judge that runs untrusted code in isolated environments.
 
-Both paths must use the same challenge definitions, strategy protocol, C++
-matching engine, scoring rules, result format, and replay format.
+The current implementation has only the local path described below. The hosted
+path and C++ matching-engine integration remain future work.
 
-## Early Local Flow
+## Current Implemented Local Flow
 
 ```text
-User opens website
-        |
-        v
-Reads prompt and chooses Python or C++ starter
-        |
-        v
-Runs strategy with local CLI
-        |
-        v
-Local strategy process <-> C++ challenge runner and matching engine
-        |
-        v
-Result JSON + replay file
-        |
-        v
+Challenge JSON
+      |
+      v
+Local evaluator (`python_level_book_skeleton_v1`)
+      |
+      +--> built-in strategy callback
+      |
+      +--> trusted local C++ strategy process over JSONL
+      |
+      v
+Scoring engine + result JSON
+      |
+      v
+Replay JSONL
+      |
+      v
 Website result/replay viewer
 ```
 
-This flow is a temporary bridge. It allows the engine, challenge model, strategy
-APIs, scoring, and visualiser to be built without accepting arbitrary code on a
-server.
+The user runs the CLI and strategy on their own machine, then imports generated
+artifacts into the browser. The website does not execute or upload code.
+
+Current boundaries:
+
+- external Python strategy execution is not implemented;
+- the repository's C++ matching engine is not used by Arena yet;
+- the C++ child process is trusted local code, not sandboxed code;
+- bundled seeds and local artifacts are inspectable and unverified;
+- there is no backend, hosted judge, account system, or leaderboard.
 
 ## Target Hosted Flow
 
@@ -111,35 +119,35 @@ same normalized events. A language-neutral process protocol is preferable so
 the judge does not embed a Python interpreter or load untrusted native plugins
 into its own process.
 
-The first adapters are:
+The intended adapters are:
 
-- a local Python strategy process;
-- a local compiled C++ strategy process.
+- a local compiled C++ strategy process, which is implemented;
+- a Python strategy process, which is still planned.
 
 Each adapter needs explicit message framing, protocol versions, deadlines,
 error reporting, and deterministic handling of invalid output.
 
 ### Local CLI Runner
 
-The local CLI is the early execution bridge. It should:
+The local CLI is the early execution bridge. It currently:
 
-- load and validate a challenge;
-- launch a Python strategy or compiled C++ strategy as a child process;
-- run deterministic public or bundled development episodes locally;
-- enforce basic timeouts and output limits;
-- produce result JSON and replay files;
-- print enough metadata to reproduce a run.
+- loads and validates a challenge;
+- runs built-in reference strategies or launches a compiled C++ strategy;
+- runs deterministic public or bundled development episodes locally;
+- enforces a per-response timeout for the C++ process;
+- produces result JSON and replay files;
+- records enough metadata to reproduce a run.
 
 Local execution is not a security boundary because the user runs their own code
 on their own machine. Bundled episodes are also inspectable, so local results
 cannot provide secret-test integrity.
 
-### C++ Judge and Matching Engine
+### Future C++ Judge and Matching Engine
 
-The existing C++ order book remains the core simulation engine. The challenge
-runner should translate scenario events and strategy actions into engine
-operations, then expose fills, book updates, positions, and account state to the
-scoring and replay components.
+The existing C++ order book is intended to become the simulation engine. That
+integration is not implemented in the local MVP. The current evaluator models
+a deterministic level book in Python and records
+`uses_cpp_matching_engine: false`.
 
 The engine should not contain website, account, or leaderboard logic.
 
@@ -195,20 +203,19 @@ judge and rank results by challenge and version. Results produced only by a
 local runner cannot be trusted for a public leaderboard without server-side
 verification.
 
-## Planned Repository Areas
-
-Exact names may change after the first schema spike.
+## Current Repository Areas
 
 ```text
 arena/
-  challenges/       # versioned challenge definitions and prompts
-  strategies/       # Python and C++ starter and baseline strategies
-  runner/           # local runner and language adapters
-  scoring/          # metric and score calculation
-  replay/           # replay schema and export
-  schemas/          # challenge, result, and replay schemas
+  challenges/       # versioned challenge definitions
+  cpp/              # trusted local C++ strategy interface and example
+  protocol/         # JSONL process contract and fixtures
+  tools/            # evaluator, process adapter, scoring, replay validation
+  tests/             # deterministic evaluator and artifact tests
+  results/           # ignored generated result files
+  replays/           # ignored generated replay files
 
-ui/                 # challenge pages and result/replay viewer
+ui/replay-visualiser/ # challenge pages and result/replay viewer
 docs/               # design, milestones, formats, and experiments
 ```
 
@@ -217,11 +224,8 @@ deployment model are documented.
 
 ## Open Decisions
 
-- process protocol and serialization format shared by Python and C++;
-- strategy callback surface and action model;
-- whether C++ starter strategies are built by CMake or a dedicated CLI command;
-- result and replay schema versioning;
-- deterministic clock and random-number rules;
+- external Python strategy process design and protocol parity;
+- migration from the Python simulator to the C++ matching engine;
 - sandbox technology and deployment boundary for the Python spike;
 - how hidden scenarios remain private once hosted judging exists;
 - whether local result files can be uploaded only for viewing, not ranking.

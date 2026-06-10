@@ -238,6 +238,29 @@ website.
 **Why it matters:** It closes the early product loop and keeps the website
 central while execution remains local.
 
+## A8.5. Local MVP Polish and Demo Hardening
+
+**Goal:** Make the completed local loop easy to reproduce and evaluate from a
+fresh checkout before hosted-execution work begins.
+
+**Deliverables**
+
+- one end-to-end local demo check script;
+- concise reviewer-facing README workflow;
+- current local architecture diagram and explicit implementation boundaries;
+- consistent local-only website and documentation language.
+
+**Acceptance criteria**
+
+- one command validates, tests, builds, evaluates, and builds the website;
+- generated result/replay files remain ignored;
+- docs distinguish implemented C++ local execution from planned Python and
+  hosted execution;
+- no page or document implies local results are verified.
+
+**Why it matters:** It makes the existing MVP demonstrable without increasing
+product scope or weakening the hosted-execution security boundary.
+
 ## A9. Hosted Python Sandbox Spike
 
 **Goal:** Test whether isolated Python execution can support the final Run and
