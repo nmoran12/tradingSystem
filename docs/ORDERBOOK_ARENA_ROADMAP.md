@@ -48,8 +48,8 @@ Outcome: Python and C++ are both first-class local strategy languages.
 
 ### Week 4: Scoring and Result JSON
 
-- implement documented PnL-style, slippage, fill-rate, drawdown, and risk
-  metrics where they are meaningful for the example challenge;
+- implement documented VWAP, slippage, fill-rate, completion, and
+  baseline-improvement metrics for the example challenge;
 - define a versioned result JSON schema;
 - add per-episode breakdowns and reproduction metadata;
 - create deterministic golden-result tests.

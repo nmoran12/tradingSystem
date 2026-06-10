@@ -1,5 +1,6 @@
 {
   "schema_version": "1.0",
+  "challenge_version": "1.0",
   "challenge_id": "beat_market_order",
   "title": "Beat the Market Order",
   "difficulty": "easy",
@@ -108,24 +109,31 @@
     "aggregate": "arithmetic_mean",
     "higher_is_better": true,
     "reported_metrics": [
-      "completion_ratio",
+      "target_quantity",
       "filled_quantity",
       "remaining_quantity",
-      "strategy_vwap_ticks",
-      "baseline_vwap_ticks",
+      "fill_rate",
+      "cash_spent_ticks",
+      "average_fill_price_ticks",
+      "baseline_average_fill_price_ticks",
       "arrival_midpoint_ticks",
-      "strategy_slippage_ticks",
+      "slippage_ticks",
+      "slippage_bps",
       "baseline_slippage_ticks",
-      "execution_cost_improvement_ticks",
-      "submitted_order_count",
-      "submitted_action_count",
+      "baseline_slippage_bps",
+      "improvement_ticks",
+      "improvement_bps",
+      "events_processed",
+      "actions_submitted",
+      "orders_submitted",
+      "fill_count",
       "maximum_open_orders"
     ]
   },
   "outputs": {
     "result": {
       "format": "json",
-      "schema_version": "1.0",
+      "schema_version": "1.1",
       "default_filename": "result.json"
     },
     "replay": {

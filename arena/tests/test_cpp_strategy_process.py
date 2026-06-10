@@ -19,6 +19,48 @@ BOOK_FIXTURE = (
     ROOT / "arena/protocol/fixtures/book_update.sample.json"
 )
 ACTIONS_FIXTURE = ROOT / "arena/protocol/fixtures/actions.sample.json"
+CPP_RESULT_FIXTURE = (
+    ROOT / "arena/tests/fixtures/results/cpp_simple_reference.golden.json"
+)
+EPISODE_GOLDEN_FIELDS = (
+    "seed",
+    "status",
+    "valid",
+    "completed",
+    "score",
+    "filled_quantity",
+    "fill_rate",
+    "cash_spent_ticks",
+    "average_fill_price_ticks",
+    "slippage_ticks",
+    "slippage_bps",
+    "improvement_ticks",
+    "improvement_bps",
+    "events_processed",
+    "fill_count",
+    "invalid_reason",
+)
+
+
+def result_golden_projection(result):
+    return {
+        "schema_version": result["schema_version"],
+        "result_generator": result["result_generator"],
+        "strategy": {
+            "mode": result["strategy"]["mode"],
+            "identifier": result["strategy"]["identifier"],
+        },
+        "score_version": result["scoring"]["score_version"],
+        "aggregate_metrics": result["aggregate_metrics"],
+        "episodes": [
+            {
+                field: episode[field]
+                for field in EPISODE_GOLDEN_FIELDS
+                if field in episode
+            }
+            for episode in result["episodes"]
+        ],
+    }
 
 
 class CppStrategyProcessTest(unittest.TestCase):
@@ -66,6 +108,12 @@ class CppStrategyProcessTest(unittest.TestCase):
         )
         self.assertEqual(len(result["episodes"]), 3)
         self.assertTrue(replay)
+
+    def test_cpp_strategy_process_matches_golden_result(self):
+        result, _ = self.evaluate_process(self.strategy_binary)
+        expected = json.loads(CPP_RESULT_FIXTURE.read_text(encoding="utf-8"))
+
+        self.assertEqual(result_golden_projection(result), expected)
 
     def test_cpp_strategy_process_is_deterministic(self):
         first_result, first_replay = self.evaluate_process(

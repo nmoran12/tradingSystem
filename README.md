@@ -75,7 +75,8 @@ simulation skeleton rather than the C++ matching engine.
 | [docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md](docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md) | Twelve small, testable Arena milestones |
 | [docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md](docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md) | Current Arena documentation milestone |
 | [docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md](docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md) | Initial `execution_v1` challenge contract |
-| [docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md](docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md) | Deterministic A3 evaluator usage and limits |
+| [docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md](docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md) | Deterministic local evaluator usage and limits |
+| [docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md](docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md) | Versioned score, metric, and result JSON contract |
 
 ## Architecture
 

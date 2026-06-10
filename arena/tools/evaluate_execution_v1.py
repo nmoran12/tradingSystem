@@ -16,8 +16,18 @@ try:
         CppStrategyProcess,
         StrategyProcessError,
     )
+    from arena.tools.scoring_results import (
+        build_result_document,
+        calculate_episode_metrics,
+        round_metric,
+    )
 except ModuleNotFoundError:
     from cpp_strategy_process import CppStrategyProcess, StrategyProcessError
+    from scoring_results import (
+        build_result_document,
+        calculate_episode_metrics,
+        round_metric,
+    )
 
 
 MASK_64 = (1 << 64) - 1
@@ -70,10 +80,6 @@ def _require_positive_int(value: Any, field_name: str) -> int:
     return value
 
 
-def _round_metric(value: float | None) -> float | None:
-    return round(value, 6) if value is not None else None
-
-
 def load_challenge(path: str | Path) -> dict[str, Any]:
     challenge_path = Path(path)
     try:
@@ -89,6 +95,8 @@ def load_challenge(path: str | Path) -> dict[str, Any]:
 def validate_challenge(challenge: dict[str, Any]) -> None:
     if challenge.get("schema_version") != "1.0":
         raise ChallengeConfigError("schema_version must be 1.0")
+    if challenge.get("challenge_version") != "1.0":
+        raise ChallengeConfigError("challenge_version must be 1.0")
     if challenge.get("challenge_type") != "execution_v1":
         raise ChallengeConfigError("challenge_type must be execution_v1")
     if challenge.get("challenge_id") != "beat_market_order":
@@ -216,6 +224,10 @@ def validate_challenge(challenge: dict[str, Any]) -> None:
         raise ChallengeConfigError("invalid and incomplete episode score must be zero")
     if scoring.get("aggregate") != "arithmetic_mean":
         raise ChallengeConfigError("unsupported score aggregate")
+    outputs = _require_mapping(challenge.get("outputs"), "outputs")
+    result_output = _require_mapping(outputs.get("result"), "outputs.result")
+    if result_output.get("schema_version") != "1.1":
+        raise ChallengeConfigError("result schema_version must be 1.1")
 
 
 @dataclass
@@ -324,6 +336,8 @@ class EpisodeState:
     submitted_action_count: int = 0
     maximum_open_orders: int = 0
     invalid_reason: str | None = None
+    events_processed: int = 0
+    fill_count: int = 0
 
     @property
     def remaining_quantity(self) -> int:
@@ -338,6 +352,7 @@ class EpisodeState:
         source: str,
     ) -> None:
         for fill in fills:
+            self.fill_count += 1
             self.filled_quantity += fill["quantity"]
             self.total_cost_tick_units += fill["price_ticks"] * fill["quantity"]
             replay.append(
@@ -365,7 +380,7 @@ class EpisodeState:
             "filled_quantity": self.filled_quantity,
             "remaining_quantity": self.remaining_quantity,
             "total_cost_tick_units": self.total_cost_tick_units,
-            "average_fill_price_ticks": _round_metric(average_fill_price),
+            "average_fill_price_ticks": round_metric(average_fill_price),
             "open_orders": open_orders,
         }
 
@@ -614,75 +629,6 @@ def _book_view(
     }
 
 
-def _episode_metrics(
-    challenge: dict[str, Any],
-    state: EpisodeState,
-    seed: int,
-    arrival_midpoint_ticks: float,
-    baseline_vwap_ticks: float | None,
-) -> dict[str, Any]:
-    completed = state.invalid_reason is None and state.remaining_quantity == 0
-    if state.invalid_reason is not None:
-        status = "invalid"
-        error_reason = state.invalid_reason
-    elif not completed:
-        status = "incomplete"
-        error_reason = "target quantity not completed"
-    else:
-        status = "completed"
-        error_reason = None
-
-    strategy_vwap = (
-        state.total_cost_tick_units / state.filled_quantity
-        if state.filled_quantity
-        else None
-    )
-    strategy_slippage = (
-        strategy_vwap - arrival_midpoint_ticks
-        if strategy_vwap is not None
-        else None
-    )
-    baseline_slippage = (
-        baseline_vwap_ticks - arrival_midpoint_ticks
-        if baseline_vwap_ticks is not None
-        else None
-    )
-    improvement = (
-        baseline_vwap_ticks - strategy_vwap
-        if completed
-        and strategy_vwap is not None
-        and baseline_vwap_ticks is not None
-        else None
-    )
-    score = (
-        improvement
-        if improvement is not None
-        else challenge["scoring"]["incomplete_or_invalid_episode_score"]
-    )
-
-    return {
-        "seed": seed,
-        "status": status,
-        "completed": completed,
-        "score": _round_metric(score),
-        "completion_ratio": _round_metric(
-            state.filled_quantity / state.target_quantity
-        ),
-        "filled_quantity": state.filled_quantity,
-        "remaining_quantity": state.remaining_quantity,
-        "strategy_vwap_ticks": _round_metric(strategy_vwap),
-        "baseline_vwap_ticks": _round_metric(baseline_vwap_ticks),
-        "arrival_midpoint_ticks": _round_metric(arrival_midpoint_ticks),
-        "strategy_slippage_ticks": _round_metric(strategy_slippage),
-        "baseline_slippage_ticks": _round_metric(baseline_slippage),
-        "execution_cost_improvement_ticks": _round_metric(improvement),
-        "submitted_order_count": state.submitted_order_count,
-        "submitted_action_count": state.submitted_action_count,
-        "maximum_open_orders": state.maximum_open_orders,
-        "error_reason": error_reason,
-    }
-
-
 def evaluate_episode(
     challenge: dict[str, Any],
     seed: int,
@@ -734,6 +680,7 @@ def evaluate_episode(
         last_event_index = event_index
         if state.invalid_reason is not None:
             break
+        state.events_processed = event_index + 1
         if event_index > 0:
             market_update = market.advance()
             _append_replay(
@@ -838,12 +785,20 @@ def evaluate_episode(
             else None
         )
 
-    metrics = _episode_metrics(
-        challenge,
-        state,
-        seed,
-        arrival_midpoint_ticks,
-        baseline_vwap_ticks,
+    metrics = calculate_episode_metrics(
+        challenge=challenge,
+        seed=seed,
+        target_quantity=state.target_quantity,
+        filled_quantity=state.filled_quantity,
+        cash_spent_ticks=state.total_cost_tick_units,
+        baseline_average_fill_price_ticks=baseline_vwap_ticks,
+        arrival_midpoint_ticks=arrival_midpoint_ticks,
+        invalid_reason=state.invalid_reason,
+        events_processed=state.events_processed,
+        actions_submitted=state.submitted_action_count,
+        orders_submitted=state.submitted_order_count,
+        fill_count=state.fill_count,
+        maximum_open_orders=state.maximum_open_orders,
     )
     _append_replay(replay, {"type": "episode_result", **copy.deepcopy(metrics)})
 
@@ -870,6 +825,7 @@ def evaluate_challenge(
     strategy: Strategy,
     strategy_name: str,
     seed_set: str = "local_evaluation",
+    challenge_source: str = "arena/challenges/beat_market_order.v1.json",
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     seeds = challenge["episodes"].get(seed_set)
     if not isinstance(seeds, list) or not seeds:
@@ -898,62 +854,16 @@ def evaluate_challenge(
         if close_strategy is not None:
             close_strategy()
 
-    aggregate_score = sum(result["score"] for result in episode_results) / len(
-        episode_results
+    result = build_result_document(
+        challenge=challenge,
+        challenge_source=challenge_source,
+        strategy_name=strategy_name,
+        strategy_mode=getattr(strategy, "strategy_kind", "built_in"),
+        runner_version=RUNNER_VERSION,
+        seed_set=seed_set,
+        seeds=list(seeds),
+        episode_results=episode_results,
     )
-    completed_count = sum(result["completed"] for result in episode_results)
-    invalid_count = sum(
-        result["status"] == "invalid" for result in episode_results
-    )
-
-    result = {
-        "result_schema_version": challenge["outputs"]["result"]["schema_version"],
-        "runner_version": RUNNER_VERSION,
-        "challenge": {
-            "schema_version": challenge["schema_version"],
-            "challenge_id": challenge["challenge_id"],
-            "title": challenge["title"],
-            "challenge_type": challenge["challenge_type"],
-        },
-        "strategy": {
-            "name": strategy_name,
-            "kind": getattr(strategy, "strategy_kind", "built_in"),
-            "api_version": challenge["strategy"]["api_version"],
-        },
-        "simulation": {
-            "model": "python_level_book_skeleton_v1",
-            "uses_cpp_matching_engine": False,
-            "configured_engine_version": challenge["market"]["engine_version"],
-            "scenario_generator": {
-                "name": challenge["market"]["scenario_generator"]["name"],
-                "version": challenge["market"]["scenario_generator"]["version"],
-                "prng": copy.deepcopy(
-                    challenge["market"]["scenario_generator"]["prng"]
-                ),
-            },
-        },
-        "evaluation": {
-            "seed_set": seed_set,
-            "seeds": list(seeds),
-            "episode_count": len(episode_results),
-            "completed_episode_count": completed_count,
-            "invalid_episode_count": invalid_count,
-            "all_completed": completed_count == len(episode_results),
-        },
-        "scoring": {
-            "version": challenge["scoring"]["version"],
-            "metric": challenge["scoring"]["completed_episode_score_metric"],
-            "aggregate": challenge["scoring"]["aggregate"],
-            "aggregate_score": _round_metric(aggregate_score),
-            "higher_is_better": challenge["scoring"]["higher_is_better"],
-            "baseline_strategy": challenge["scoring"]["baseline_strategy"],
-        },
-        "episodes": episode_results,
-        "replay": {
-            "format": challenge["outputs"]["replay"]["format"],
-            "schema_version": challenge["outputs"]["replay"]["schema_version"],
-        },
-    }
     return result, replay_records
 
 
@@ -1012,7 +922,11 @@ def main(argv: list[str] | None = None) -> int:
         else:
             strategy_name, strategy = BUILT_IN_STRATEGIES[args.strategy]
         result, replay = evaluate_challenge(
-            challenge, strategy, strategy_name, args.seed_set
+            challenge,
+            strategy,
+            strategy_name,
+            args.seed_set,
+            challenge_source=args.challenge,
         )
         result["replay"]["path"] = args.replay_out
         write_result(args.results_out, result)

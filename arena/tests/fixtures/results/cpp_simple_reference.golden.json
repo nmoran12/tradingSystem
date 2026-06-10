@@ -1,0 +1,79 @@
+{
+  "aggregate_metrics": {
+    "completed_episode_count": 3,
+    "episode_count": 3,
+    "incomplete_episode_count": 0,
+    "invalid_episode_count": 0,
+    "mean_completed_improvement_ticks": 1.865333,
+    "mean_fill_rate": 1.0,
+    "score": 1.865333,
+    "valid_episode_count": 3
+  },
+  "episodes": [
+    {
+      "average_fill_price_ticks": 9999.804,
+      "cash_spent_ticks": 4999902,
+      "completed": true,
+      "events_processed": 19,
+      "fill_count": 4,
+      "fill_rate": 1.0,
+      "filled_quantity": 500,
+      "improvement_bps": 1.995641,
+      "improvement_ticks": 1.996,
+      "invalid_reason": null,
+      "score": 1.996,
+      "seed": 901,
+      "slippage_bps": -0.196,
+      "slippage_ticks": -0.196,
+      "status": "completed",
+      "valid": true
+    },
+    {
+      "average_fill_price_ticks": 10000.0,
+      "cash_spent_ticks": 5000000,
+      "completed": true,
+      "events_processed": 40,
+      "fill_count": 4,
+      "fill_rate": 1.0,
+      "filled_quantity": 500,
+      "improvement_bps": 1.799676,
+      "improvement_ticks": 1.8,
+      "invalid_reason": null,
+      "score": 1.8,
+      "seed": 902,
+      "slippage_bps": 0.0,
+      "slippage_ticks": 0.0,
+      "status": "completed",
+      "valid": true
+    },
+    {
+      "average_fill_price_ticks": 10000.0,
+      "cash_spent_ticks": 5000000,
+      "completed": true,
+      "events_processed": 25,
+      "fill_count": 3,
+      "fill_rate": 1.0,
+      "filled_quantity": 500,
+      "improvement_bps": 1.799676,
+      "improvement_ticks": 1.8,
+      "invalid_reason": null,
+      "score": 1.8,
+      "seed": 903,
+      "slippage_bps": 0.0,
+      "slippage_ticks": 0.0,
+      "status": "completed",
+      "valid": true
+    }
+  ],
+  "result_generator": {
+    "name": "arena_execution_result",
+    "timestamp_policy": "none",
+    "version": "1.0"
+  },
+  "schema_version": "1.1",
+  "score_version": "1.0",
+  "strategy": {
+    "identifier": "arena_simple_reference_strategy",
+    "mode": "external_cpp_process"
+  }
+}

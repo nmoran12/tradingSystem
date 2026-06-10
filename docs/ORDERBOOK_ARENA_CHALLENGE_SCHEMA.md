@@ -36,6 +36,7 @@ The example challenge is
 | Field | Meaning |
 |---|---|
 | `schema_version` | Version of this challenge document format. |
+| `challenge_version` | Version of the challenge content and rules. |
 | `challenge_id` | Stable lowercase identifier. |
 | `title` | Display title. |
 | `difficulty` | Display difficulty: initially `easy`, `medium`, or `hard`. |
@@ -201,8 +202,9 @@ The first schema supports:
 - local callback timeout placeholder;
 - future hosted callback timeout placeholder.
 
-Timeout fields describe the intended runner contract. A2 does not implement or
-enforce them.
+The local C++ process adapter enforces `local_callback_timeout_ms` per response.
+The hosted timeout remains a placeholder because hosted execution does not
+exist.
 
 Limit violations should produce a structured invalid-run result rather than a
 normal score.
@@ -234,12 +236,14 @@ the target.
 
 Result output also reports:
 
-- completion ratio;
-- strategy and baseline VWAP;
-- strategy and baseline slippage from arrival midpoint;
-- execution-cost improvement;
+- fill rate;
+- strategy and baseline average fill price in ticks;
+- strategy and baseline slippage from arrival midpoint in ticks and basis
+  points;
+- baseline-relative improvement in ticks and basis points;
+- execution cost in tick-quantity units;
 - filled and remaining quantity;
-- order and action counts;
+- event, order, action, and fill counts;
 - maximum open orders;
 - invalid-run reason, when applicable.
 
@@ -251,16 +255,20 @@ prices and a precise mark-to-market definition.
 
 ### Result JSON
 
-The result file should contain:
+Result schema `1.1` contains:
 
-- result schema version and status;
-- challenge, engine, generator, and strategy API versions;
-- language and strategy identifier;
+- result generator and timestamp policy;
+- challenge, simulator, generator, PRNG, score, and strategy API versions;
+- strategy mode and identifier;
 - seed set and per-episode seeds;
-- overall score and per-episode metrics;
-- baseline metrics;
-- limit or callback failures;
+- aggregate score and supporting metrics;
+- per-episode status, metrics, counters, and reproduction metadata;
+- invalid, incomplete, process, limit, or callback failures;
 - replay file reference.
+
+See
+[`ORDERBOOK_ARENA_RESULT_SCHEMA.md`](ORDERBOOK_ARENA_RESULT_SCHEMA.md) for
+field definitions and units.
 
 ### Replay JSONL
 
@@ -275,10 +283,9 @@ The replay should contain ordered records for:
 - portfolio updates;
 - final metrics.
 
-A2 defines expected content only. Replay and result schemas are implemented in
-later milestones.
+Replay schema formalization remains a later milestone.
 
-## Validation Rules for the Future Parser
+## Validation Rules
 
 - `schema_version` must be supported.
 - `challenge_type` must be `execution_v1`.
@@ -292,4 +299,5 @@ later milestones.
 - The configured baseline and named score metric must be supported.
 - Output schema versions and filenames must be present.
 
-The parser and these validation checks belong to the runner milestone, not A2.
+The local evaluator implements the checks needed by the current example.
+Future challenge types will require their own versioned validation rules.

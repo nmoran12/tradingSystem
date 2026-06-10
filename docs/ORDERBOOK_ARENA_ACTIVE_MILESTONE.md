@@ -1,68 +1,73 @@
-# Active Milestone: A4 Local C++ Strategy Runner
+# Active Milestone: A5 Scoring Engine and Result JSON
 
 **Status:** Complete
 
 ## Previous Milestone
 
-A3, Local `execution_v1` Evaluator Skeleton, was committed as `c45605e` with
-commit message:
+A4, Local C++ Strategy Runner, was committed as `b6873d8` with commit message:
 
 ```text
-feat: add deterministic execution evaluator skeleton
+feat: add local c++ strategy runner
 ```
 
 ## Goal
 
-Give trusted local C++ strategies the same `execution_v1` callback and action
-semantics as built-in strategies through a separate compiled process.
-
-The evaluator continues to own deterministic simulation, action validation,
-portfolio state, baseline comparison, scoring, result generation, and replay
-generation.
+Produce explainable, versioned result JSON from deterministic `execution_v1`
+episodes without changing the existing strategy protocol or simulation model.
 
 ## Implemented Scope
 
-- [x] Function-based C++ `BookView`, `Portfolio`, and `Action` interface.
-- [x] Header-owned JSON Lines protocol loop.
-- [x] Example C++ limit-then-market-cleanup strategy.
-- [x] Standalone CMake build for the example.
-- [x] One persistent trusted local process per evaluation.
-- [x] `book_update`, `episode_end`, and `evaluation_end` messages.
-- [x] Per-response timeout using the challenge's local timeout.
-- [x] Protocol fixtures for normalized input and action output.
-- [x] Result and replay output through the existing evaluator path.
-- [x] Tests for build, success, determinism, fixtures, invalid JSON, malformed
-  responses, early exit, and timeout.
-- [x] Existing built-in strategy behavior and tests preserved.
+- [x] Result schema `1.1` and result generator `1.0`.
+- [x] Explicit no-wall-clock timestamp policy.
+- [x] Score version `1.0` retained without behavior changes.
+- [x] Canonical quantity, cost, VWAP, fill-rate, slippage, and improvement
+  metrics with documented units and basis-point denominators.
+- [x] Per-episode validity, completion, counters, errors, and reproduction
+  metadata.
+- [x] Aggregate counts, mean fill rate, mean completed improvement, and score.
+- [x] Arithmetic-mean score across every configured local evaluation seed.
+- [x] Hand-calculated unit tests for completed, partial, zero-fill, invalid,
+  and incomplete cases.
+- [x] Golden result fixtures for built-in, C++, invalid, and incomplete runs.
+- [x] Byte-stability test for deterministic result serialization.
+- [x] Existing built-in and C++ strategy-process behavior preserved.
 
-## Security Boundary
+## Score Contract
 
-This is trusted local execution only.
+For a completed buy episode:
 
-The strategy process:
+```text
+score = baseline_average_fill_price_ticks - average_fill_price_ticks
+```
 
-- runs with the current user's permissions;
-- is not sandboxed or isolated;
-- may access local files, processes, and network resources;
-- must not be exposed as hosted arbitrary-code execution.
+Invalid and incomplete episodes score zero. A completed episode may have a
+negative score when it performs worse than the baseline. The aggregate score
+is the mean of all selected episode scores.
 
-The timeout is a development reliability limit, not a security boundary.
+Score behavior remains version `1.0`. The result schema moved to `1.1` because
+the result now formalizes metrics, counters, reproduction data, and error
+fields.
 
 ## Architecture Boundary
 
-A4 does not invoke the C++ matching engine. The simulator remains
-`python_level_book_skeleton_v1`, and result metadata states
-`uses_cpp_matching_engine: false`.
+A5 still uses `python_level_book_skeleton_v1`. It does not invoke the C++
+matching engine, run external Python strategies, add website UI, or provide
+hosted or sandboxed execution.
 
-A4 also does not add external Python execution, Docker, WASM, containers,
-network services, website UI, accounts, leaderboards, or hosted execution.
+The C++ process remains trusted local code.
 
 ## Checks
 
 ```bash
+python3 -m json.tool arena/challenges/beat_market_order.v1.json
+python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
 cmake -S arena/cpp -B build/arena-cpp
 cmake --build build/arena-cpp
-python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy simple_reference \
+  --results-out arena/results/builtin.result.json \
+  --replay-out arena/replays/builtin.replay.jsonl
 python3 arena/tools/evaluate_execution_v1.py \
   --challenge arena/challenges/beat_market_order.v1.json \
   --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
@@ -74,5 +79,6 @@ git diff --check
 
 ## Exit Condition
 
-A4 is committed separately. Do not start C++ matching-engine integration,
-external Python execution, or hosted execution as part of this milestone.
+A5 is committed separately. Replay schema/viewer work, C++ matching-engine
+integration, external Python execution, and hosted execution remain outside
+this milestone.

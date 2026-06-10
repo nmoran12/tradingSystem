@@ -135,7 +135,7 @@ systems and low-latency candidates without coupling strategy code to the judge.
 **Deliverables**
 
 - scoring rules for the example challenge;
-- PnL-style, slippage, fill-rate, drawdown, and risk metrics where applicable;
+- VWAP, slippage, fill-rate, completion, and baseline-improvement metrics;
 - versioned result JSON schema;
 - per-episode results and reproduction metadata.
 
@@ -150,7 +150,8 @@ systems and low-latency candidates without coupling strategy code to the judge.
 
 - hand-calculated metric unit tests;
 - golden-result integration tests;
-- zero-fill, partial-fill, loss, drawdown, and risk-limit cases.
+- zero-fill, partial-fill, completed, invalid, and incomplete cases;
+- built-in and C++ strategy result regression checks.
 
 **Why it matters:** Supporting metrics make scoring credible and help users
 understand trade-offs instead of optimizing an unexplained number.

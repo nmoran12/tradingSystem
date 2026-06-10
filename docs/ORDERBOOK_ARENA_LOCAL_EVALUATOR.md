@@ -70,7 +70,8 @@ The scenario generator uses SplitMix64 implemented directly in
 selection. The evaluator does not use Python's `random` module.
 
 For a fixed challenge file, seed set, runner version, and deterministic
-strategy, repeated runs should produce byte-identical result and replay files.
+strategy, repeated runs should produce byte-identical result and replay files
+when the same output paths are used. Result JSON has no wall-clock timestamp.
 
 ## Built-In Strategies
 
@@ -109,6 +110,13 @@ Any invalid action invalidates the episode. The result sets `completed` to
 An episode that reaches the end without filling the full target is incomplete
 and also receives a score of zero.
 
+Completed episodes score the price-tick VWAP improvement over the same-seed
+immediate-market baseline. The aggregate score is the arithmetic mean across
+every selected seed, including zero scores from invalid or incomplete
+episodes. See
+[`ORDERBOOK_ARENA_RESULT_SCHEMA.md`](ORDERBOOK_ARENA_RESULT_SCHEMA.md) for
+formulas, units, schema versions, and reproduction metadata.
+
 ## Replay Records
 
 The JSONL replay includes episode metadata, market updates, visible book and
@@ -124,4 +132,5 @@ python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
 The tests cover config loading, seed determinism, strict invalid-action
 handling, full-completion scoring, local seed aggregation, C++ compilation,
 protocol fixtures, C++ repeatability, invalid JSON, malformed responses,
-process exit, and timeout handling.
+process exit, timeout handling, hand-calculated metrics, byte stability, and
+golden result fixtures.
