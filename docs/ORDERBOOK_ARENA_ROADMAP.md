@@ -11,6 +11,11 @@ trusted C++ process. External Python strategy execution remains planned. Hosted
 code execution is deferred until the challenge and strategy contracts are
 stable and a credible sandbox design exists.
 
+The near-term sequence is: finish the local MVP, add local Python execution,
+ship strategy authoring docs/templates, dogfood the product with 2-3 custom
+strategies, then write the hosted Python threat model before any hosted
+implementation begins.
+
 ## First Six Weeks
 
 The six-week target is a coherent local judging loop plus the website surfaces
@@ -96,6 +101,10 @@ integration, secure hosted execution, accounts, trusted public submissions, or
 a leaderboard. The week-by-week plan above records the original intended
 sequence; implementation prioritized the evaluator skeleton and C++ process
 before an external Python adapter.
+
+The revised post-A8 sequence is A8.6 local Python, A8.7 authoring docs and
+templates, A8.8 dogfooding, A9.1 hosted Python threat model, and A9.2 hosted
+Python prototype.
 
 ## Post-MVP Hosted Execution
 

@@ -74,10 +74,11 @@ The current MVP provides:
 - replay export and a browser-based replay viewer;
 - website pages for browsing challenges and reading prompts.
 
-Planned work includes an external Python strategy runner, C++ matching-engine
-integration, and eventually a separate hosted Python sandbox spike. Hosted C++
-execution follows later because compiling and running native code safely adds
-more operational and security complexity.
+Planned work next is local Python strategy execution, strategy authoring
+docs/templates, and dogfooding with a few custom strategies. Only after that
+should the project move to hosted Python threat modeling and prototype work.
+Hosted C++ execution follows later because compiling and running native code
+safely adds more operational and security complexity.
 
 ## What It Is Not
 

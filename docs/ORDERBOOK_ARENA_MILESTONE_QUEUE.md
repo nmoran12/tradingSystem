@@ -261,34 +261,157 @@ fresh checkout before hosted-execution work begins.
 **Why it matters:** It makes the existing MVP demonstrable without increasing
 product scope or weakening the hosted-execution security boundary.
 
-## A9. Hosted Python Sandbox Spike
+## A8.6. Local Python Strategy Runner
 
-**Goal:** Test whether isolated Python execution can support the final Run and
-Submit experience.
+**Goal:** Run local Python strategy files through the same JSONL protocol used
+by the trusted local C++ strategy runner.
+
+**Purpose:** Complete the local Python/C++ product promise before any hosted
+execution work begins.
+
+**Deliverables**
+
+- standalone Python strategy example;
+- `--strategy-file` or equivalent evaluator mode;
+- JSONL stdin/stdout protocol reuse;
+- trusted-local-only warning;
+- invalid JSON, timeout, and early-exit handling;
+- tests for deterministic Python strategy execution;
+- docs showing how to run local Python strategies.
+
+**Acceptance criteria**
+
+- a local Python strategy can complete the example challenge;
+- built-in and C++ local modes keep working;
+- invalid JSON, timeout, and early exit invalidate the episode;
+- the docs say the mode is trusted local execution only, not sandboxed or
+  leaderboard-verified.
+
+**Tests/checks**
+
+- deterministic Python strategy execution tests;
+- invalid JSON, timeout, and early-exit tests;
+- existing Arena and C++ suites.
+
+**Why it matters:** Python is a target strategy language, so the local MVP is
+not complete until both local language paths are available.
+
+## A8.7. Strategy Authoring Docs and Templates
+
+**Goal:** Make it easy for users to write, debug, and improve local Python/C++
+strategies.
+
+**Deliverables**
+
+- strategy authoring guide;
+- Python starter template;
+- C++ starter template;
+- explanation of book update messages;
+- explanation of portfolio state;
+- allowed actions reference;
+- order ID guidance;
+- debugging invalid actions;
+- examples of simple strategy improvements.
+
+**Acceptance criteria**
+
+- docs show how to reason about strategy inputs and outputs;
+- templates match the local evaluator contracts;
+- the guide helps users diagnose common invalid-action mistakes.
+
+**Tests/checks**
+
+- README and docs review for consistency;
+- starter-template smoke review against the protocol contract;
+- existing evaluator tests remain green.
+
+**Why it matters:** The product is only useful if a user can get from prompt to
+working strategy without guessing the protocol.
+
+## A8.8. Local Dogfooding Strategies
+
+**Goal:** Validate the local MVP by writing and running several custom
+strategies.
+
+**Deliverables**
+
+- 2-3 example strategies with different behaviours;
+- comparison of scores;
+- sample result/replay artifacts;
+- notes on what was confusing or missing;
+- possible improvements before hosted execution.
+
+**Acceptance criteria**
+
+- the custom strategies run locally and produce comparable outputs;
+- the doc set captures what remained unclear or awkward;
+- the examples are still clearly local-only and unverified.
+
+**Tests/checks**
+
+- local evaluator runs for each example strategy;
+- result/replay inspection in the website;
+- score comparison notes are reproducible.
+
+**Why it matters:** Dogfooding usually finds protocol or UX gaps before hosted
+execution makes them harder to fix.
+
+## A9.1. Hosted Python Sandbox Threat Model
+
+**Goal:** Document trust boundaries, abuse cases, resource limits, job lifecycle,
+and security requirements before writing sandbox code.
 
 **Deliverables**
 
 - threat model and trust-boundary diagram;
-- isolated Python job prototype;
 - CPU, wall-clock, memory, process, filesystem, network, and output limits;
-- queue, cleanup, logging, and dependency policy notes;
-- measurements and known bypass risks.
+- job lifecycle and cleanup design;
+- abuse-case notes and hardening criteria;
+- criteria before any hosted Run/Submit UI is enabled.
 
 **Acceptance criteria**
 
-- jobs cannot access the web service process or other job workspaces;
-- network and filesystem policies are verified;
-- process trees are terminated on timeout;
-- the spike is explicitly labelled non-production unless independently hardened.
+- trust boundaries are documented;
+- resource limits are explicit;
+- abuse cases and rejection criteria are listed;
+- no hosted Run/Submit UI is implied until the model is credible.
 
 **Tests/checks**
 
-- timeout, fork/process, memory, disk, output, and network abuse cases;
-- concurrent isolation tests;
-- cleanup and stale-job tests.
+- threat-model review;
+- limit-policy review;
+- abuse-case checklist.
 
-**Why it matters:** Hosted Python removes the download step, but only if
-untrusted execution is treated as a security boundary.
+**Why it matters:** Hosted Python should only start after the local product is
+stable and the trust boundary is written down first.
+
+## A9.2. Hosted Python Sandbox Prototype
+
+**Goal:** Implement the first hosted Python sandbox spike only after the threat
+model exists.
+
+**Deliverables**
+
+- isolated job workspace prototype;
+- timeout, memory, process, and output tests;
+- artifact collection;
+- explicit non-production warning.
+
+**Acceptance criteria**
+
+- jobs cannot access the host workspace or other jobs;
+- timeouts terminate the process tree;
+- the prototype remains clearly non-production;
+- the prototype produces reviewable artifacts.
+
+**Tests/checks**
+
+- timeout, memory, output, and process-abuse tests;
+- cleanup and stale-job tests;
+- artifact collection check.
+
+**Why it matters:** This is the first practical validation of the hosted model
+after the security requirements are written down.
 
 ## A10. Hosted C++ Sandbox Spike
 

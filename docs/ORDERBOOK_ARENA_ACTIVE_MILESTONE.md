@@ -68,3 +68,8 @@ type-checks the frontend, and runs its production build/tests.
 ## Exit Condition
 
 A8.5 is committed separately. A9 hosted Python sandboxing has not started.
+
+## Next Planned Milestone
+
+A8.6, Local Python Strategy Runner, is the next planned milestone. It remains
+unimplemented until the local Python adapter is added.

@@ -89,6 +89,10 @@ python3 arena/tools/evaluate_execution_v1.py \
 
 The C++ process runs with your local user permissions and is not sandboxed.
 
+The next planned step is a local Python strategy runner, followed by strategy
+authoring docs/templates and dogfooding the local MVP before any hosted
+sandboxing work begins.
+
 ### Open the website
 
 ```bash
