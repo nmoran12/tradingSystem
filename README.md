@@ -4,9 +4,23 @@ A C++20 low-latency market data and order book engine that processes exchange-st
 
 This project focuses on core market data infrastructure: parsing simulated exchange messages, maintaining a price-time priority order book, matching client orders, and measuring per-event processing latency. It is not a trading bot and does not connect to live exchanges.
 
-**Status:** Milestones 1–6 in progress · **123/123 tests** passing · replay + engine CLI + binary replay + benchmarks
+**Status:** Existing order-book engine with replay, engine CLI, binary replay,
+benchmarks, and an experimental OrderBook Arena planning track.
 
 Run all commands from this directory (`cpp-low-latency-orderbook/`), not the parent workspace folder.
+
+## OrderBook Arena direction
+
+This repository is being extended experimentally toward **OrderBook Arena**: a
+LeetCode-style challenge website where users can browse prompts, view examples,
+and inspect replays. Strategies run on the user's machine through a local CLI,
+which uses the existing C++ matching engine and deterministic market scenarios.
+
+The first goal is a website-first, local-judging MVP with challenge
+definitions, scoring, and replay files. It does not include live trading or
+secure server-side code execution. See
+[docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) and
+[docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md).
 
 ## Project documentation
 
@@ -22,6 +36,11 @@ Run all commands from this directory (`cpp-low-latency-orderbook/`), not the par
 | [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | File-based replay visualiser UI (spike) |
 | [docs/MILESTONE_5_PLAN.md](docs/MILESTONE_5_PLAN.md) | Binary protocol milestone plan |
 | [docs/MILESTONE_6_PLAN.md](docs/MILESTONE_6_PLAN.md) | Performance and SPSC milestone plan |
+| [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) | Arena purpose, MVP, and non-goals |
+| [docs/ORDERBOOK_ARENA_ARCHITECTURE.md](docs/ORDERBOOK_ARENA_ARCHITECTURE.md) | Planned Arena components and data flow |
+| [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md) | Four-to-six-week Arena delivery plan |
+| [docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md](docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md) | Small, testable Arena milestones |
+| [docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md](docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md) | Next Arena implementation milestone |
 
 ## Architecture
 
