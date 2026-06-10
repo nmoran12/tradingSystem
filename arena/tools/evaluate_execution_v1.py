@@ -11,9 +11,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    from arena.tools.cpp_strategy_process import (
+        CppStrategyProcess,
+        StrategyProcessError,
+    )
+except ModuleNotFoundError:
+    from cpp_strategy_process import CppStrategyProcess, StrategyProcessError
+
 
 MASK_64 = (1 << 64) - 1
-RUNNER_VERSION = "execution_v1_evaluator_v1"
+RUNNER_VERSION = "execution_v1_evaluator_v2"
 Strategy = Callable[[dict[str, Any], dict[str, Any]], list[dict[str, Any]]]
 
 
@@ -686,6 +694,7 @@ def evaluate_episode(
     limits = challenge["limits"]
     market = MarketState(generator, SplitMix64(seed))
     state = EpisodeState(challenge["task"]["target_quantity"], market)
+    last_event_index = 0
     replay: list[dict[str, Any]] = [
         {
             "type": "episode_start",
@@ -709,7 +718,22 @@ def evaluate_episode(
         initial_bids[0]["price_ticks"] + initial_asks[0]["price_ticks"]
     ) / 2
 
+    begin_episode = getattr(strategy, "begin_episode", None)
+    if begin_episode is not None:
+        try:
+            begin_episode(seed)
+        except Exception as error:
+            reason = (
+                f"strategy process error: {error}"
+                if isinstance(error, StrategyProcessError)
+                else f"strategy setup raised {type(error).__name__}: {error}"
+            )
+            _invalidate(state, replay, 0, reason)
+
     for event_index in range(generator["event_count"]):
+        last_event_index = event_index
+        if state.invalid_reason is not None:
+            break
         if event_index > 0:
             market_update = market.advance()
             _append_replay(
@@ -739,12 +763,17 @@ def evaluate_episode(
 
         try:
             actions = strategy(copy.deepcopy(book), copy.deepcopy(portfolio))
-        except Exception as error:  # Built-ins today; external adapters come later.
+        except Exception as error:
+            reason = (
+                f"strategy process error: {error}"
+                if isinstance(error, StrategyProcessError)
+                else f"strategy callback raised {type(error).__name__}: {error}"
+            )
             _invalidate(
                 state,
                 replay,
                 event_index,
-                f"strategy callback raised {type(error).__name__}: {error}",
+                reason,
             )
             break
 
@@ -788,6 +817,19 @@ def evaluate_episode(
                 "portfolio": state.portfolio_view(),
             },
         )
+
+    end_episode = getattr(strategy, "end_episode", None)
+    if end_episode is not None:
+        try:
+            end_episode(seed)
+        except Exception as error:
+            if state.invalid_reason is None:
+                reason = (
+                    f"strategy process error: {error}"
+                    if isinstance(error, StrategyProcessError)
+                    else f"strategy teardown raised {type(error).__name__}: {error}"
+                )
+                _invalidate(state, replay, last_event_index, reason)
 
     if baseline_vwap_ticks is None and strategy_name == "immediate_market_order_baseline":
         baseline_vwap_ticks = (
@@ -836,20 +878,25 @@ def evaluate_challenge(
     episode_results: list[dict[str, Any]] = []
     replay_records: list[dict[str, Any]] = []
 
-    for seed in seeds:
-        baseline_result, _ = _baseline_for_seed(challenge, seed)
-        if not baseline_result["completed"]:
-            raise RuntimeError(f"baseline did not complete for seed {seed}")
+    try:
+        for seed in seeds:
+            baseline_result, _ = _baseline_for_seed(challenge, seed)
+            if not baseline_result["completed"]:
+                raise RuntimeError(f"baseline did not complete for seed {seed}")
 
-        episode_result, episode_replay = evaluate_episode(
-            challenge,
-            seed,
-            strategy,
-            strategy_name,
-            baseline_result["strategy_vwap_ticks"],
-        )
-        episode_results.append(episode_result)
-        replay_records.extend(episode_replay)
+            episode_result, episode_replay = evaluate_episode(
+                challenge,
+                seed,
+                strategy,
+                strategy_name,
+                baseline_result["strategy_vwap_ticks"],
+            )
+            episode_results.append(episode_result)
+            replay_records.extend(episode_replay)
+    finally:
+        close_strategy = getattr(strategy, "close", None)
+        if close_strategy is not None:
+            close_strategy()
 
     aggregate_score = sum(result["score"] for result in episode_results) / len(
         episode_results
@@ -870,7 +917,7 @@ def evaluate_challenge(
         },
         "strategy": {
             "name": strategy_name,
-            "kind": "built_in",
+            "kind": getattr(strategy, "strategy_kind", "built_in"),
             "api_version": challenge["strategy"]["api_version"],
         },
         "simulation": {
@@ -929,14 +976,18 @@ def write_replay(path: str | Path, records: list[dict[str, Any]]) -> None:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate a built-in strategy for an execution_v1 challenge."
+        description="Evaluate an execution_v1 strategy."
     )
     parser.add_argument("--challenge", required=True, help="Challenge JSON path")
-    parser.add_argument(
+    strategy_group = parser.add_mutually_exclusive_group(required=True)
+    strategy_group.add_argument(
         "--strategy",
-        required=True,
         choices=sorted(BUILT_IN_STRATEGIES),
         help="Built-in evaluator strategy",
+    )
+    strategy_group.add_argument(
+        "--strategy-process",
+        help="Trusted local C++ strategy executable",
     )
     parser.add_argument(
         "--seed-set",
@@ -952,14 +1003,26 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
         challenge = load_challenge(args.challenge)
-        strategy_name, strategy = BUILT_IN_STRATEGIES[args.strategy]
+        if args.strategy_process:
+            strategy = CppStrategyProcess(
+                args.strategy_process,
+                challenge["limits"]["local_callback_timeout_ms"],
+            )
+            strategy_name = strategy.strategy_name
+        else:
+            strategy_name, strategy = BUILT_IN_STRATEGIES[args.strategy]
         result, replay = evaluate_challenge(
             challenge, strategy, strategy_name, args.seed_set
         )
         result["replay"]["path"] = args.replay_out
         write_result(args.results_out, result)
         write_replay(args.replay_out, replay)
-    except (ChallengeConfigError, OSError, RuntimeError) as error:
+    except (
+        ChallengeConfigError,
+        OSError,
+        RuntimeError,
+        StrategyProcessError,
+    ) as error:
         print(f"evaluation failed: {error}", file=sys.stderr)
         return 1
 

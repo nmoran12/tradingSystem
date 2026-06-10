@@ -27,6 +27,34 @@ post-MVP work. This project does not support live trading. See
 [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) and
 [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md).
 
+### Local Arena evaluator
+
+Built-in strategy mode:
+
+```bash
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy simple_reference \
+  --results-out arena/results/builtin.result.json \
+  --replay-out arena/replays/builtin.replay.jsonl
+```
+
+Trusted local C++ strategy mode:
+
+```bash
+cmake -S arena/cpp -B build/arena-cpp
+cmake --build build/arena-cpp
+
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
+  --results-out arena/results/cpp.result.json \
+  --replay-out arena/replays/cpp.replay.jsonl
+```
+
+The C++ process is not sandboxed, and this evaluator still uses the Python
+simulation skeleton rather than the C++ matching engine.
+
 ## Project documentation
 
 | Document | Description |

@@ -1,0 +1,31 @@
+{
+  "book": {
+    "asks": [
+      {
+        "price_ticks": 101,
+        "quantity": 100
+      }
+    ],
+    "bids": [
+      {
+        "price_ticks": 99,
+        "quantity": 100
+      }
+    ]
+  },
+  "episode_seed": 123,
+  "event_index": 0,
+  "events_remaining": 99,
+  "portfolio": {
+    "average_fill_price_ticks": null,
+    "cash_spent_ticks": 0,
+    "filled_quantity": 0,
+    "open_orders": [],
+    "remaining_quantity": 500,
+    "target_quantity": 500
+  },
+  "protocol_version": "1.0",
+  "symbol": "ARENA",
+  "timestamp_ms": 0,
+  "type": "book_update"
+}

@@ -1,0 +1,11 @@
+{
+  "actions": [
+    {
+      "order_id": 1,
+      "price_ticks": 100,
+      "quantity": 500,
+      "type": "limit_order"
+    }
+  ],
+  "type": "actions"
+}

@@ -2,15 +2,16 @@
 
 ## Status
 
-The A3 evaluator is a deterministic Python skeleton for the first
+The local evaluator is a deterministic Python simulation skeleton for the first
 `execution_v1` challenge. It proves challenge loading, seeded episode
-generation, baseline comparison, scoring, and result/replay output.
+generation, strategy callbacks, baseline comparison, scoring, and
+result/replay output.
 
-It runs only built-in reference strategies. It does not execute user Python or
-C++ code, provide sandboxing, call the C++ matching engine, or implement the
-website. Those remain later milestones.
+It supports built-in evaluator strategies and a separately compiled C++
+strategy process. It does not provide sandboxing, run external Python
+strategies, call the C++ matching engine, or implement the website.
 
-## Run
+## Built-In Strategy
 
 From the repository root:
 
@@ -26,6 +27,39 @@ Use `--strategy baseline` to evaluate the immediate-market baseline. The
 default seed set is `local_evaluation`; every seed in that set contributes to
 the aggregate score.
 
+## C++ Strategy Process
+
+Build the included C++ example:
+
+```bash
+cmake -S arena/cpp -B build/arena-cpp
+cmake --build build/arena-cpp
+```
+
+Then run it through the evaluator:
+
+```bash
+python3 arena/tools/evaluate_execution_v1.py \
+  --challenge arena/challenges/beat_market_order.v1.json \
+  --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
+  --results-out arena/results/cpp.result.json \
+  --replay-out arena/replays/cpp.replay.jsonl
+```
+
+The starter interface is
+[`arena/cpp/execution_v1_strategy.hpp`](../arena/cpp/execution_v1_strategy.hpp).
+User code implements:
+
+```cpp
+std::vector<Action> onBookUpdate(
+    const BookView& book,
+    const Portfolio& portfolio);
+```
+
+The header owns the stdin/stdout protocol loop. See
+[`arena/protocol/execution_v1_protocol.md`](../arena/protocol/execution_v1_protocol.md)
+for the JSON Lines contract and fixtures.
+
 Generated result and replay files are ignored by Git. Their directories retain
 `.gitkeep` files.
 
@@ -35,8 +69,8 @@ The scenario generator uses SplitMix64 implemented directly in
 `evaluate_execution_v1.py`. It uses explicit unsigned 64-bit masking and modulo
 selection. The evaluator does not use Python's `random` module.
 
-For a fixed challenge file, seed set, runner version, and strategy, repeated
-runs should produce byte-identical result and replay files.
+For a fixed challenge file, seed set, runner version, and deterministic
+strategy, repeated runs should produce byte-identical result and replay files.
 
 ## Built-In Strategies
 
@@ -46,6 +80,26 @@ runs should produce byte-identical result and replay files.
 
 These strategies exercise the pipeline only. They are not claims of realistic
 execution quality.
+
+The C++ example implements the same limit-then-market-cleanup decisions as the
+built-in `simple_reference` strategy.
+
+## Process Boundary
+
+The C++ executable is trusted local code. It runs with the current user's
+permissions and is not isolated from the machine, filesystem, or network.
+
+The evaluator applies a per-response timeout from
+`limits.local_callback_timeout_ms`. This catches hangs for local development;
+it is not a security control.
+
+Invalid JSON, malformed response envelopes, process exit, timeout, and invalid
+actions invalidate the current episode with score zero and a clear result
+error.
+
+The A4 C++ process supplies decisions only. Simulation still uses
+`python_level_book_skeleton_v1`, and result metadata continues to state
+`uses_cpp_matching_engine: false`.
 
 ## Invalid and Incomplete Episodes
 
@@ -68,5 +122,6 @@ python3 -m unittest discover -s arena/tests -p 'test_*.py' -v
 ```
 
 The tests cover config loading, seed determinism, strict invalid-action
-handling, full-completion scoring, local seed aggregation, and repeatability of
-both built-in strategies.
+handling, full-completion scoring, local seed aggregation, C++ compilation,
+protocol fixtures, C++ repeatability, invalid JSON, malformed responses,
+process exit, and timeout handling.

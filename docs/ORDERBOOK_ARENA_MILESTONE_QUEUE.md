@@ -102,22 +102,28 @@ compiled process.
 
 **Deliverables**
 
-- C++ starter interface and example strategy;
-- documented build command or CLI build step;
-- process adapter using the shared protocol;
-- parity fixtures shared with Python.
+- function-based C++ starter interface and example strategy;
+- standalone CMake build;
+- trusted-local JSON Lines process adapter;
+- normalized request/response fixtures;
+- timeout and clear protocol/process failures.
 
 **Acceptance criteria**
 
-- a C++ baseline completes the example challenge;
-- it receives the same normalized events as the Python baseline;
-- crashes, timeouts, invalid messages, and build failures are reported clearly.
+- the C++ reference completes the example challenge;
+- repeated C++ runs are deterministic;
+- built-in strategy mode remains unchanged;
+- normalized payloads match versioned fixtures;
+- invalid JSON, malformed envelopes, exit, and timeout invalidate episodes;
+- docs state that the process is trusted local code and the C++ matching engine
+  is not used.
 
 **Tests/checks**
 
-- C++ protocol conformance tests;
-- cross-language event parity test;
-- compile and process-failure tests.
+- standalone CMake build;
+- protocol fixture and deterministic result/replay tests;
+- invalid JSON, malformed envelope, exit, and timeout tests;
+- existing Arena and C++ repository suites.
 
 **Why it matters:** Native strategy support makes the platform relevant to
 systems and low-latency candidates without coupling strategy code to the judge.
