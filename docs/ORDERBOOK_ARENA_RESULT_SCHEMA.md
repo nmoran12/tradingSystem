@@ -23,8 +23,8 @@ Normal result files contain no wall-clock timestamp. The timestamp policy is
 
 For a fixed challenge file path, challenge contents, seed set, strategy
 identifier, runner version, and deterministic strategy, result JSON is
-byte-stable. The CLI records the requested replay output path, so changing that
-path changes the result bytes without changing the evaluation.
+byte-stable. The CLI records only the replay filename, so changing its parent
+directory does not add a machine-specific absolute path.
 
 Reproduction metadata records:
 
@@ -49,7 +49,7 @@ Reproduction metadata records:
 | `scoring` | Score version, formulas, baseline, and aggregate score. |
 | `aggregate_metrics` | Supporting metrics aggregated across all episodes. |
 | `episodes` | Ordered per-seed results. |
-| `replay` | Replay format, schema version, and CLI output path when present. |
+| `replay` | Replay format, schema, artifact name, record count, and seeds. |
 
 `result_schema_version` is retained as an alias of `schema_version` for the A3
 and A4 result consumers.

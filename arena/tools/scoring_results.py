@@ -163,6 +163,7 @@ def build_result_document(
     seed_set: str,
     seeds: list[int],
     episode_results: list[dict[str, Any]],
+    replay_record_count: int,
 ) -> dict[str, Any]:
     episode_count = len(episode_results)
     completed_count = sum(result["completed"] for result in episode_results)
@@ -284,5 +285,10 @@ def build_result_document(
         "replay": {
             "format": challenge["outputs"]["replay"]["format"],
             "schema_version": challenge["outputs"]["replay"]["schema_version"],
+            "artifact_name": challenge["outputs"]["replay"][
+                "default_filename"
+            ],
+            "record_count": replay_record_count,
+            "seeds": list(seeds),
         },
     }

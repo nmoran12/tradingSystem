@@ -121,7 +121,21 @@ formulas, units, schema versions, and reproduction metadata.
 
 The JSONL replay includes episode metadata, market updates, visible book and
 portfolio snapshots, strategy actions, fills, cancellations, errors, and final
-metrics. Records include deterministic sequence numbers and episode seeds.
+metrics. Records include replay schema `1.0`, deterministic file and episode
+sequence numbers, event indexes, and episode seeds.
+
+Open a generated replay with the local browser visualiser:
+
+```bash
+cd ui/replay-visualiser
+npm ci
+npm run dev
+```
+
+See
+[`ORDERBOOK_ARENA_REPLAY_SCHEMA.md`](ORDERBOOK_ARENA_REPLAY_SCHEMA.md) for the
+record contract. The viewer inspects local artifacts only; it does not run or
+submit strategy code.
 
 ## Tests
 

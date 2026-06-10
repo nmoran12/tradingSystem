@@ -55,6 +55,17 @@ python3 arena/tools/evaluate_execution_v1.py \
 The C++ process is not sandboxed, and this evaluator still uses the Python
 simulation skeleton rather than the C++ matching engine.
 
+Inspect either generated replay locally:
+
+```bash
+cd ui/replay-visualiser
+npm ci
+npm run dev
+```
+
+The visualiser loads replay JSONL files from the user's machine. It does not
+run or submit strategy code.
+
 ## Project documentation
 
 | Document | Description |
@@ -77,6 +88,7 @@ simulation skeleton rather than the C++ matching engine.
 | [docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md](docs/ORDERBOOK_ARENA_CHALLENGE_SCHEMA.md) | Initial `execution_v1` challenge contract |
 | [docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md](docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md) | Deterministic local evaluator usage and limits |
 | [docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md](docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md) | Versioned score, metric, and result JSON contract |
+| [docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md](docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md) | Versioned Arena replay JSONL contract |
 
 ## Architecture
 

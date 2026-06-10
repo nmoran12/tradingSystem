@@ -10,6 +10,7 @@ from arena.tools.cpp_strategy_process import (
     build_book_update_message,
 )
 from arena.tools.evaluate_execution_v1 import evaluate_challenge, load_challenge
+from arena.tools.evaluate_execution_v1 import evaluate_episode, write_replay
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +22,11 @@ BOOK_FIXTURE = (
 ACTIONS_FIXTURE = ROOT / "arena/protocol/fixtures/actions.sample.json"
 CPP_RESULT_FIXTURE = (
     ROOT / "arena/tests/fixtures/results/cpp_simple_reference.golden.json"
+)
+CPP_REPLAY_FIXTURE = (
+    ROOT
+    / "arena/tests/fixtures/replays"
+    / "cpp_simple_reference.seed7.replay.jsonl"
 )
 EPISODE_GOLDEN_FIELDS = (
     "seed",
@@ -114,6 +120,26 @@ class CppStrategyProcessTest(unittest.TestCase):
         expected = json.loads(CPP_RESULT_FIXTURE.read_text(encoding="utf-8"))
 
         self.assertEqual(result_golden_projection(result), expected)
+
+    def test_cpp_strategy_process_matches_golden_replay(self):
+        strategy = CppStrategyProcess(self.strategy_binary, 1000)
+        try:
+            _, replay = evaluate_episode(
+                self.challenge,
+                7,
+                strategy,
+                strategy.strategy_name,
+                baseline_vwap_ticks=10001.8,
+            )
+        finally:
+            strategy.close()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            actual_path = Path(temp_dir) / "actual.replay.jsonl"
+            write_replay(actual_path, replay)
+            self.assertEqual(
+                actual_path.read_bytes(), CPP_REPLAY_FIXTURE.read_bytes()
+            )
 
     def test_cpp_strategy_process_is_deterministic(self):
         first_result, first_replay = self.evaluate_process(

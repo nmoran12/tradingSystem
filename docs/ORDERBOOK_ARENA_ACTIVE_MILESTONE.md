@@ -1,60 +1,45 @@
-# Active Milestone: A5 Scoring Engine and Result JSON
+# Active Milestone: A6 Replay Export and Replay Visualiser
 
 **Status:** Complete
 
 ## Previous Milestone
 
-A4, Local C++ Strategy Runner, was committed as `b6873d8` with commit message:
+A5, Scoring Engine and Result JSON, was committed as `c224c21` with commit
+message:
 
 ```text
-feat: add local c++ strategy runner
+feat: formalize arena scoring results
 ```
 
 ## Goal
 
-Produce explainable, versioned result JSON from deterministic `execution_v1`
-episodes without changing the existing strategy protocol or simulation model.
+Make deterministic Arena runs inspectable through a versioned replay artifact
+and a lightweight local browser visualiser.
 
 ## Implemented Scope
 
-- [x] Result schema `1.1` and result generator `1.0`.
-- [x] Explicit no-wall-clock timestamp policy.
-- [x] Score version `1.0` retained without behavior changes.
-- [x] Canonical quantity, cost, VWAP, fill-rate, slippage, and improvement
-  metrics with documented units and basis-point denominators.
-- [x] Per-episode validity, completion, counters, errors, and reproduction
-  metadata.
-- [x] Aggregate counts, mean fill rate, mean completed improvement, and score.
-- [x] Arithmetic-mean score across every configured local evaluation seed.
-- [x] Hand-calculated unit tests for completed, partial, zero-fill, invalid,
-  and incomplete cases.
-- [x] Golden result fixtures for built-in, C++, invalid, and incomplete runs.
-- [x] Byte-stability test for deterministic result serialization.
-- [x] Existing built-in and C++ strategy-process behavior preserved.
-
-## Score Contract
-
-For a completed buy episode:
-
-```text
-score = baseline_average_fill_price_ticks - average_fill_price_ticks
-```
-
-Invalid and incomplete episodes score zero. A completed episode may have a
-negative score when it performs worse than the baseline. The aggregate score
-is the mean of all selected episode scores.
-
-Score behavior remains version `1.0`. The result schema moved to `1.1` because
-the result now formalizes metrics, counters, reproduction data, and error
-fields.
+- [x] Replay JSONL schema `1.0`.
+- [x] Schema version, global record index, episode sequence, seed, event index,
+  and record type on every record.
+- [x] Explicit accepted and rejected action records.
+- [x] Visible book, fills, portfolio updates, errors, and final episode state.
+- [x] Result metadata for replay artifact name, record count, schema, and
+  seeds.
+- [x] Portable replay filename without absolute machine paths.
+- [x] Deterministic built-in and C++ replay fixtures.
+- [x] Replay validation, ordering, compatibility, and byte-stability tests.
+- [x] Existing React/Vite visualiser adapted for Arena JSONL.
+- [x] Local file loading, episode/event controls, book, actions, fills,
+  portfolio, summary metrics, and useful validation errors.
+- [x] Clear UI statement that no hosted Run or Submit behavior exists.
 
 ## Architecture Boundary
 
-A5 still uses `python_level_book_skeleton_v1`. It does not invoke the C++
-matching engine, run external Python strategies, add website UI, or provide
-hosted or sandboxed execution.
+A6 still uses `python_level_book_skeleton_v1`. It does not invoke the C++
+matching engine or add challenge browsing, external Python execution, hosted
+execution, sandboxing, accounts, or leaderboards.
 
-The C++ process remains trusted local code.
+The visualiser reads local files in the browser. It has no backend.
 
 ## Checks
 
@@ -73,12 +58,13 @@ python3 arena/tools/evaluate_execution_v1.py \
   --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
   --results-out arena/results/cpp.result.json \
   --replay-out arena/replays/cpp.replay.jsonl
+cd ui/replay-visualiser && npm ci && npm run build
 ./scripts/verify.sh
 git diff --check
 ```
 
 ## Exit Condition
 
-A5 is committed separately. Replay schema/viewer work, C++ matching-engine
-integration, external Python execution, and hosted execution remain outside
+A6 is committed separately. Challenge browsing pages, online strategy
+execution, C++ matching-engine integration, and hosted judging remain outside
 this milestone.

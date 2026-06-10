@@ -165,7 +165,7 @@ understand trade-offs instead of optimizing an unexplained number.
 - versioned replay schema;
 - export of market events, actions, fills, book state, and account changes;
 - browser replay loader and timeline;
-- sample Python and C++ replay files.
+- sample built-in and C++ replay files.
 
 **Acceptance criteria**
 

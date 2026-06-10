@@ -21,6 +21,10 @@ try:
         calculate_episode_metrics,
         round_metric,
     )
+    from arena.tools.replay_schema import (
+        REPLAY_SCHEMA_VERSION,
+        validate_replay_records,
+    )
 except ModuleNotFoundError:
     from cpp_strategy_process import CppStrategyProcess, StrategyProcessError
     from scoring_results import (
@@ -28,6 +32,7 @@ except ModuleNotFoundError:
         calculate_episode_metrics,
         round_metric,
     )
+    from replay_schema import REPLAY_SCHEMA_VERSION, validate_replay_records
 
 
 MASK_64 = (1 << 64) - 1
@@ -228,6 +233,11 @@ def validate_challenge(challenge: dict[str, Any]) -> None:
     result_output = _require_mapping(outputs.get("result"), "outputs.result")
     if result_output.get("schema_version") != "1.1":
         raise ChallengeConfigError("result schema_version must be 1.1")
+    replay_output = _require_mapping(outputs.get("replay"), "outputs.replay")
+    if replay_output.get("schema_version") != REPLAY_SCHEMA_VERSION:
+        raise ChallengeConfigError(
+            f"replay schema_version must be {REPLAY_SCHEMA_VERSION}"
+        )
 
 
 @dataclass
@@ -498,18 +508,20 @@ def _apply_action(
     limits: dict[str, Any],
     replay: list[dict[str, Any]],
     event_index: int,
+    action_index: int,
 ) -> str | None:
-    if not isinstance(action, dict):
-        return "action must be an object"
-    action_type = action.get("type")
     _append_replay(
         replay,
         {
             "type": "strategy_action",
             "event_index": event_index,
+            "action_index": action_index,
             "action": copy.deepcopy(action),
         },
     )
+    if not isinstance(action, dict):
+        return "action must be an object"
+    action_type = action.get("type")
 
     if action_type == "cancel_order":
         order_id = action.get("order_id")
@@ -644,6 +656,7 @@ def evaluate_episode(
     replay: list[dict[str, Any]] = [
         {
             "type": "episode_start",
+            "event_index": 0,
             "runner_version": RUNNER_VERSION,
             "challenge_id": challenge["challenge_id"],
             "challenge_type": challenge["challenge_type"],
@@ -746,9 +759,27 @@ def evaluate_episode(
             break
 
         state.submitted_action_count += len(actions)
-        for action in actions:
+        for action_index, action in enumerate(actions):
             error_reason = _apply_action(
-                action, state, limits, replay, event_index
+                action,
+                state,
+                limits,
+                replay,
+                event_index,
+                action_index,
+            )
+            _append_replay(
+                replay,
+                {
+                    "type": "action_result",
+                    "event_index": event_index,
+                    "action_index": action_index,
+                    "status": (
+                        "rejected" if error_reason is not None else "accepted"
+                    ),
+                    "action": copy.deepcopy(action),
+                    "reason": error_reason,
+                },
             )
             if error_reason is not None:
                 _invalidate(state, replay, event_index, error_reason)
@@ -800,9 +831,22 @@ def evaluate_episode(
         fill_count=state.fill_count,
         maximum_open_orders=state.maximum_open_orders,
     )
-    _append_replay(replay, {"type": "episode_result", **copy.deepcopy(metrics)})
+    final_book = _book_view(challenge, state, last_event_index)
+    _append_replay(
+        replay,
+        {
+            "type": "episode_result",
+            "event_index": last_event_index,
+            "book": copy.deepcopy(final_book),
+            "portfolio": state.portfolio_view(),
+            **copy.deepcopy(metrics),
+        },
+    )
 
     for sequence, record in enumerate(replay):
+        record["replay_schema_version"] = REPLAY_SCHEMA_VERSION
+        record["record_index"] = sequence
+        record["episode_sequence"] = sequence
         record["sequence"] = sequence
         record["seed"] = seed
 
@@ -854,6 +898,10 @@ def evaluate_challenge(
         if close_strategy is not None:
             close_strategy()
 
+    for record_index, record in enumerate(replay_records):
+        record["record_index"] = record_index
+    validate_replay_records(replay_records)
+
     result = build_result_document(
         challenge=challenge,
         challenge_source=challenge_source,
@@ -863,6 +911,7 @@ def evaluate_challenge(
         seed_set=seed_set,
         seeds=list(seeds),
         episode_results=episode_results,
+        replay_record_count=len(replay_records),
     )
     return result, replay_records
 
@@ -876,6 +925,7 @@ def write_result(path: str | Path, result: dict[str, Any]) -> None:
 
 
 def write_replay(path: str | Path, records: list[dict[str, Any]]) -> None:
+    validate_replay_records(records)
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as output:
@@ -928,7 +978,7 @@ def main(argv: list[str] | None = None) -> int:
             args.seed_set,
             challenge_source=args.challenge,
         )
-        result["replay"]["path"] = args.replay_out
+        result["replay"]["artifact_name"] = Path(args.replay_out).name
         write_result(args.results_out, result)
         write_replay(args.replay_out, replay)
     except (

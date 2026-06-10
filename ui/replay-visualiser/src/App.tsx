@@ -1,578 +1,374 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-type Trade = {
-  price: number;
-  quantity: number;
-  aggressiveOrderId?: number;
-  restingOrderId?: number;
-};
+import {
+  ArenaReplay,
+  EventFrame,
+  PriceLevel,
+  parseArenaReplay,
+} from './replay';
 
-type Level = {
-  price: number;
-  quantity: number;
-};
 
-type ReplayStep = {
-  schemaVersion?: number;
-  index: number;
-  commandType: string;
-  side: string;
-  orderType: string;
-  orderId: number;
-  price: number;
-  quantity: number;
-  symbol?: string;
-  bestBid: number | null;
-  bestAsk: number | null;
-  spread: number | null;
-  restingBidLevels: Level[];
-  restingAskLevels: Level[];
-  trades: Trade[];
-  totalRestingOrders: number;
-  totalRestingQuantity: number;
-};
+type Source = { label: string } | null;
 
-type Source =
-  | { kind: 'none' }
-  | { kind: 'scenario'; label: string; file: string }
-  | { kind: 'file'; name: string };
-
-type Scenario = { label: string; file: string };
-
-function parseNdjson(text: string): ReplayStep[] {
-  const lines = text.split('\n');
-  const steps: ReplayStep[] = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    const raw = lines[i].trim();
-    if (raw.length === 0) continue;
-    try {
-      steps.push(JSON.parse(raw) as ReplayStep);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Invalid NDJSON at line ${i + 1}: ${message}`);
-    }
-  }
-  return steps.sort((a, b) => a.index - b.index);
+function formatNumber(value: unknown, digits = 3): string {
+  if (typeof value !== 'number') return '—';
+  return Number.isInteger(value) ? String(value) : value.toFixed(digits);
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+function actionLabel(action: unknown): string {
+  if (typeof action !== 'object' || action === null) return JSON.stringify(action);
+  const value = action as Record<string, unknown>;
+  const fields = [
+    value.type,
+    value.order_id !== undefined ? `#${value.order_id}` : null,
+    value.quantity !== undefined ? `qty ${value.quantity}` : null,
+    value.price_ticks !== undefined ? `@ ${value.price_ticks}` : null,
+  ].filter(Boolean);
+  return fields.join(' ');
 }
 
-function formatNullableNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—';
-  return String(value);
-}
-
-function buildSeriesPoints(
-  steps: ReplayStep[],
-  getY: (s: ReplayStep) => number | null,
-): Array<{ x: number; y: number }> {
-  const points: Array<{ x: number; y: number }> = [];
-  for (let i = 0; i < steps.length; i += 1) {
-    const y = getY(steps[i]);
-    if (y === null) continue;
-    points.push({ x: i, y });
-  }
-  return points;
-}
-
-function toPolyline(
-  points: Array<{ x: number; y: number }>,
-  width: number,
-  height: number,
-  padding: number,
-): string {
-  if (points.length === 0) return '';
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs);
-  const yMin = Math.min(...ys);
-  const yMax = Math.max(...ys);
-
-  const innerW = Math.max(1, width - padding * 2);
-  const innerH = Math.max(1, height - padding * 2);
-
-  const xDen = Math.max(1, xMax - xMin);
-  const yDen = Math.max(1, yMax - yMin);
-
-  return points
-    .map((p) => {
-      const x = padding + ((p.x - xMin) / xDen) * innerW;
-      const y = padding + (1 - (p.y - yMin) / yDen) * innerH;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+function BookSide({
+  title,
+  levels,
+  side,
+}: {
+  title: string;
+  levels: PriceLevel[];
+  side: 'bid' | 'ask';
+}) {
+  const maximum = Math.max(1, ...levels.map((level) => level.quantity));
+  return (
+    <div>
+      <div className="section-label">{title}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Price ticks</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {levels.map((level) => (
+            <tr key={`${side}-${level.price_ticks}`}>
+              <td className={side}>{level.price_ticks}</td>
+              <td className="quantity-cell">
+                <span
+                  className={`quantity-bar ${side}`}
+                  style={{ width: `${(level.quantity / maximum) * 100}%` }}
+                />
+                <span>{level.quantity}</span>
+              </td>
+            </tr>
+          ))}
+          {levels.length === 0 && (
+            <tr>
+              <td colSpan={2} className="muted">No visible levels</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export const App: React.FC = () => {
-  const [steps, setSteps] = useState<ReplayStep[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [source, setSource] = useState<Source>({ kind: 'none' });
-  const scenarios: Scenario[] = useMemo(
-    () => [
-      { label: 'Basic replay', file: '/sample-replay.ndjson' },
-      { label: 'Deep book', file: '/sample-deep-book.ndjson' },
-      { label: 'Crossing trades', file: '/sample-crossing-trades.ndjson' },
-      { label: 'Spread movement', file: '/sample-spread-movement.ndjson' },
-    ],
-    [],
-  );
-  const [selectedScenarioFile, setSelectedScenarioFile] = useState<string>(
-    scenarios[0].file,
-  );
+  const [replay, setReplay] = useState<ArenaReplay | null>(null);
+  const [source, setSource] = useState<Source>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [episodeIndex, setEpisodeIndex] = useState(0);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
 
-  const safeIndex = steps.length > 0 ? clamp(currentIndex, 0, steps.length - 1) : 0;
-  const current = steps.length > 0 ? steps[safeIndex] : null;
+  const episode = replay?.episodes[episodeIndex] ?? null;
+  const frame: EventFrame | null = episode?.frames[frameIndex] ?? null;
+  const result = episode?.result ?? null;
 
-  React.useEffect(() => {
-    if (steps.length === 0) {
-      if (currentIndex !== 0) setCurrentIndex(0);
-      if (isPlaying) setIsPlaying(false);
-      return;
+  const loadText = (text: string, label: string) => {
+    try {
+      const parsed = parseArenaReplay(text);
+      setReplay(parsed);
+      setSource({ label });
+      setError(null);
+      setEpisodeIndex(0);
+      setFrameIndex(0);
+      setPlaying(false);
+    } catch (loadError) {
+      setReplay(null);
+      setSource({ label });
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
+      setEpisodeIndex(0);
+      setFrameIndex(0);
+      setPlaying(false);
     }
-    if (currentIndex >= steps.length) {
-      setCurrentIndex(steps.length - 1);
-    }
-  }, [steps.length, currentIndex, isPlaying]);
+  };
 
-  const tradesSoFar = useMemo(() => {
-    const out: Array<{ stepIndex: number; trade: Trade }> = [];
-    for (const step of steps.slice(0, currentIndex + 1)) {
-      for (const trade of step.trades) {
-        out.push({ stepIndex: step.index, trade });
+  const loadSample = async () => {
+    try {
+      const response = await fetch('/arena-simple-reference.replay.jsonl');
+      if (!response.ok) {
+        throw new Error(`Could not load sample replay: HTTP ${response.status}.`);
       }
+      loadText(await response.text(), 'Built-in simple reference sample');
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
     }
-    return out;
-  }, [steps, currentIndex]);
+  };
 
-  React.useEffect(() => {
-    if (!isPlaying || steps.length === 0) {
-      return;
-    }
-    const handle = window.setInterval(() => {
-      setCurrentIndex((idx) => {
-        if (idx + 1 >= steps.length) {
-          setIsPlaying(false);
-          return idx;
-        }
-        return idx + 1;
-      });
-    }, 200);
-    return () => window.clearInterval(handle);
-  }, [isPlaying, steps.length]);
-
-  const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-    const file = e.target.files?.[0];
+  const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+    const file = event.target.files?.[0];
     if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = parseNdjson(text);
-      setSteps(parsed);
-      setCurrentIndex(0);
-      setIsPlaying(false);
-      setLoadError(parsed.length === 0 ? 'File contains no replay steps.' : null);
-      setSource({ kind: 'file', name: file.name });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setSteps([]);
-      setCurrentIndex(0);
-      setIsPlaying(false);
-      setLoadError(message);
-      setSource({ kind: 'file', name: file.name });
-    }
+    loadText(await file.text(), file.name);
+    event.target.value = '';
   };
 
-  const loadScenario = async (file: string) => {
-    try {
-      const res = await fetch(file);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch replay (HTTP ${res.status})`);
-      }
-      const text = await res.text();
-      const parsed = parseNdjson(text);
-      setSteps(parsed);
-      setCurrentIndex(0);
-      setIsPlaying(false);
-      setLoadError(parsed.length === 0 ? 'Replay contains no steps.' : null);
-      const label = scenarios.find((s) => s.file === file)?.label ?? 'Scenario';
-      setSource({ kind: 'scenario', label, file });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setSteps([]);
-      setCurrentIndex(0);
-      setIsPlaying(false);
-      setLoadError(message);
-      const label = scenarios.find((s) => s.file === file)?.label ?? 'Scenario';
-      setSource({ kind: 'scenario', label, file });
-    }
-  };
+  useEffect(() => {
+    if (!playing || !episode) return;
+    const timer = window.setInterval(() => {
+      setFrameIndex((current) => {
+        if (current + 1 >= episode.frames.length) {
+          setPlaying(false);
+          return current;
+        }
+        return current + 1;
+      });
+    }, 450);
+    return () => window.clearInterval(timer);
+  }, [playing, episode]);
 
-  const bestBid = current?.bestBid ?? null;
-  const bestAsk = current?.bestAsk ?? null;
-  const spread = current?.spread ?? null;
-  const symbol = current?.symbol ?? steps.find((s) => s.symbol)?.symbol ?? null;
+  useEffect(() => {
+    setFrameIndex(0);
+    setPlaying(false);
+  }, [episodeIndex]);
 
-  const bidLevels = current?.restingBidLevels ?? [];
-  const askLevels = current?.restingAskLevels ?? [];
-  const maxBidQty = Math.max(1, ...bidLevels.map((l) => l.quantity));
-  const maxAskQty = Math.max(1, ...askLevels.map((l) => l.quantity));
-
-  const chartWidth = 640;
-  const chartHeight = 140;
-  const chartPadding = 10;
-  const bidSeries = useMemo(
-    () => buildSeriesPoints(steps, (s) => s.bestBid),
-    [steps],
-  );
-  const askSeries = useMemo(
-    () => buildSeriesPoints(steps, (s) => s.bestAsk),
-    [steps],
-  );
-  const bidPolyline = useMemo(
-    () => toPolyline(bidSeries, chartWidth, chartHeight, chartPadding),
-    [bidSeries],
-  );
-  const askPolyline = useMemo(
-    () => toPolyline(askSeries, chartWidth, chartHeight, chartPadding),
-    [askSeries],
-  );
-
-  const loadedLabel =
-    source.kind === 'none'
-      ? 'No replay loaded'
-      : source.kind === 'scenario'
-        ? source.label
-        : `File: ${source.name}`;
+  const runSummary = useMemo(() => {
+    if (!result) return [];
+    return [
+      ['Status', String(result.status ?? 'unknown')],
+      ['Score', formatNumber(result.score, 6)],
+      ['Filled', `${formatNumber(result.filled_quantity)} / ${formatNumber(result.target_quantity)}`],
+      ['Average fill', formatNumber(result.average_fill_price_ticks, 3)],
+      ['Baseline fill', formatNumber(result.baseline_average_fill_price_ticks, 3)],
+      ['Improvement', `${formatNumber(result.improvement_ticks, 3)} ticks`],
+    ];
+  }, [result]);
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbar-left">
-          <div className="title">
-            <div className="title-main">Order Book Replay Visualiser</div>
-            <div className="title-sub">C++ Matching Engine Replay</div>
-          </div>
-          <div className="pills">
-            <span className="pill">{loadedLabel}</span>
-            <span className="pill">
-              Step {steps.length === 0 ? '—' : safeIndex + 1} / {steps.length === 0 ? '—' : steps.length}
-            </span>
-            <span className="pill">
-              Symbol {symbol ?? '—'}
-            </span>
-          </div>
+    <main className="app-shell">
+      <header className="hero">
+        <div>
+          <p className="eyebrow">OrderBook Arena</p>
+          <h1>Replay Visualiser</h1>
+          <p className="hero-copy">
+            Inspect deterministic replay files generated by the local Arena CLI.
+            This page does not run or submit strategy code.
+          </p>
         </div>
+        <div className="load-actions">
+          <button type="button" onClick={loadSample}>Load sample</button>
+          <label className="file-button">
+            Open replay JSONL
+            <input
+              type="file"
+              accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
+              onChange={onFileChange}
+            />
+          </label>
+        </div>
+      </header>
 
-        <div className="topbar-right">
-          <div className="load-controls">
-            <label className="select-wrap">
-              <span className="select-label">Scenario</span>
+      {error && (
+        <section className="error-panel">
+          <strong>Replay could not be loaded</strong>
+          <span>{error}</span>
+        </section>
+      )}
+
+      {!replay && !error && (
+        <section className="empty-panel">
+          Load the included sample or choose a replay generated by
+          <code>evaluate_execution_v1.py</code>.
+        </section>
+      )}
+
+      {replay && episode && frame && (
+        <>
+          <section className="toolbar">
+            <div>
+              <span className="toolbar-label">Artifact</span>
+              <strong>{source?.label}</strong>
+              <small>
+                schema {replay.schemaVersion} · {replay.recordCount} records
+              </small>
+            </div>
+            <label>
+              <span className="toolbar-label">Episode</span>
               <select
-                className="select"
-                value={selectedScenarioFile}
-                onChange={(e) => setSelectedScenarioFile(e.target.value)}
+                value={episodeIndex}
+                onChange={(event) => setEpisodeIndex(Number(event.target.value))}
               >
-                {scenarios.map((s) => (
-                  <option key={s.file} value={s.file}>
-                    {s.label}
+                {replay.episodes.map((item, index) => (
+                  <option key={item.seed} value={index}>
+                    Seed {item.seed}
                   </option>
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => loadScenario(selectedScenarioFile)}
-            >
-              Load
-            </button>
-            <label className="file-input btn">
-              Load NDJSON
-              <input
-                type="file"
-                accept=".ndjson,application/x-ndjson,application/jsonl,text/plain"
-                onChange={onFileChange}
-              />
-            </label>
-          </div>
-        </div>
-      </header>
-
-      <section className="controls-bar">
-        <div className="controls">
-          <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            setIsPlaying(false);
-            setCurrentIndex(0);
-          }}
-          disabled={steps.length === 0}
-        >
-          Reset
-          </button>
-          <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            setIsPlaying(false);
-            setCurrentIndex((idx) => Math.max(0, idx - 1));
-          }}
-          disabled={steps.length === 0 || currentIndex === 0}
-        >
-          Step back
-          </button>
-          <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            setIsPlaying(false);
-            setCurrentIndex((idx) => Math.min(steps.length - 1, idx + 1));
-          }}
-          disabled={steps.length === 0 || currentIndex >= steps.length - 1}
-        >
-          Step forward
-          </button>
-          <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setIsPlaying((v) => !v)}
-          disabled={steps.length === 0}
-        >
-          {isPlaying ? 'Pause' : 'Play'}
-          </button>
-        </div>
-        <div className="now">
-          <div className="now-label">Current command</div>
-          <div className="now-value">
-            {current
-              ? `${current.commandType.toUpperCase()} ${current.side.toUpperCase()} ${current.orderType.toUpperCase()} @ ${current.price} × ${current.quantity}`
-              : '—'}
-          </div>
-        </div>
-      </section>
-
-      <main className="dashboard">
-        {loadError && (
-          <section className="panel error">
-            <div className="panel-title">Load error</div>
-            <div className="error-text">{loadError}</div>
-          </section>
-        )}
-        <section className="cards">
-          <div className="card">
-            <div className="card-label">Best bid</div>
-            <div className="card-value">{formatNullableNumber(bestBid)}</div>
-          </div>
-          <div className="card">
-            <div className="card-label">Best ask</div>
-            <div className="card-value">{formatNullableNumber(bestAsk)}</div>
-          </div>
-          <div className="card">
-            <div className="card-label">Spread</div>
-            <div className="card-value">{formatNullableNumber(spread)}</div>
-          </div>
-          <div className="card">
-            <div className="card-label">Resting orders</div>
-            <div className="card-value">{current ? String(current.totalRestingOrders) : '—'}</div>
-          </div>
-          <div className="card">
-            <div className="card-label">Resting quantity</div>
-            <div className="card-value">{current ? String(current.totalRestingQuantity) : '—'}</div>
-          </div>
-          <div className="card">
-            <div className="card-label">Trades so far</div>
-            <div className="card-value">{String(tradesSoFar.length)}</div>
-          </div>
-        </section>
-
-        <section className="panel chart">
-          <div className="panel-head">
-            <div className="panel-title">Top of book</div>
-            <div className="panel-meta">Bid/ask over time (per replay step)</div>
-          </div>
-          <div className="chart-wrap">
-            {steps.length === 0 ? (
-              <div className="empty-state">Load a replay to view the timeline.</div>
-            ) : (
-              <svg
-                width="100%"
-                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                preserveAspectRatio="none"
-                className="chart-svg"
-                role="img"
-                aria-label="Top of book timeline"
+            <div className="timeline-controls">
+              <button
+                type="button"
+                disabled={frameIndex === 0}
+                onClick={() => setFrameIndex((value) => Math.max(0, value - 1))}
               >
-                <defs>
-                  <linearGradient id="gBid" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(34,197,94,0.35)" />
-                    <stop offset="100%" stopColor="rgba(34,197,94,0.05)" />
-                  </linearGradient>
-                  <linearGradient id="gAsk" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(56,189,248,0.30)" />
-                    <stop offset="100%" stopColor="rgba(56,189,248,0.05)" />
-                  </linearGradient>
-                </defs>
-
-                <rect x="0" y="0" width={chartWidth} height={chartHeight} fill="rgba(2,6,23,1)" />
-                <g opacity="0.5">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <line
-                      key={i}
-                      x1={(chartWidth / 8) * i}
-                      y1={0}
-                      x2={(chartWidth / 8) * i}
-                      y2={chartHeight}
-                      stroke="rgba(17,24,39,1)"
-                      strokeWidth="1"
-                    />
-                  ))}
-                </g>
-
-                {bidPolyline && (
-                  <polyline points={bidPolyline} fill="none" stroke="rgba(34,197,94,0.95)" strokeWidth="2" />
-                )}
-                {askPolyline && (
-                  <polyline points={askPolyline} fill="none" stroke="rgba(56,189,248,0.95)" strokeWidth="2" />
-                )}
-
-                <line
-                  x1={chartPadding + (safeIndex / Math.max(1, steps.length - 1)) * (chartWidth - chartPadding * 2)}
-                  y1={0}
-                  x2={chartPadding + (safeIndex / Math.max(1, steps.length - 1)) * (chartWidth - chartPadding * 2)}
-                  y2={chartHeight}
-                  stroke="rgba(148,163,184,0.55)"
-                  strokeWidth="1.5"
-                />
-              </svg>
-            )}
-          </div>
-        </section>
-
-        <section className="panel ladder">
-          <div className="panel-head">
-            <div className="panel-title">Order book ladder</div>
-            <div className="panel-meta">Top levels (current step)</div>
-          </div>
-          <div className="ladder-grid">
-            <div>
-              <div className="subhead">Bids</div>
-              <table className="book-table book-bids">
-                <thead>
-                  <tr>
-                    <th>Price</th>
-                    <th>Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bidLevels.map((lvl) => {
-                    const pct = Math.round((lvl.quantity / maxBidQty) * 100);
-                    return (
-                    <tr
-                      key={lvl.price}
-                      className={
-                        bestBid !== null && lvl.price === bestBid
-                          ? 'best'
-                          : undefined
-                      }
-                    >
-                      <td>{lvl.price}</td>
-                      <td className="qty-cell">
-                        <div className="qty-bar bid" style={{ width: `${pct}%` }} />
-                        <span className="qty-text">{lvl.quantity}</span>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                  {bidLevels.length === 0 && (
-                    <tr>
-                      <td colSpan={2} className="empty">
-                        No bids
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                Previous
+              </button>
+              <button type="button" onClick={() => setPlaying((value) => !value)}>
+                {playing ? 'Pause' : 'Play'}
+              </button>
+              <button
+                type="button"
+                disabled={frameIndex + 1 >= episode.frames.length}
+                onClick={() =>
+                  setFrameIndex((value) =>
+                    Math.min(episode.frames.length - 1, value + 1),
+                  )
+                }
+              >
+                Next
+              </button>
             </div>
-            <div>
-              <div className="subhead">Asks</div>
-              <table className="book-table book-asks">
-                <thead>
-                  <tr>
-                    <th>Price</th>
-                    <th>Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {askLevels.map((lvl) => {
-                    const pct = Math.round((lvl.quantity / maxAskQty) * 100);
-                    return (
-                    <tr
-                      key={lvl.price}
-                      className={
-                        bestAsk !== null && lvl.price === bestAsk
-                          ? 'best'
-                          : undefined
-                      }
-                    >
-                      <td>{lvl.price}</td>
-                      <td className="qty-cell">
-                        <div className="qty-bar ask" style={{ width: `${pct}%` }} />
-                        <span className="qty-text">{lvl.quantity}</span>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                  {askLevels.length === 0 && (
-                    <tr>
-                      <td colSpan={2} className="empty">
-                        No asks
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="panel trades">
-          <div className="panel-head">
-            <div className="panel-title">Trade tape</div>
-            <div className="panel-meta">Recent executed trades</div>
-          </div>
-          <table className="trade-table">
-            <thead>
-              <tr>
-                <th>Index</th>
-                <th>Price</th>
-                <th>Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tradesSoFar.slice(-50).map(({ stepIndex, trade }, idx) => (
-                <tr key={`${stepIndex}-${idx}`}>
-                  <td>{stepIndex}</td>
-                  <td>{trade.price}</td>
-                  <td>{trade.quantity}</td>
-                </tr>
-              ))}
-              {tradesSoFar.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="empty">
-                    No trades yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-      </main>
-    </div>
+          <section className="timeline">
+            <input
+              aria-label="Replay event"
+              type="range"
+              min={0}
+              max={episode.frames.length - 1}
+              value={frameIndex}
+              onChange={(event) => {
+                setPlaying(false);
+                setFrameIndex(Number(event.target.value));
+              }}
+            />
+            <span>
+              Event {frame.eventIndex} · frame {frameIndex + 1} of{' '}
+              {episode.frames.length}
+            </span>
+          </section>
+
+          <section className="summary-grid">
+            {runSummary.map(([label, value]) => (
+              <article className="metric-card" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </article>
+            ))}
+          </section>
+
+          <section className="dashboard">
+            <article className="panel book-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Visible book</p>
+                  <h2>{frame.book?.symbol ?? 'Unknown symbol'}</h2>
+                </div>
+                <span>
+                  {frame.book
+                    ? `${frame.book.timestamp_ms} ms simulated`
+                    : 'No book snapshot'}
+                </span>
+              </div>
+              <div className="book-grid">
+                <BookSide title="Bids" levels={frame.book?.bids ?? []} side="bid" />
+                <BookSide title="Asks" levels={frame.book?.asks ?? []} side="ask" />
+              </div>
+            </article>
+
+            <article className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Portfolio</p>
+                  <h2>Execution state</h2>
+                </div>
+              </div>
+              <dl className="detail-list">
+                <div><dt>Target</dt><dd>{formatNumber(frame.portfolio?.target_quantity)}</dd></div>
+                <div><dt>Filled</dt><dd>{formatNumber(frame.portfolio?.filled_quantity)}</dd></div>
+                <div><dt>Remaining</dt><dd>{formatNumber(frame.portfolio?.remaining_quantity)}</dd></div>
+                <div><dt>Cost</dt><dd>{formatNumber(frame.portfolio?.total_cost_tick_units)}</dd></div>
+                <div><dt>Average fill</dt><dd>{formatNumber(frame.portfolio?.average_fill_price_ticks)}</dd></div>
+              </dl>
+              <div className="section-label">Open orders</div>
+              <div className="record-list">
+                {(frame.portfolio?.open_orders ?? []).map((order) => (
+                  <div className="record-row" key={order.order_id}>
+                    <strong>#{order.order_id}</strong>
+                    <span>{order.remaining_quantity} @ {order.price_ticks}</span>
+                  </div>
+                ))}
+                {(frame.portfolio?.open_orders ?? []).length === 0 && (
+                  <span className="muted">No open orders</span>
+                )}
+              </div>
+            </article>
+
+            <article className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Event activity</p>
+                  <h2>Actions and fills</h2>
+                </div>
+              </div>
+              <div className="section-label">Strategy actions</div>
+              <div className="record-list">
+                {frame.actions.map((action) => (
+                  <div className="record-row" key={action.actionIndex}>
+                    <span className={`status ${action.status}`}>{action.status}</span>
+                    <strong>{actionLabel(action.action)}</strong>
+                    {action.reason && <small>{action.reason}</small>}
+                  </div>
+                ))}
+                {frame.actions.length === 0 && (
+                  <span className="muted">No actions at this event</span>
+                )}
+              </div>
+              <div className="section-label spaced">Fills</div>
+              <div className="record-list">
+                {frame.fills.map((fill, index) => (
+                  <div className="record-row" key={`${fill.orderId}-${index}`}>
+                    <strong>Order #{fill.orderId}</strong>
+                    <span>{fill.quantity} @ {fill.priceTicks}</span>
+                    <small>{fill.source}</small>
+                  </div>
+                ))}
+                {frame.fills.length === 0 && (
+                  <span className="muted">No fills at this event</span>
+                )}
+              </div>
+            </article>
+
+            <article className="panel records-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Audit records</p>
+                  <h2>Current event records</h2>
+                </div>
+              </div>
+              <div className="record-chips">
+                {frame.records.map((record) => (
+                  <span key={record.record_index}>
+                    {record.record_index}: {record.type}
+                  </span>
+                ))}
+              </div>
+              <p className="muted">
+                Strategy: {episode.strategy}. Replay data is synthetic and uses
+                the Python simulator skeleton, not the C++ matching engine.
+              </p>
+            </article>
+          </section>
+        </>
+      )}
+    </main>
   );
 };
-
