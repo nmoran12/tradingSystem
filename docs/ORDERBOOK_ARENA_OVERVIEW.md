@@ -2,89 +2,98 @@
 
 ## What It Is
 
-OrderBook Arena is an experimental, LeetCode-style coding challenge website
-built around this repository's C++ matching engine.
+OrderBook Arena is a planned LeetCode-style website for trading and
+market-structure coding challenges.
 
-The product direction is:
+Users will browse a challenge, write a strategy in Python or C++, and run it
+against deterministic market scenarios judged by the existing C++ order book.
+The result should include a score, trading metrics, and a replay that explains
+what happened.
 
-- browse a list of trading and market-microstructure challenges
-- read a prompt, rules, examples, and baseline results
-- download or copy a starter strategy
-- run the strategy locally against deterministic scenarios
-- inspect the score, metrics, and replay in the website
+JavaScript or TypeScript may power the website frontend. They are not planned
+as strategy languages.
 
-The website explains and presents challenges. The local CLI performs strategy
-execution and simulation.
+## Target User Experience
 
-## Why the Website Exists
+The intended final flow is:
 
-The website gives the project a clear way to organise challenges and results.
-It should make each challenge understandable without requiring users to read
-the C++ source.
+1. Open the website and choose a challenge.
+2. Read the prompt, rules, strategy interface, and sample results.
+3. Write a Python or C++ strategy in the online editor.
+4. Click **Run** or **Submit**.
+5. Run the strategy in an isolated server-side environment against deterministic
+   scenarios and hidden episodes.
+6. View the score, PnL-style metrics, slippage, fill rate, drawdown, and replay.
+7. Optionally compare a submitted result on a future leaderboard.
 
-For the MVP, it should provide:
+This seamless flow requires secure hosted execution. That capability does not
+exist yet.
 
-- a challenge list
-- challenge detail pages
-- prompts, rules, constraints, and starter instructions
-- sample and baseline results
-- a file-based replay viewer
-- clear commands for running a solution locally
+## Early MVP
 
-It does not execute user code.
+The website remains the product direction, but the first implementation may use
+a local runner as a development bridge:
 
-## What Runs Locally
+1. The user opens a challenge on the website.
+2. The user downloads or checks out starter code for Python or C++.
+3. A local CLI runs the strategy against the same challenge definition and C++
+   simulation engine.
+4. The CLI writes a result JSON file and replay file.
+5. The user opens those files in the website result and replay viewer.
 
-The local runner should:
+The local runner avoids exposing a server to arbitrary user code while the
+challenge format, strategy API, scoring, and replay contracts are still being
+developed. It is not the final user experience.
 
-1. Load a versioned challenge definition.
-2. Start the user's strategy.
-3. Generate deterministic single-instrument scenarios.
-4. Run orders through the existing C++ matching engine.
-5. Track fills, cash, inventory, risk limits, and summary metrics.
-6. Calculate a deterministic score.
-7. Write result JSON and a replay file.
+## Why Build It
 
-The same challenge version, strategy version, and seed should produce the same
-result.
+The current repository already contains the hardest domain-specific component:
+a C++ limit order book and matching engine. Arena gives that engine a clear
+product use:
 
-## How a User Solves a Challenge
+- challenges define repeatable market situations;
+- Python and C++ strategies react to the same event model;
+- the engine applies orders and produces an auditable event stream;
+- scoring turns each run into comparable results;
+- replays make strategy behaviour visible instead of reducing it to one number.
 
-```text
-Open challenge page
--> read prompt and rules
--> get starter strategy
--> edit and run it locally with the Arena CLI
--> receive score.json and replay.ndjson
--> open the replay in the website visualiser
-```
+This direction demonstrates both systems engineering and a usable application
+without pretending the project is a live trading platform.
 
-An optional later submission flow may upload signed or reproducible result
-metadata for a leaderboard. It should not be confused with trusted evaluation.
+## First Useful Scope
 
-## First MVP
+The first useful version should provide:
 
-The first useful version should include:
+- a small set of versioned challenge definitions;
+- deterministic public scenarios and a format that can later reference private
+  hosted evaluation episodes;
+- local Python and C++ strategy runners using the same contract;
+- the existing C++ matching engine as the simulation judge;
+- baseline strategies for validating challenge difficulty;
+- result JSON containing score and supporting metrics;
+- replay export and a browser-based replay viewer;
+- website pages for browsing challenges and reading prompts.
 
-- website challenge browsing and detail pages
-- one versioned challenge format
-- one deterministic scenario type
-- a local CLI backed by the existing C++ engine
-- built-in baseline strategies
-- transparent scoring and result JSON
-- replay export and website replay viewing
-- a small Python strategy API
+Hosted execution should begin only as a separate Python sandbox spike. C++
+hosted execution follows later because compiling and running native code safely
+adds more operational and security complexity.
 
 ## What It Is Not
 
-OrderBook Arena is not:
+The early project is not:
 
-- a live trading system
-- a broker or exchange connection
-- a professional quant platform
-- a secure server-side code runner
-- a claim that local evaluation episodes are truly hidden
+- a live trading system;
+- an exchange or exchange-grade simulator;
+- a brokerage or professional quant platform;
+- a claim that PnL from synthetic scenarios predicts real trading performance;
+- a cloud judge with secure arbitrary-code execution;
+- a public competitive platform with real users.
 
-Hosted execution is deferred because safely running untrusted code requires
-isolation, resource limits, abuse controls, result verification, and ongoing
-operations. Those are separate problems from proving the challenge experience.
+Accounts, leaderboards, result submission, and hosted Python/C++ execution are
+later stages. Any hosted runner must enforce isolation, timeouts, memory and
+process limits, restricted filesystem and network access, and reliable cleanup
+before it can be treated as a public feature.
+
+Scenarios distributed with the local runner are inspectable, even if they are
+labelled as held-out development cases. Truly hidden evaluation requires a
+trusted hosted judge.

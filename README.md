@@ -12,13 +12,18 @@ Run all commands from this directory (`cpp-low-latency-orderbook/`), not the par
 ## OrderBook Arena direction
 
 This repository is being extended experimentally toward **OrderBook Arena**: a
-LeetCode-style challenge website where users can browse prompts, view examples,
-and inspect replays. Strategies run on the user's machine through a local CLI,
-which uses the existing C++ matching engine and deterministic market scenarios.
+LeetCode-style challenge website for Python and C++ trading strategies. The
+target experience is to read a prompt, write a strategy in an online editor,
+click Run or Submit, and inspect deterministic scores, trading metrics, and
+replays produced by the existing C++ matching engine. JavaScript or TypeScript
+may power the frontend; it is not a target strategy language.
 
-The first goal is a website-first, local-judging MVP with challenge
-definitions, scoring, and replay files. It does not include live trading or
-secure server-side code execution. See
+Secure hosted execution is not implemented. Early versions will use local
+Python and C++ runners as a temporary bridge, producing result and replay files
+that the website can open. The long-term no-download experience requires
+isolated server-side execution with strict resource limits and other security
+controls. Hosted Python will be investigated before hosted C++, and both remain
+post-MVP work. This project does not support live trading. See
 [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) and
 [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md).
 
@@ -36,11 +41,11 @@ secure server-side code execution. See
 | [docs/REPLAY_VISUALISER.md](docs/REPLAY_VISUALISER.md) | File-based replay visualiser UI (spike) |
 | [docs/MILESTONE_5_PLAN.md](docs/MILESTONE_5_PLAN.md) | Binary protocol milestone plan |
 | [docs/MILESTONE_6_PLAN.md](docs/MILESTONE_6_PLAN.md) | Performance and SPSC milestone plan |
-| [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) | Arena purpose, MVP, and non-goals |
-| [docs/ORDERBOOK_ARENA_ARCHITECTURE.md](docs/ORDERBOOK_ARENA_ARCHITECTURE.md) | Planned Arena components and data flow |
-| [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md) | Four-to-six-week Arena delivery plan |
-| [docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md](docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md) | Small, testable Arena milestones |
-| [docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md](docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md) | Next Arena implementation milestone |
+| [docs/ORDERBOOK_ARENA_OVERVIEW.md](docs/ORDERBOOK_ARENA_OVERVIEW.md) | Website goal, local bridge, and non-goals |
+| [docs/ORDERBOOK_ARENA_ARCHITECTURE.md](docs/ORDERBOOK_ARENA_ARCHITECTURE.md) | Local and future hosted execution paths |
+| [docs/ORDERBOOK_ARENA_ROADMAP.md](docs/ORDERBOOK_ARENA_ROADMAP.md) | Six-week MVP and post-MVP sandbox work |
+| [docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md](docs/ORDERBOOK_ARENA_MILESTONE_QUEUE.md) | Twelve small, testable Arena milestones |
+| [docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md](docs/ORDERBOOK_ARENA_ACTIVE_MILESTONE.md) | Current Arena documentation milestone |
 
 ## Architecture
 

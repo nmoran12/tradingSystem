@@ -1,175 +1,339 @@
 # OrderBook Arena Milestone Queue
 
-This queue covers the first implementation path after planning. Complete one
-milestone at a time and keep the existing matching behaviour stable.
+Milestones are ordered by dependency and resume value. Each one should leave a
+small, testable result. Hosted execution is intentionally after the local
+challenge loop and website viewer.
 
-## Queue
+## A1. Product and Documentation Alignment
 
-| Order | ID | Milestone | Status |
-|------:|----|-----------|--------|
-| 1 | A1 | Website/Product Skeleton and Challenge Browsing | Ready |
-| 2 | A2 | Challenge Definition Schema | Planned |
-| 3 | A3 | Local Deterministic Challenge Runner | Planned |
-| 4 | A4 | Built-in Baseline Strategies | Planned |
-| 5 | A5 | Scoring and Result JSON | Planned |
-| 6 | A6 | Replay Export and Website Replay Viewer | Planned |
-| 7 | A7 | Python Strategy API | Planned |
-| 8 | A8 | Optional Leaderboard/Result Submission Spike | Stretch |
+**Goal:** Define the website-led Python/C++ product direction before changing
+the implementation.
 
-## A1: Website/Product Skeleton and Challenge Browsing
+**Deliverables**
 
-**Goal:** establish the website as the place to discover and understand
-challenges.
+- aligned overview, architecture, roadmap, milestone, and README documents;
+- clear distinction between the local execution bridge and hosted target;
+- documented security boundary for future untrusted execution;
+- initial list of product and architecture decisions still open.
 
-**Deliverables:** website shell, challenge catalogue mock data, challenge detail
-page, starter instructions, sample result section, and replay-viewer link.
+**Acceptance criteria**
 
-**Acceptance criteria:**
+- Python and C++ are consistently named as strategy languages;
+- JavaScript or TypeScript is described only as frontend technology;
+- no document claims hosted execution is implemented;
+- local execution is described as temporary;
+- hosted Python is ordered before hosted C++.
 
-- At least two sample challenge cards can be browsed.
-- One detail page shows prompt, rules, constraints, scoring summary, and local
-  run instructions.
-- The site clearly says strategies execute locally.
-- Existing replay visualiser behaviour remains available.
+**Tests/checks**
 
-**Tests/checks:** frontend build, basic component/parser tests, responsive manual
-check, and link check.
+- review all Arena docs for contradictory scope;
+- run Markdown link and formatting checks if available;
+- inspect `git diff --check`.
 
-**Why it matters:** defines the user experience before backend contracts harden.
+**Why it matters:** It prevents incompatible runners, schemas, and website work
+from being built around different product assumptions.
 
-## A2: Challenge Definition Schema
+## A2. Challenge Definition Schema
 
-**Goal:** define one versioned format shared by the website and local runner.
+**Goal:** Define one versioned format consumed by local and future hosted
+runners.
 
-**Deliverables:** schema, validator, one complete challenge, starter metadata,
-and clear validation errors.
+**Deliverables**
 
-**Acceptance criteria:**
+- challenge schema and validation;
+- prompt, engine, scenario, risk, scoring, and strategy API fields;
+- public sample seeds, bundled development seeds, and future private evaluation
+  references;
+- one minimal example challenge.
 
-- Presentation, scenario, risk, seed, and scoring fields can be loaded.
-- Unknown versions and invalid ranges fail clearly.
-- The format contains no executable code.
-- Website data and runner data come from the same challenge definition.
+**Acceptance criteria**
 
-**Tests/checks:** valid fixture, required-field failures, invalid ranges, unknown
-version, and stable canonical serialization if used.
+- malformed definitions fail with useful errors;
+- the example round-trips through the parser;
+- schema and engine versions are explicit;
+- deterministic inputs are fully identified.
 
-**Why it matters:** prevents the website and judge from describing different
-challenges.
+**Tests/checks**
 
-## A3: Local Deterministic Challenge Runner
+- valid and invalid schema fixtures;
+- parser round-trip test;
+- repeated seed-generation test.
 
-**Goal:** run one seeded single-instrument challenge through the existing engine.
+**Why it matters:** A stable challenge contract is the foundation for both
+languages, the website, scoring, and hosted judging.
 
-**Deliverables:** CLI command, simulated clock, scenario generator, episode
-loop, portfolio/risk state, and output directory.
+## A3. Local Python Strategy Runner
 
-**Acceptance criteria:**
+**Goal:** Run an untrusted-by-contract Python strategy locally without embedding
+it in the C++ judge process.
 
-- One command runs a challenge and public seed set locally.
-- The same inputs produce the same canonical events and state.
-- Different seeds produce different valid episodes.
-- Existing engine tests pass and book invariants hold.
+**Deliverables**
 
-**Tests/checks:** golden scenario, repeated-run equivalence, different-seed
-test, invariant stress test, CLI smoke test, and existing C++ tests.
+- Python starter API and example strategy;
+- child-process adapter using the versioned strategy protocol;
+- deadlines, message limits, and structured failures;
+- deterministic single-challenge CLI command.
 
-**Why it matters:** creates the deterministic judge without server execution.
+**Acceptance criteria**
 
-## A4: Built-in Baseline Strategies
+- a Python baseline completes the example challenge;
+- timeout, crash, malformed output, and illegal action cases fail cleanly;
+- repeated runs with the same seed match.
 
-**Goal:** define the strategy contract with controlled in-process examples.
+**Tests/checks**
 
-**Deliverables:** observation/action types, no-op baseline, and one active
-baseline.
+- protocol conformance tests;
+- failure-mode integration tests;
+- deterministic replay hash or normalized event comparison.
 
-**Acceptance criteria:**
+**Why it matters:** Python is the most accessible target language and the first
+candidate for later hosted execution.
 
-- Strategies cannot mutate engine state directly.
-- Invalid actions are handled consistently.
-- Baseline results are deterministic and suitable for challenge pages.
+## A4. Local C++ Strategy Runner
 
-**Tests/checks:** observation fixtures, action validation, baseline golden
-results, and repeated-run equivalence.
+**Goal:** Give C++ strategies the same challenge semantics through a separate
+compiled process.
 
-**Why it matters:** proves the strategy interface and gives users reference
-results.
+**Deliverables**
 
-## A5: Scoring and Result JSON
+- C++ starter interface and example strategy;
+- documented build command or CLI build step;
+- process adapter using the shared protocol;
+- parity fixtures shared with Python.
 
-**Goal:** produce an explainable local result.
+**Acceptance criteria**
 
-**Deliverables:** portfolio accounting, score components, penalties, versioned
-result JSON, and batch seed summary.
+- a C++ baseline completes the example challenge;
+- it receives the same normalized events as the Python baseline;
+- crashes, timeouts, invalid messages, and build failures are reported clearly.
 
-**Acceptance criteria:**
+**Tests/checks**
 
-- Result JSON records challenge, engine, strategy, protocol, and seed versions.
-- Raw metrics explain the final score.
-- Risk breaches and failures have explicit results.
-- Identical completed episodes receive identical scores.
+- C++ protocol conformance tests;
+- cross-language event parity test;
+- compile and process-failure tests.
 
-**Tests/checks:** hand-calculated scores, no-trade run, profitable and losing
-runs, risk breach, failure result, and schema tests.
+**Why it matters:** Native strategy support makes the platform relevant to
+systems and low-latency candidates without coupling strategy code to the judge.
 
-**Why it matters:** turns local simulation into a challenge outcome that can be
-shown or compared.
+## A5. Scoring Engine and Result JSON
 
-## A6: Replay Export and Website Replay Viewer
+**Goal:** Produce explainable, versioned results from deterministic episodes.
 
-**Goal:** inspect locally generated runs in the website.
+**Deliverables**
 
-**Deliverables:** versioned Arena event log, replay export, browser file loader,
-and views for strategy actions, fills, inventory, and score components.
+- scoring rules for the example challenge;
+- PnL-style, slippage, fill-rate, drawdown, and risk metrics where applicable;
+- versioned result JSON schema;
+- per-episode results and reproduction metadata.
 
-**Acceptance criteria:**
+**Acceptance criteria**
 
-- A CLI-generated replay opens without uploading to a server.
-- Existing replay samples remain supported.
-- Displayed result metadata matches the result JSON.
-- Export is disabled outside explicit Arena runs or replay modes.
+- metric definitions and units are documented;
+- the same run produces byte-stable or semantically identical result data;
+- invalid runs cannot receive a normal score;
+- score changes require an explicit score version change.
 
-**Tests/checks:** golden replay, replay/result equivalence, malformed file
-handling, frontend build, and end-to-end manual replay.
+**Tests/checks**
 
-**Why it matters:** makes a score understandable and connects the local runner
-to the website.
+- hand-calculated metric unit tests;
+- golden-result integration tests;
+- zero-fill, partial-fill, loss, drawdown, and risk-limit cases.
 
-## A7: Python Strategy API
+**Why it matters:** Supporting metrics make scoring credible and help users
+understand trade-offs instead of optimizing an unexplained number.
 
-**Goal:** let users solve challenges with a local Python strategy.
+## A6. Replay Export and Replay Visualiser
 
-**Deliverables:** versioned line-oriented protocol, starter strategy, local
-process adapter, timeout, and failure handling.
+**Goal:** Make every scored run inspectable.
 
-**Acceptance criteria:**
+**Deliverables**
 
-- Python receives observations and returns actions.
-- A fixed strategy and seed set produce repeatable results.
-- Timeout, crash, malformed output, and invalid actions fail cleanly.
-- Documentation states that local process handling is not a secure sandbox.
+- versioned replay schema;
+- export of market events, actions, fills, book state, and account changes;
+- browser replay loader and timeline;
+- sample Python and C++ replay files.
 
-**Tests/checks:** successful strategy, built-in/Python equivalence where
-applicable, timeout, process failure, malformed response, and invalid action.
+**Acceptance criteria**
 
-**Why it matters:** provides the first practical user coding workflow.
+- both language runners produce viewable replays;
+- replay order is deterministic;
+- the viewer shows enough state to explain key fills and metric changes;
+- incompatible replay versions fail visibly.
 
-## A8: Optional Leaderboard/Result Submission Spike
+**Tests/checks**
 
-**Goal:** explore result sharing without pretending local files are trusted.
+- replay schema validation;
+- golden replay fixture;
+- viewer smoke test with both sample files.
 
-**Deliverables:** result bundle format, optional upload or local history
-prototype, validation rules, and leaderboard mock view.
+**Why it matters:** Replay turns the engine into a demonstrable product and
+makes challenge outcomes auditable.
 
-**Acceptance criteria:**
+## A7. Website Challenge Browser and Prompt Pages
 
-- Submitted metadata is schema-validated and versioned.
-- The UI labels unverified local results clearly.
-- Replay and result hashes can be compared.
-- Hosted user-code execution is not introduced.
+**Goal:** Establish the website as the main product surface.
 
-**Tests/checks:** valid and invalid submissions, duplicate handling, version
-mismatch, and leaderboard rendering.
+**Deliverables**
 
-**Why it matters:** tests social comparison while keeping secure hosted judging
-as a separate future project.
+- challenge list and detail pages;
+- prompt, rules, metrics, examples, and difficulty display;
+- Python and C++ starter templates;
+- editor-shaped interface that clearly explains the current local run flow.
+
+**Acceptance criteria**
+
+- users can find and understand the example challenge;
+- both language interfaces are visible and consistent with the local APIs;
+- no Run or Submit control falsely implies hosted execution works;
+- challenge content is sourced from versioned definitions or generated metadata.
+
+**Tests/checks**
+
+- frontend build and lint;
+- route and content smoke tests;
+- manual review at narrow and desktop widths.
+
+**Why it matters:** It demonstrates the intended LeetCode-style experience
+without hiding the current execution limitation.
+
+## A8. Website Result and Replay Viewer
+
+**Goal:** Let users inspect artifacts generated by the local runner in the
+website.
+
+**Deliverables**
+
+- local result/replay file import;
+- score and metric summary;
+- per-episode breakdown;
+- replay visualisation linked to result metadata.
+
+**Acceptance criteria**
+
+- a user can run locally and inspect the output without editing files;
+- invalid or incompatible files show useful errors;
+- the page distinguishes local, unverified results from future verified runs.
+
+**Tests/checks**
+
+- frontend fixture tests;
+- result/replay compatibility tests;
+- end-to-end local run to browser-viewer check.
+
+**Why it matters:** It closes the early product loop and keeps the website
+central while execution remains local.
+
+## A9. Hosted Python Sandbox Spike
+
+**Goal:** Test whether isolated Python execution can support the final Run and
+Submit experience.
+
+**Deliverables**
+
+- threat model and trust-boundary diagram;
+- isolated Python job prototype;
+- CPU, wall-clock, memory, process, filesystem, network, and output limits;
+- queue, cleanup, logging, and dependency policy notes;
+- measurements and known bypass risks.
+
+**Acceptance criteria**
+
+- jobs cannot access the web service process or other job workspaces;
+- network and filesystem policies are verified;
+- process trees are terminated on timeout;
+- the spike is explicitly labelled non-production unless independently hardened.
+
+**Tests/checks**
+
+- timeout, fork/process, memory, disk, output, and network abuse cases;
+- concurrent isolation tests;
+- cleanup and stale-job tests.
+
+**Why it matters:** Hosted Python removes the download step, but only if
+untrusted execution is treated as a security boundary.
+
+## A10. Hosted C++ Sandbox Spike
+
+**Goal:** Extend the isolated judge model to compilation and execution of
+untrusted C++.
+
+**Deliverables**
+
+- pinned compiler and standard library environment;
+- separate compile and run limits;
+- binary and workspace lifecycle controls;
+- native-code threat-model additions;
+- compatibility tests using the local C++ strategy contract.
+
+**Acceptance criteria**
+
+- compile bombs and runtime abuse are bounded;
+- generated binaries cannot escape the job boundary;
+- compiler diagnostics are returned without leaking host details;
+- the prototype reuses the same result and replay pipeline.
+
+**Tests/checks**
+
+- compile timeout and memory cases;
+- malicious process, filesystem, network, and output cases;
+- toolchain reproducibility test.
+
+**Why it matters:** C++ is a core target language, but native compilation and
+execution require more controls than the Python spike.
+
+## A11. Accounts and Leaderboard
+
+**Goal:** Add persistent, trusted competition only after hosted judging is
+credible.
+
+**Deliverables**
+
+- accounts and submission history;
+- server-verified result provenance;
+- challenge/version-specific leaderboard;
+- rerun and invalidation policy.
+
+**Acceptance criteria**
+
+- local result files cannot create ranked entries;
+- rankings separate challenge and scoring versions;
+- users can inspect the result and replay behind their own submissions;
+- abuse and retention rules are documented.
+
+**Tests/checks**
+
+- authentication and authorization tests;
+- duplicate, replayed, and invalid submission cases;
+- ranking and version-partition tests.
+
+**Why it matters:** A leaderboard is useful only when results are comparable and
+generated by a trusted judge.
+
+## A12. Public Demo Polish
+
+**Goal:** Make the project easy to evaluate from GitHub and a public demo.
+
+**Deliverables**
+
+- concise README and architecture diagram;
+- curated challenge set and starter strategies;
+- screenshots and short end-to-end demo;
+- reproducible build, test, benchmark, and local-run instructions;
+- documented limitations and hosted-execution status.
+
+**Acceptance criteria**
+
+- a fresh checkout can reproduce the documented local flow;
+- CI covers the supported build and core tests;
+- performance claims name hardware, build mode, workload, and methodology;
+- the demo does not overstate security, users, or production readiness.
+
+**Tests/checks**
+
+- clean-environment setup rehearsal;
+- full CI and documentation-link check;
+- benchmark reproduction and demo smoke test.
+
+**Why it matters:** Strong implementation work has little resume value if a
+reviewer cannot understand or reproduce it quickly.

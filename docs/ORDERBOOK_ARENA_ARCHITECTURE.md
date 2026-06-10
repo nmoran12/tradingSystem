@@ -2,206 +2,226 @@
 
 ## Design Goal
 
-Separate the website experience from local strategy execution. The website
-publishes challenge content and displays replays. The local CLI owns simulation,
-strategy processes, scoring, and output generation.
+OrderBook Arena should present a website-first challenge experience while
+keeping challenge execution deterministic and auditable. Python and C++ are the
+strategy languages. JavaScript or TypeScript is limited to the website
+frontend.
 
-## User Flow
+The architecture should support two execution paths:
+
+- an early local runner used while the product contracts are being developed;
+- a later hosted judge that runs untrusted code in isolated environments.
+
+Both paths must use the same challenge definitions, strategy protocol, C++
+matching engine, scoring rules, result format, and replay format.
+
+## Early Local Flow
 
 ```text
 User opens website
--> browses challenges
--> reads prompt, rules, examples, and baseline results
--> downloads or copies a starter strategy
--> runs the Arena CLI locally
--> local CLI runs deterministic scenarios through the C++ engine
--> CLI writes score.json and replay.ndjson
--> user opens replay.ndjson in the website visualiser
--> optional future result upload or leaderboard
+        |
+        v
+Reads prompt and chooses Python or C++ starter
+        |
+        v
+Runs strategy with local CLI
+        |
+        v
+Local strategy process <-> C++ challenge runner and matching engine
+        |
+        v
+Result JSON + replay file
+        |
+        v
+Website result/replay viewer
 ```
 
-## System Split
+This flow is a temporary bridge. It allows the engine, challenge model, strategy
+APIs, scoring, and visualiser to be built without accepting arbitrary code on a
+server.
+
+## Target Hosted Flow
 
 ```text
-WEBSITE / FRONTEND
-
-Challenge catalogue -> Challenge page -> Starter instructions
-                                |
-                                v
-                         Replay file picker
-                                |
-                                v
-                         Replay visualiser
-
-No user strategy execution in the MVP website.
-
-
-LOCAL MACHINE
-
-Challenge Definition
+Website prompt + Python/C++ editor
         |
         v
-Arena CLI <----------> Local Strategy Process
+Run / Submit API
         |
         v
-Deterministic Scenario Generator
+Job queue and execution coordinator
+        |
+        +--> Python sandbox (first)
+        |
+        +--> C++ compile and run sandbox (later)
         |
         v
-Existing C++ MatchingEngine -> OrderBook
+C++ challenge runner and matching engine
         |
-        +-> Portfolio / Risk State -> Scoring Engine -> score.json
+        v
+Scoring engine + result/replay storage
         |
-        +-> Versioned Event Log ---------------------> replay.ndjson
-
-
-OPTIONAL LATER SERVICE
-
-Result metadata upload -> validation -> leaderboard display
+        v
+Website metrics, replay, and optional leaderboard
 ```
+
+The hosted path is a later feature, not an implemented capability.
 
 ## Main Components
 
-### Website and Challenge Catalogue
+### Challenge Website
 
-The website is the user's starting point. It should contain static or
-repository-backed challenge content:
+The website is the main product surface. It should provide:
 
-- challenge title, difficulty, and tags
-- prompt and market rules
-- input, output, and strategy API explanation
-- risk limits and scoring formula
-- starter strategy download or code sample
-- baseline score and sample replay
+- challenge browsing and prompt pages;
+- Python and C++ starter templates;
+- an online editor in the target hosted experience;
+- sample results and metric explanations;
+- result and replay viewing;
+- optional later submission history and leaderboards.
 
-The first version can be a static frontend. It does not need accounts, a
-database, or a backend.
+Frontend JavaScript or TypeScript renders the interface. It does not replace the
+Python or C++ strategy APIs.
 
 ### Challenge Definitions
 
-A versioned challenge definition is shared by the website build and local
-runner. It describes:
+A versioned challenge file should describe:
 
-- stable ID, title, version, and difficulty
-- scenario type and public seed set
-- episode length and simulated clock settings
-- initial cash and inventory
-- order and position limits
-- scoring weights
-- starter files and explanatory content references
+- challenge identity and schema version;
+- prompt and strategy interface version;
+- scenario generator and deterministic seeds;
+- public sample episodes and references to future private evaluation episodes;
+- initial market and account state;
+- allowed actions and risk limits;
+- scoring rules and metric definitions;
+- engine, result, and replay format versions.
 
-The website reads presentation fields. The local runner validates and uses the
-simulation fields. The format contains data, not executable code.
-
-### Local CLI and Strategy Runner
-
-The CLI coordinates each run:
-
-1. load and validate the challenge
-2. start a built-in or local user strategy
-3. send market observations to the strategy
-4. validate returned actions
-5. process orders through the matching engine
-6. update fills, cash, inventory, and risk state
-7. calculate the score
-8. write result and replay files
-
-Built-in strategies should establish the contract first. Python strategies can
-run as local child processes using a small versioned message protocol. This
-keeps failures outside the engine process but is not a security boundary.
-
-### Existing C++ Matching Engine
-
-`MatchingEngine` and `OrderBook` remain responsible for matching and resting
-order state. They should not contain challenge prompts, strategy logic, PnL,
-website concerns, or scoring policy.
-
-The MVP uses one engine instance for one instrument per episode.
+The local and hosted runners must interpret the same definition.
 
 ### Deterministic Scenario Generator
 
-The generator owns seeded market activity, simulated timestamps, and episode
-termination. It must not depend on wall-clock time, thread scheduling, or
-global randomness.
+The scenario generator produces repeatable market events from a challenge
+definition and seed. A replay must record enough metadata to reproduce the run.
+Determinism should be tested across repeated runs on supported platforms.
 
-The same challenge version and seed must produce the same canonical scenario
-events.
+### Strategy Interfaces
 
-### Scoring and Result JSON
+Python and C++ strategies should implement equivalent callbacks and receive the
+same normalized events. A language-neutral process protocol is preferable so
+the judge does not embed a Python interpreter or load untrusted native plugins
+into its own process.
 
-The scoring engine consumes completed portfolio and risk state. A result file
-should include:
+The first adapters are:
 
-- challenge and engine versions
-- seed or seed-set identity
-- final score
-- PnL, drawdown, inventory, fills, and penalties
-- run status and failure reason when applicable
-- replay file reference or content hash
+- a local Python strategy process;
+- a local compiled C++ strategy process.
 
-The score must be explainable from the raw metrics.
+Each adapter needs explicit message framing, protocol versions, deadlines,
+error reporting, and deterministic handling of invalid output.
 
-### Replay Export and Website Viewer
+### Local CLI Runner
 
-The local runner writes a versioned event log and visualisation-friendly replay
-file. The website loads that file in the browser; no upload is required.
+The local CLI is the early execution bridge. It should:
 
-The viewer can later show strategy actions, fills, cash, inventory, and score
-components alongside the existing order-book views.
+- load and validate a challenge;
+- launch a Python strategy or compiled C++ strategy as a child process;
+- run deterministic public or bundled development episodes locally;
+- enforce basic timeouts and output limits;
+- produce result JSON and replay files;
+- print enough metadata to reproduce a run.
+
+Local execution is not a security boundary because the user runs their own code
+on their own machine. Bundled episodes are also inspectable, so local results
+cannot provide secret-test integrity.
+
+### C++ Judge and Matching Engine
+
+The existing C++ order book remains the core simulation engine. The challenge
+runner should translate scenario events and strategy actions into engine
+operations, then expose fills, book updates, positions, and account state to the
+scoring and replay components.
+
+The engine should not contain website, account, or leaderboard logic.
+
+### Scoring Engine
+
+Scoring should be deterministic and challenge-specific. Result JSON may include:
+
+- total score and score version;
+- PnL-style outcome for the synthetic episode;
+- slippage;
+- fill rate;
+- maximum drawdown;
+- inventory or risk-limit violations;
+- per-episode breakdowns;
+- challenge, seed, engine, strategy API, and runner versions.
+
+Metric definitions must be documented. A single score without supporting
+measurements is not enough to explain a result.
+
+### Replay and Event Log
+
+The runner should write an append-only replay containing market events, strategy
+actions, fills, account changes, and timestamps or sequence numbers. The
+browser visualiser consumes this file and should work for both local and future
+hosted runs.
+
+### Hosted Execution Coordinator
+
+Hosted execution is required for the final no-download experience, but it must
+be treated as a security project rather than a normal subprocess wrapper.
+
+At minimum it requires:
+
+- isolation between jobs and from the host;
+- disabled or tightly restricted network access;
+- CPU, wall-clock, memory, process, file, and output limits;
+- restricted filesystem access and temporary workspaces;
+- fixed compiler/interpreter and dependency versions;
+- controlled compilation for C++;
+- termination and cleanup of process trees;
+- queue limits, abuse controls, logging, and operational monitoring;
+- separation of untrusted execution from web and data services.
+
+Python hosted execution should be investigated first. C++ follows because native
+compilation, compiler resource use, generated binaries, and lower-level system
+access increase the attack surface. Neither sandbox should be considered
+production-ready after a single spike.
 
 ### Optional Result Submission and Leaderboard
 
-A later service may accept result metadata and display rankings. A local result
-file alone is not proof that a run was honest, so early leaderboards should be
-labelled experimental.
+A later submission service could accept signed result bundles from the hosted
+judge and rank results by challenge and version. Results produced only by a
+local runner cannot be trusted for a public leaderboard without server-side
+verification.
 
-Trusted rankings would eventually require server-held episodes or server-side
-re-evaluation. That depends on secure hosted execution and is not part of the
-MVP.
+## Planned Repository Areas
 
-## Why Hosted Execution Is Deferred
-
-Running arbitrary code on a server introduces work unrelated to the first
-product loop:
-
-- process and filesystem isolation
-- CPU, memory, and time limits
-- dependency and compiler management
-- abuse prevention and authentication
-- secret evaluation episodes
-- reproducible result verification
-- hosting and operational support
-
-The MVP can prove challenge quality, deterministic judging, scoring, and replay
-without taking on those risks.
-
-## Determinism Rules
-
-- Identify a run by challenge, engine, strategy, protocol, and seed versions.
-- Use a simulated clock.
-- Explicitly seed every random generator.
-- Define event ordering for equal timestamps.
-- Specify score arithmetic and rounding.
-- Produce stable result and replay schemas.
-
-## Planned Repository Structure
+Exact names may change after the first schema spike.
 
 ```text
 arena/
-  challenges/          Versioned challenge definitions and starter files
-  strategies/          Built-in baseline strategies
-include/arena/          Local runner, scenario, scoring, and result interfaces
-src/arena/              Arena implementations
-tests/arena/            Unit, golden, and end-to-end tests
-ui/replay-visualiser/   Website catalogue and replay views
+  challenges/       # versioned challenge definitions and prompts
+  strategies/       # Python and C++ starter and baseline strategies
+  runner/           # local runner and language adapters
+  scoring/          # metric and score calculation
+  replay/           # replay schema and export
+  schemas/          # challenge, result, and replay schemas
+
+ui/                 # challenge pages and result/replay viewer
+docs/               # design, milestones, formats, and experiments
 ```
 
-Create these paths only when their implementation milestone starts.
+Hosted execution services should not be added until their trust boundaries and
+deployment model are documented.
 
 ## Open Decisions
 
-- Challenge schema and content format.
-- Whether the existing Vite app becomes the full Arena website.
-- Strategy observation and action protocol.
-- Final PnL marking and score normalization rules.
-- Timeout and failure handling for local strategies.
-- Result-signing or verification approach for an experimental leaderboard.
+- process protocol and serialization format shared by Python and C++;
+- strategy callback surface and action model;
+- whether C++ starter strategies are built by CMake or a dedicated CLI command;
+- result and replay schema versioning;
+- deterministic clock and random-number rules;
+- sandbox technology and deployment boundary for the Python spike;
+- how hidden scenarios remain private once hosted judging exists;
+- whether local result files can be uploaded only for viewing, not ranking.

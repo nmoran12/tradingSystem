@@ -1,97 +1,134 @@
 # OrderBook Arena Roadmap
 
-## Approach
+## Product Direction
 
-Build two connected pieces:
+The target product is a website where users solve trading and market-structure
+challenges by writing Python or C++ strategies. The C++ order book is the core
+judge. The website presents prompts, an editor, results, metrics, and replays.
 
-1. a website for discovering and understanding challenges
-2. a local runner for executing strategies and generating results
+The first implementation uses local Python and C++ runners as a temporary
+execution bridge. Hosted code execution is deferred until the challenge and
+strategy contracts are stable and a credible sandbox design exists.
 
-The MVP does not need accounts, cloud judging, or secure hosted execution.
+## First Six Weeks
 
-## Six-Week Plan
+The six-week target is a coherent local judging loop plus the website surfaces
+needed to browse challenges and inspect results. It does not include public
+hosted execution.
 
-### Week 1: Website and Product Skeleton
+### Week 1: Align the Product and Define the Contract
 
-- Turn the existing frontend into a basic Arena website shell.
-- Add challenge list and challenge detail page designs.
-- Define how prompts, rules, starter files, and sample results are presented.
-- Keep the existing replay viewer reachable.
+- finish the Python/C++ product and architecture documentation;
+- define a versioned challenge schema;
+- create one small example challenge with public and held-out development seed
+  sets, acknowledging that both are inspectable locally;
+- decide the language-neutral strategy message protocol;
+- document deterministic time and random-number rules.
 
-**Outcome:** users can browse a small static challenge catalogue.
+Outcome: one validated challenge definition and a stable enough interface to
+start both language runners.
 
-### Week 2: Challenge Definition Schema
+### Week 2: Local Python Runner
 
-- Define one versioned challenge format shared by the website and local runner.
-- Add validation and one complete sample challenge.
-- Include scenario, risk, scoring, prompt, and starter metadata.
+- run a Python strategy in a child process;
+- exchange normalized market events and actions over the strategy protocol;
+- enforce deadlines, message limits, and clear failure results;
+- prove repeated runs produce the same engine events and result data.
 
-**Outcome:** one challenge definition can drive both presentation and judging.
+Outcome: a Python strategy can complete one deterministic challenge locally.
 
-### Week 3: Local Runner and Baselines
+### Week 3: Local C++ Runner
 
-- Implement one deterministic single-instrument scenario.
-- Add the local episode runner around the existing matching engine.
-- Add no-op and simple active baseline strategies.
-- Track fills, cash, inventory, and risk state.
+- provide a C++ starter strategy using the same logical callbacks;
+- compile and run it as a separate process;
+- reuse the same framing, validation, and failure semantics;
+- add parity tests showing Python and C++ baselines receive equivalent inputs.
 
-**Outcome:** built-in strategies complete repeatable local episodes.
+Outcome: Python and C++ are both first-class local strategy languages.
 
-### Week 4: Scoring and Results
+### Week 4: Scoring and Result JSON
 
-- Implement a transparent scoring formula.
-- Write versioned result JSON with raw metrics.
-- Add batch runs across a small public seed set.
-- Test hand-calculated scores and repeated-run equivalence.
+- implement documented PnL-style, slippage, fill-rate, drawdown, and risk
+  metrics where they are meaningful for the example challenge;
+- define a versioned result JSON schema;
+- add per-episode breakdowns and reproduction metadata;
+- create deterministic golden-result tests.
 
-**Outcome:** the CLI produces an explainable score and result file.
+Outcome: runs produce explainable, comparable result files rather than only a
+single score.
 
-### Week 5: Replay and Python Strategy API
+### Week 5: Replay Export and Visualisation
 
-- Export strategy actions, engine events, portfolio state, and score data.
-- Load generated replay files in the website viewer.
-- Add a local child-process Python strategy protocol.
-- Handle timeout, crash, malformed response, and invalid action cases.
+- export strategy actions, fills, book updates, positions, and metric changes;
+- version the replay format;
+- connect the existing visualiser or a small website viewer to replay files;
+- verify that a local Python or C++ run can be inspected in the browser.
 
-**Outcome:** a user can run a Python strategy locally and inspect the replay in
-the website.
+Outcome: users can understand why a strategy received its result.
 
-### Week 6: End-to-End Polish and Submission Spike
+### Week 6: Website Challenge and Result Pages
 
-- Document the full solve flow from challenge page to replay.
-- Add sample baseline results and generated replay files to the website.
-- Improve CLI errors and starter instructions.
-- Optionally prototype result metadata upload or a local leaderboard.
-- Record a short demo and run clean verification.
+- add challenge browsing and prompt pages;
+- show Python and C++ starter interfaces;
+- add an editor-shaped UI for the intended product flow without claiming hosted
+  Run/Submit works;
+- support loading local result and replay files;
+- publish a short end-to-end demo and reproducible commands.
 
-**Outcome:** a focused website-first portfolio demo with local judging.
+Outcome: the repository demonstrates the final website direction while using
+the local runner honestly.
 
-## MVP Scope
+## MVP Boundary
 
-- static challenge catalogue and detail pages
-- one shared challenge definition format
-- deterministic local CLI runner
-- existing C++ matching engine as the judge
-- built-in baseline strategies
-- scoring and result JSON
-- replay export and browser-based replay viewing
-- Python strategy API
+The MVP includes milestones A1 through A8:
 
-## Polish After MVP
+- versioned challenges;
+- local Python and C++ execution;
+- deterministic scoring and results;
+- replay export and browser viewing;
+- website challenge, prompt, result, and replay pages.
 
-- More challenge types and starter templates.
-- Better Arena-specific replay panels.
-- Result history and comparisons across seed sets.
-- Improved local runner packaging.
-- Benchmarks separating Arena orchestration from raw engine cost.
+The MVP does not include secure hosted execution, accounts, trusted public
+submissions, or a leaderboard.
 
-## Stretch Features
+## Post-MVP Hosted Execution
 
-- Experimental result upload and leaderboard.
-- Server-held evaluation episodes.
-- Process-based C++ strategy SDK.
-- Multi-instrument challenges.
-- Secure hosted code execution.
+### Hosted Python Sandbox Spike
 
-Hosted execution remains last because it adds security and operational work
-without being necessary for the initial challenge experience.
+Investigate a separate execution service for untrusted Python submissions.
+Define isolation, resource limits, network and filesystem restrictions, job
+cleanup, dependency policy, abuse controls, and deployment boundaries. The
+spike should end with a written threat model and measured prototype, not a
+claim of production readiness.
+
+Python comes first because it avoids an untrusted compile step and has a smaller
+initial toolchain surface than C++.
+
+### Hosted C++ Sandbox Spike
+
+Extend the execution model to compile and run untrusted C++. Account for
+compiler CPU and memory use, generated binaries, compile-time limits, toolchain
+pinning, and the larger native-code attack surface. Reuse the same challenge,
+strategy, result, and replay contracts.
+
+### Accounts and Leaderboard
+
+Only hosted, server-verified results should affect a public leaderboard. Add
+accounts and ranking after execution integrity, challenge versioning, and
+result provenance are credible.
+
+### Public Demo Polish
+
+Finish concise documentation, screenshots, a recorded end-to-end run,
+benchmark methodology, CI checks, and a small curated challenge set. Report
+measured limits and known gaps.
+
+## Scope Rules
+
+- Python and C++ are the strategy languages.
+- JavaScript or TypeScript is for the website frontend only.
+- The C++ matching engine remains the judge and simulation core.
+- The local runner is transitional, not the final product experience.
+- Local result uploads are not trusted leaderboard submissions.
+- Hosted execution must not share a trust boundary with the public web service.
+- Performance and security claims require reproducible evidence.
