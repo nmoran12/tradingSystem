@@ -192,7 +192,8 @@ makes challenge outcomes auditable.
 - challenge list and detail pages;
 - prompt, rules, metrics, examples, and difficulty display;
 - Python and C++ starter templates;
-- editor-shaped interface that clearly explains the current local run flow.
+- local workflow and replay-viewer links;
+- challenge content imported from the versioned definition.
 
 **Acceptance criteria**
 

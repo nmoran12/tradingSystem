@@ -41,6 +41,7 @@ npm run dev
 
 Open the local Vite URL and either:
 
+- open `#/replay`;
 - select **Load sample** for the committed built-in replay; or
 - select **Open replay JSONL** and choose a CLI-generated file.
 

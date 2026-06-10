@@ -1,0 +1,374 @@
+import React, { useEffect, useMemo, useState } from 'react';
+
+import {
+  ArenaReplay,
+  EventFrame,
+  PriceLevel,
+  parseArenaReplay,
+} from './replay';
+
+
+type Source = { label: string } | null;
+
+function formatNumber(value: unknown, digits = 3): string {
+  if (typeof value !== 'number') return '—';
+  return Number.isInteger(value) ? String(value) : value.toFixed(digits);
+}
+
+function actionLabel(action: unknown): string {
+  if (typeof action !== 'object' || action === null) return JSON.stringify(action);
+  const value = action as Record<string, unknown>;
+  const fields = [
+    value.type,
+    value.order_id !== undefined ? `#${value.order_id}` : null,
+    value.quantity !== undefined ? `qty ${value.quantity}` : null,
+    value.price_ticks !== undefined ? `@ ${value.price_ticks}` : null,
+  ].filter(Boolean);
+  return fields.join(' ');
+}
+
+function BookSide({
+  title,
+  levels,
+  side,
+}: {
+  title: string;
+  levels: PriceLevel[];
+  side: 'bid' | 'ask';
+}) {
+  const maximum = Math.max(1, ...levels.map((level) => level.quantity));
+  return (
+    <div>
+      <div className="section-label">{title}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Price ticks</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {levels.map((level) => (
+            <tr key={`${side}-${level.price_ticks}`}>
+              <td className={side}>{level.price_ticks}</td>
+              <td className="quantity-cell">
+                <span
+                  className={`quantity-bar ${side}`}
+                  style={{ width: `${(level.quantity / maximum) * 100}%` }}
+                />
+                <span>{level.quantity}</span>
+              </td>
+            </tr>
+          ))}
+          {levels.length === 0 && (
+            <tr>
+              <td colSpan={2} className="muted">No visible levels</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export const ReplayPage: React.FC = () => {
+  const [replay, setReplay] = useState<ArenaReplay | null>(null);
+  const [source, setSource] = useState<Source>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [episodeIndex, setEpisodeIndex] = useState(0);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  const episode = replay?.episodes[episodeIndex] ?? null;
+  const frame: EventFrame | null = episode?.frames[frameIndex] ?? null;
+  const result = episode?.result ?? null;
+
+  const loadText = (text: string, label: string) => {
+    try {
+      const parsed = parseArenaReplay(text);
+      setReplay(parsed);
+      setSource({ label });
+      setError(null);
+      setEpisodeIndex(0);
+      setFrameIndex(0);
+      setPlaying(false);
+    } catch (loadError) {
+      setReplay(null);
+      setSource({ label });
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
+      setEpisodeIndex(0);
+      setFrameIndex(0);
+      setPlaying(false);
+    }
+  };
+
+  const loadSample = async () => {
+    try {
+      const response = await fetch('/arena-simple-reference.replay.jsonl');
+      if (!response.ok) {
+        throw new Error(`Could not load sample replay: HTTP ${response.status}.`);
+      }
+      loadText(await response.text(), 'Built-in simple reference sample');
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : String(loadError));
+    }
+  };
+
+  const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    loadText(await file.text(), file.name);
+    event.target.value = '';
+  };
+
+  useEffect(() => {
+    if (!playing || !episode) return;
+    const timer = window.setInterval(() => {
+      setFrameIndex((current) => {
+        if (current + 1 >= episode.frames.length) {
+          setPlaying(false);
+          return current;
+        }
+        return current + 1;
+      });
+    }, 450);
+    return () => window.clearInterval(timer);
+  }, [playing, episode]);
+
+  useEffect(() => {
+    setFrameIndex(0);
+    setPlaying(false);
+  }, [episodeIndex]);
+
+  const runSummary = useMemo(() => {
+    if (!result) return [];
+    return [
+      ['Status', String(result.status ?? 'unknown')],
+      ['Score', formatNumber(result.score, 6)],
+      ['Filled', `${formatNumber(result.filled_quantity)} / ${formatNumber(result.target_quantity)}`],
+      ['Average fill', formatNumber(result.average_fill_price_ticks, 3)],
+      ['Baseline fill', formatNumber(result.baseline_average_fill_price_ticks, 3)],
+      ['Improvement', `${formatNumber(result.improvement_ticks, 3)} ticks`],
+    ];
+  }, [result]);
+
+  return (
+    <main className="app-shell">
+      <header className="hero">
+        <div>
+          <p className="eyebrow">OrderBook Arena</p>
+          <h1>Replay Visualiser</h1>
+          <p className="hero-copy">
+            Inspect deterministic replay files generated by the local Arena CLI.
+            This page does not run or submit strategy code.
+          </p>
+        </div>
+        <div className="load-actions">
+          <button type="button" onClick={loadSample}>Load sample</button>
+          <label className="file-button">
+            Open replay JSONL
+            <input
+              type="file"
+              accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
+              onChange={onFileChange}
+            />
+          </label>
+        </div>
+      </header>
+
+      {error && (
+        <section className="error-panel">
+          <strong>Replay could not be loaded</strong>
+          <span>{error}</span>
+        </section>
+      )}
+
+      {!replay && !error && (
+        <section className="empty-panel">
+          Load the included sample or choose a replay generated by
+          <code>evaluate_execution_v1.py</code>.
+        </section>
+      )}
+
+      {replay && episode && frame && (
+        <>
+          <section className="toolbar">
+            <div>
+              <span className="toolbar-label">Artifact</span>
+              <strong>{source?.label}</strong>
+              <small>
+                schema {replay.schemaVersion} · {replay.recordCount} records
+              </small>
+            </div>
+            <label>
+              <span className="toolbar-label">Episode</span>
+              <select
+                value={episodeIndex}
+                onChange={(event) => setEpisodeIndex(Number(event.target.value))}
+              >
+                {replay.episodes.map((item, index) => (
+                  <option key={item.seed} value={index}>
+                    Seed {item.seed}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="timeline-controls">
+              <button
+                type="button"
+                disabled={frameIndex === 0}
+                onClick={() => setFrameIndex((value) => Math.max(0, value - 1))}
+              >
+                Previous
+              </button>
+              <button type="button" onClick={() => setPlaying((value) => !value)}>
+                {playing ? 'Pause' : 'Play'}
+              </button>
+              <button
+                type="button"
+                disabled={frameIndex + 1 >= episode.frames.length}
+                onClick={() =>
+                  setFrameIndex((value) =>
+                    Math.min(episode.frames.length - 1, value + 1),
+                  )
+                }
+              >
+                Next
+              </button>
+            </div>
+          </section>
+
+          <section className="timeline">
+            <input
+              aria-label="Replay event"
+              type="range"
+              min={0}
+              max={episode.frames.length - 1}
+              value={frameIndex}
+              onChange={(event) => {
+                setPlaying(false);
+                setFrameIndex(Number(event.target.value));
+              }}
+            />
+            <span>
+              Event {frame.eventIndex} · frame {frameIndex + 1} of{' '}
+              {episode.frames.length}
+            </span>
+          </section>
+
+          <section className="summary-grid">
+            {runSummary.map(([label, value]) => (
+              <article className="metric-card" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </article>
+            ))}
+          </section>
+
+          <section className="dashboard">
+            <article className="panel book-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Visible book</p>
+                  <h2>{frame.book?.symbol ?? 'Unknown symbol'}</h2>
+                </div>
+                <span>
+                  {frame.book
+                    ? `${frame.book.timestamp_ms} ms simulated`
+                    : 'No book snapshot'}
+                </span>
+              </div>
+              <div className="book-grid">
+                <BookSide title="Bids" levels={frame.book?.bids ?? []} side="bid" />
+                <BookSide title="Asks" levels={frame.book?.asks ?? []} side="ask" />
+              </div>
+            </article>
+
+            <article className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Portfolio</p>
+                  <h2>Execution state</h2>
+                </div>
+              </div>
+              <dl className="detail-list">
+                <div><dt>Target</dt><dd>{formatNumber(frame.portfolio?.target_quantity)}</dd></div>
+                <div><dt>Filled</dt><dd>{formatNumber(frame.portfolio?.filled_quantity)}</dd></div>
+                <div><dt>Remaining</dt><dd>{formatNumber(frame.portfolio?.remaining_quantity)}</dd></div>
+                <div><dt>Cost</dt><dd>{formatNumber(frame.portfolio?.total_cost_tick_units)}</dd></div>
+                <div><dt>Average fill</dt><dd>{formatNumber(frame.portfolio?.average_fill_price_ticks)}</dd></div>
+              </dl>
+              <div className="section-label">Open orders</div>
+              <div className="record-list">
+                {(frame.portfolio?.open_orders ?? []).map((order) => (
+                  <div className="record-row" key={order.order_id}>
+                    <strong>#{order.order_id}</strong>
+                    <span>{order.remaining_quantity} @ {order.price_ticks}</span>
+                  </div>
+                ))}
+                {(frame.portfolio?.open_orders ?? []).length === 0 && (
+                  <span className="muted">No open orders</span>
+                )}
+              </div>
+            </article>
+
+            <article className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Event activity</p>
+                  <h2>Actions and fills</h2>
+                </div>
+              </div>
+              <div className="section-label">Strategy actions</div>
+              <div className="record-list">
+                {frame.actions.map((action) => (
+                  <div className="record-row" key={action.actionIndex}>
+                    <span className={`status ${action.status}`}>{action.status}</span>
+                    <strong>{actionLabel(action.action)}</strong>
+                    {action.reason && <small>{action.reason}</small>}
+                  </div>
+                ))}
+                {frame.actions.length === 0 && (
+                  <span className="muted">No actions at this event</span>
+                )}
+              </div>
+              <div className="section-label spaced">Fills</div>
+              <div className="record-list">
+                {frame.fills.map((fill, index) => (
+                  <div className="record-row" key={`${fill.orderId}-${index}`}>
+                    <strong>Order #{fill.orderId}</strong>
+                    <span>{fill.quantity} @ {fill.priceTicks}</span>
+                    <small>{fill.source}</small>
+                  </div>
+                ))}
+                {frame.fills.length === 0 && (
+                  <span className="muted">No fills at this event</span>
+                )}
+              </div>
+            </article>
+
+            <article className="panel records-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Audit records</p>
+                  <h2>Current event records</h2>
+                </div>
+              </div>
+              <div className="record-chips">
+                {frame.records.map((record) => (
+                  <span key={record.record_index}>
+                    {record.record_index}: {record.type}
+                  </span>
+                ))}
+              </div>
+              <p className="muted">
+                Strategy: {episode.strategy}. Replay data is synthetic and uses
+                the Python simulator skeleton, not the C++ matching engine.
+              </p>
+            </article>
+          </section>
+        </>
+      )}
+    </main>
+  );
+};

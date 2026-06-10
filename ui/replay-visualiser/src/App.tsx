@@ -1,374 +1,399 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
-  ArenaReplay,
-  EventFrame,
-  PriceLevel,
-  parseArenaReplay,
-} from './replay';
+  ArenaChallenge,
+  challengeDescription,
+  challenges,
+  formatMetric,
+} from './challenge';
+import { ReplayPage } from './ReplayPage';
 
 
-type Source = { label: string } | null;
+const CPP_TEMPLATE = `#include "execution_v1_strategy.hpp"
 
-function formatNumber(value: unknown, digits = 3): string {
-  if (typeof value !== 'number') return '—';
-  return Number.isInteger(value) ? String(value) : value.toFixed(digits);
+#include <vector>
+
+namespace arena = orderbook_arena::execution_v1;
+
+std::vector<arena::Action> onBookUpdate(
+    const arena::BookView& book,
+    const arena::Portfolio& portfolio) {
+    if (portfolio.remaining_quantity == 0) {
+        return {};
+    }
+
+    // Add your execution decisions here.
+    return {};
 }
 
-function actionLabel(action: unknown): string {
-  if (typeof action !== 'object' || action === null) return JSON.stringify(action);
-  const value = action as Record<string, unknown>;
-  const fields = [
-    value.type,
-    value.order_id !== undefined ? `#${value.order_id}` : null,
-    value.quantity !== undefined ? `qty ${value.quantity}` : null,
-    value.price_ticks !== undefined ? `@ ${value.price_ticks}` : null,
-  ].filter(Boolean);
-  return fields.join(' ');
+int main() {
+    return arena::run_strategy_loop(onBookUpdate);
+}`;
+
+const PYTHON_TEMPLATE = `def on_book_update(book, portfolio):
+    if portfolio["remaining_quantity"] == 0:
+        return []
+
+    # Planned Python callback contract.
+    # External Python process execution is not implemented yet.
+    return []`;
+
+const BUILTIN_COMMAND = `python3 arena/tools/evaluate_execution_v1.py \\
+  --challenge arena/challenges/beat_market_order.v1.json \\
+  --strategy simple_reference \\
+  --results-out arena/results/builtin.result.json \\
+  --replay-out arena/replays/builtin.replay.jsonl`;
+
+const CPP_BUILD_COMMAND = `cmake -S arena/cpp -B build/arena-cpp
+cmake --build build/arena-cpp`;
+
+const CPP_EVALUATE_COMMAND = `python3 arena/tools/evaluate_execution_v1.py \\
+  --challenge arena/challenges/beat_market_order.v1.json \\
+  --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \\
+  --results-out arena/results/cpp.result.json \\
+  --replay-out arena/replays/cpp.replay.jsonl`;
+
+const VIEWER_COMMAND = `cd ui/replay-visualiser
+npm ci
+npm run dev`;
+
+type Route =
+  | { page: 'challenges' }
+  | { page: 'challenge'; challengeId: string }
+  | { page: 'replay' };
+
+function parseRoute(): Route {
+  const route = window.location.hash.replace(/^#/, '') || '/challenges';
+  if (route === '/replay') return { page: 'replay' };
+  if (route.startsWith('/challenges/')) {
+    return {
+      page: 'challenge',
+      challengeId: route.slice('/challenges/'.length),
+    };
+  }
+  return { page: 'challenges' };
 }
 
-function BookSide({
-  title,
-  levels,
-  side,
+function useRoute(): Route {
+  const [route, setRoute] = useState<Route>(parseRoute);
+  useEffect(() => {
+    const update = () => setRoute(parseRoute());
+    window.addEventListener('hashchange', update);
+    return () => window.removeEventListener('hashchange', update);
+  }, []);
+  return route;
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return <span className="tag">{children}</span>;
+}
+
+function CodeBlock({
+  code,
+  label,
 }: {
-  title: string;
-  levels: PriceLevel[];
-  side: 'bid' | 'ask';
+  code: string;
+  label: string;
 }) {
-  const maximum = Math.max(1, ...levels.map((level) => level.quantity));
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
   return (
-    <div>
-      <div className="section-label">{title}</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Price ticks</th>
-            <th>Quantity</th>
-          </tr>
-        </thead>
-        <tbody>
-          {levels.map((level) => (
-            <tr key={`${side}-${level.price_ticks}`}>
-              <td className={side}>{level.price_ticks}</td>
-              <td className="quantity-cell">
-                <span
-                  className={`quantity-bar ${side}`}
-                  style={{ width: `${(level.quantity / maximum) * 100}%` }}
-                />
-                <span>{level.quantity}</span>
-              </td>
-            </tr>
-          ))}
-          {levels.length === 0 && (
-            <tr>
-              <td colSpan={2} className="muted">No visible levels</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    <div className="code-card">
+      <div className="code-card-head">
+        <span>{label}</span>
+        <button type="button" className="copy-button" onClick={copy}>
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre><code>{code}</code></pre>
     </div>
   );
 }
 
-export const App: React.FC = () => {
-  const [replay, setReplay] = useState<ArenaReplay | null>(null);
-  const [source, setSource] = useState<Source>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [episodeIndex, setEpisodeIndex] = useState(0);
-  const [frameIndex, setFrameIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-
-  const episode = replay?.episodes[episodeIndex] ?? null;
-  const frame: EventFrame | null = episode?.frames[frameIndex] ?? null;
-  const result = episode?.result ?? null;
-
-  const loadText = (text: string, label: string) => {
-    try {
-      const parsed = parseArenaReplay(text);
-      setReplay(parsed);
-      setSource({ label });
-      setError(null);
-      setEpisodeIndex(0);
-      setFrameIndex(0);
-      setPlaying(false);
-    } catch (loadError) {
-      setReplay(null);
-      setSource({ label });
-      setError(loadError instanceof Error ? loadError.message : String(loadError));
-      setEpisodeIndex(0);
-      setFrameIndex(0);
-      setPlaying(false);
-    }
-  };
-
-  const loadSample = async () => {
-    try {
-      const response = await fetch('/arena-simple-reference.replay.jsonl');
-      if (!response.ok) {
-        throw new Error(`Could not load sample replay: HTTP ${response.status}.`);
-      }
-      loadText(await response.text(), 'Built-in simple reference sample');
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : String(loadError));
-    }
-  };
-
-  const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    loadText(await file.text(), file.name);
-    event.target.value = '';
-  };
-
-  useEffect(() => {
-    if (!playing || !episode) return;
-    const timer = window.setInterval(() => {
-      setFrameIndex((current) => {
-        if (current + 1 >= episode.frames.length) {
-          setPlaying(false);
-          return current;
-        }
-        return current + 1;
-      });
-    }, 450);
-    return () => window.clearInterval(timer);
-  }, [playing, episode]);
-
-  useEffect(() => {
-    setFrameIndex(0);
-    setPlaying(false);
-  }, [episodeIndex]);
-
-  const runSummary = useMemo(() => {
-    if (!result) return [];
-    return [
-      ['Status', String(result.status ?? 'unknown')],
-      ['Score', formatNumber(result.score, 6)],
-      ['Filled', `${formatNumber(result.filled_quantity)} / ${formatNumber(result.target_quantity)}`],
-      ['Average fill', formatNumber(result.average_fill_price_ticks, 3)],
-      ['Baseline fill', formatNumber(result.baseline_average_fill_price_ticks, 3)],
-      ['Improvement', `${formatNumber(result.improvement_ticks, 3)} ticks`],
-    ];
-  }, [result]);
-
+function SiteHeader() {
   return (
-    <main className="app-shell">
-      <header className="hero">
+    <header className="site-header">
+      <a className="brand" href="#/challenges">
+        <span className="brand-mark">OA</span>
+        <span>
+          <strong>OrderBook Arena</strong>
+          <small>Local challenge preview</small>
+        </span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#/challenges">Challenges</a>
+        <a href="#/replay">Replay viewer</a>
+      </nav>
+      <span className="local-badge">Local execution only</span>
+    </header>
+  );
+}
+
+function ChallengeBrowser() {
+  return (
+    <main className="site-main">
+      <section className="product-hero">
         <div>
-          <p className="eyebrow">OrderBook Arena</p>
-          <h1>Replay Visualiser</h1>
-          <p className="hero-copy">
-            Inspect deterministic replay files generated by the local Arena CLI.
-            This page does not run or submit strategy code.
+          <p className="eyebrow">Deterministic market challenges</p>
+          <h1>Learn execution by writing strategy decisions</h1>
+          <p>
+            Browse versioned challenges, understand the rules, then evaluate
+            built-in or compiled C++ strategies on your own machine.
           </p>
         </div>
-        <div className="load-actions">
-          <button type="button" onClick={loadSample}>Load sample</button>
-          <label className="file-button">
-            Open replay JSONL
-            <input
-              type="file"
-              accept=".jsonl,.ndjson,application/x-ndjson,text/plain"
-              onChange={onFileChange}
-            />
-          </label>
+        <aside className="status-callout">
+          <strong>Current product boundary</strong>
+          <p>
+            The website explains challenges and reads replay artifacts. It does
+            not execute, upload, or submit strategy code.
+          </p>
+        </aside>
+      </section>
+
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">Challenge library</p>
+          <h2>Available challenges</h2>
         </div>
-      </header>
+        <span>{challenges.length} challenge</span>
+      </section>
 
-      {error && (
-        <section className="error-panel">
-          <strong>Replay could not be loaded</strong>
-          <span>{error}</span>
-        </section>
-      )}
-
-      {!replay && !error && (
-        <section className="empty-panel">
-          Load the included sample or choose a replay generated by
-          <code>evaluate_execution_v1.py</code>.
-        </section>
-      )}
-
-      {replay && episode && frame && (
-        <>
-          <section className="toolbar">
-            <div>
-              <span className="toolbar-label">Artifact</span>
-              <strong>{source?.label}</strong>
-              <small>
-                schema {replay.schemaVersion} · {replay.recordCount} records
-              </small>
+      <section className="challenge-list" aria-label="Available challenges">
+        {challenges.map((challenge) => (
+          <article className="challenge-card" key={challenge.challenge_id}>
+            <div className="challenge-card-main">
+              <div className="tag-row">
+                <Tag>{challenge.difficulty}</Tag>
+                <Tag>{challenge.challenge_type}</Tag>
+                {challenge.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
+              </div>
+              <h3>{challenge.title}</h3>
+              <p>{challengeDescription(challenge)}</p>
+              <div className="language-row">
+                {challenge.strategy.supported_languages.map((language) => (
+                  <span key={language}>{language.toUpperCase()}</span>
+                ))}
+              </div>
             </div>
-            <label>
-              <span className="toolbar-label">Episode</span>
-              <select
-                value={episodeIndex}
-                onChange={(event) => setEpisodeIndex(Number(event.target.value))}
-              >
-                {replay.episodes.map((item, index) => (
-                  <option key={item.seed} value={index}>
-                    Seed {item.seed}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="timeline-controls">
-              <button
-                type="button"
-                disabled={frameIndex === 0}
-                onClick={() => setFrameIndex((value) => Math.max(0, value - 1))}
-              >
-                Previous
-              </button>
-              <button type="button" onClick={() => setPlaying((value) => !value)}>
-                {playing ? 'Pause' : 'Play'}
-              </button>
-              <button
-                type="button"
-                disabled={frameIndex + 1 >= episode.frames.length}
-                onClick={() =>
-                  setFrameIndex((value) =>
-                    Math.min(episode.frames.length - 1, value + 1),
-                  )
-                }
-              >
-                Next
-              </button>
-            </div>
-          </section>
-
-          <section className="timeline">
-            <input
-              aria-label="Replay event"
-              type="range"
-              min={0}
-              max={episode.frames.length - 1}
-              value={frameIndex}
-              onChange={(event) => {
-                setPlaying(false);
-                setFrameIndex(Number(event.target.value));
-              }}
-            />
-            <span>
-              Event {frame.eventIndex} · frame {frameIndex + 1} of{' '}
-              {episode.frames.length}
-            </span>
-          </section>
-
-          <section className="summary-grid">
-            {runSummary.map(([label, value]) => (
-              <article className="metric-card" key={label}>
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </article>
-            ))}
-          </section>
-
-          <section className="dashboard">
-            <article className="panel book-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Visible book</p>
-                  <h2>{frame.book?.symbol ?? 'Unknown symbol'}</h2>
-                </div>
-                <span>
-                  {frame.book
-                    ? `${frame.book.timestamp_ms} ms simulated`
-                    : 'No book snapshot'}
-                </span>
-              </div>
-              <div className="book-grid">
-                <BookSide title="Bids" levels={frame.book?.bids ?? []} side="bid" />
-                <BookSide title="Asks" levels={frame.book?.asks ?? []} side="ask" />
-              </div>
-            </article>
-
-            <article className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Portfolio</p>
-                  <h2>Execution state</h2>
-                </div>
-              </div>
-              <dl className="detail-list">
-                <div><dt>Target</dt><dd>{formatNumber(frame.portfolio?.target_quantity)}</dd></div>
-                <div><dt>Filled</dt><dd>{formatNumber(frame.portfolio?.filled_quantity)}</dd></div>
-                <div><dt>Remaining</dt><dd>{formatNumber(frame.portfolio?.remaining_quantity)}</dd></div>
-                <div><dt>Cost</dt><dd>{formatNumber(frame.portfolio?.total_cost_tick_units)}</dd></div>
-                <div><dt>Average fill</dt><dd>{formatNumber(frame.portfolio?.average_fill_price_ticks)}</dd></div>
-              </dl>
-              <div className="section-label">Open orders</div>
-              <div className="record-list">
-                {(frame.portfolio?.open_orders ?? []).map((order) => (
-                  <div className="record-row" key={order.order_id}>
-                    <strong>#{order.order_id}</strong>
-                    <span>{order.remaining_quantity} @ {order.price_ticks}</span>
-                  </div>
-                ))}
-                {(frame.portfolio?.open_orders ?? []).length === 0 && (
-                  <span className="muted">No open orders</span>
-                )}
-              </div>
-            </article>
-
-            <article className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Event activity</p>
-                  <h2>Actions and fills</h2>
-                </div>
-              </div>
-              <div className="section-label">Strategy actions</div>
-              <div className="record-list">
-                {frame.actions.map((action) => (
-                  <div className="record-row" key={action.actionIndex}>
-                    <span className={`status ${action.status}`}>{action.status}</span>
-                    <strong>{actionLabel(action.action)}</strong>
-                    {action.reason && <small>{action.reason}</small>}
-                  </div>
-                ))}
-                {frame.actions.length === 0 && (
-                  <span className="muted">No actions at this event</span>
-                )}
-              </div>
-              <div className="section-label spaced">Fills</div>
-              <div className="record-list">
-                {frame.fills.map((fill, index) => (
-                  <div className="record-row" key={`${fill.orderId}-${index}`}>
-                    <strong>Order #{fill.orderId}</strong>
-                    <span>{fill.quantity} @ {fill.priceTicks}</span>
-                    <small>{fill.source}</small>
-                  </div>
-                ))}
-                {frame.fills.length === 0 && (
-                  <span className="muted">No fills at this event</span>
-                )}
-              </div>
-            </article>
-
-            <article className="panel records-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Audit records</p>
-                  <h2>Current event records</h2>
-                </div>
-              </div>
-              <div className="record-chips">
-                {frame.records.map((record) => (
-                  <span key={record.record_index}>
-                    {record.record_index}: {record.type}
-                  </span>
-                ))}
-              </div>
-              <p className="muted">
-                Strategy: {episode.strategy}. Replay data is synthetic and uses
-                the Python simulator skeleton, not the C++ matching engine.
-              </p>
-            </article>
-          </section>
-        </>
-      )}
+            <a
+              className="text-link"
+              href={`#/challenges/${challenge.challenge_id}`}
+            >
+              View challenge
+            </a>
+          </article>
+        ))}
+      </section>
     </main>
+  );
+}
+
+function ChallengeSummary({ challenge }: { challenge: ArenaChallenge }) {
+  const generator = challenge.market.scenario_generator;
+  const items = [
+    ['Target', `${challenge.task.target_quantity} units`],
+    ['Episode', `${generator.event_count} events`],
+    ['Interval', `${generator.event_interval_ms} ms simulated`],
+    ['Visible depth', `${challenge.strategy.book_view.visible_depth_levels} levels`],
+    ['Initial midpoint', `${generator.initial_mid_price_ticks} ticks`],
+    ['Initial spread', `${generator.initial_spread_ticks} ticks`],
+  ];
+  return (
+    <div className="fact-grid">
+      {items.map(([label, value]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChallengeDetail({ challenge }: { challenge: ArenaChallenge }) {
+  return (
+    <main className="site-main">
+      <a className="back-link" href="#/challenges">← All challenges</a>
+      <section className="challenge-hero">
+        <div>
+          <div className="tag-row">
+            <Tag>{challenge.difficulty}</Tag>
+            <Tag>{challenge.challenge_type}</Tag>
+            {challenge.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
+          </div>
+          <h1>{challenge.title}</h1>
+          <p>{challenge.prompt}</p>
+        </div>
+        <aside className="status-callout">
+          <strong>Execution status</strong>
+          <p>
+            Built-in and trusted local C++ strategies work today. External
+            Python execution and hosted judging are not implemented.
+          </p>
+        </aside>
+      </section>
+
+      <section className="content-layout">
+        <div className="content-column">
+          <article className="content-card">
+            <p className="eyebrow">Objective</p>
+            <h2>Complete the order without paying the baseline price</h2>
+            <p>
+              Buy the full target before the deterministic episode ends.
+              Partial or invalid episodes score zero. Completed episodes score
+              the immediate-market baseline VWAP minus your strategy VWAP.
+            </p>
+            <div className="formula">
+              score = baseline average fill price − strategy average fill price
+            </div>
+            <p className="muted">
+              Positive is better. A completed strategy can receive a negative
+              score when it pays more than the baseline.
+            </p>
+          </article>
+
+          <article className="content-card">
+            <p className="eyebrow">Market settings</p>
+            <h2>Deterministic synthetic level book</h2>
+            <ChallengeSummary challenge={challenge} />
+            <p className="muted">
+              Prices use integer ticks and quantities use integer units. The
+              current simulator is <code>python_level_book_skeleton_v1</code>,
+              not the repository's C++ matching engine.
+            </p>
+          </article>
+
+          <article className="content-card">
+            <p className="eyebrow">Rules</p>
+            <h2>Allowed strategy actions</h2>
+            <div className="rule-grid">
+              {challenge.allowed_actions.map((action) => (
+                <div key={action}>
+                  <strong>{action}</strong>
+                  <span>
+                    {action === 'market_order' && 'Buy immediately from visible asks.'}
+                    {action === 'limit_order' && 'Buy up to a chosen price and rest any remainder.'}
+                    {action === 'cancel_order' && 'Cancel one strategy-owned open order.'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="content-card">
+            <p className="eyebrow">Result contract</p>
+            <h2>Metrics reported after evaluation</h2>
+            <div className="metric-list">
+              {challenge.scoring.reported_metrics.map((metric) => (
+                <span key={metric}>{formatMetric(metric)}</span>
+              ))}
+            </div>
+            <p className="muted">
+              Aggregate score is the arithmetic mean across all selected seeds,
+              including zero scores from incomplete or invalid episodes.
+            </p>
+          </article>
+
+          <article className="content-card">
+            <p className="eyebrow">Starter templates</p>
+            <h2>Write only the decision callback</h2>
+            <div className="language-status">
+              <div>
+                <strong>C++</strong>
+                <span className="support-ready">Available locally</span>
+                <p>
+                  The existing header owns the JSONL process loop. Implement
+                  <code>{challenge.strategy.callbacks.cpp}</code> and compile it.
+                </p>
+              </div>
+              <div>
+                <strong>Python</strong>
+                <span className="support-planned">Contract only</span>
+                <p>
+                  The function shape is documented, but external Python
+                  strategy execution is a later milestone.
+                </p>
+              </div>
+            </div>
+            <CodeBlock label="C++ starter" code={CPP_TEMPLATE} />
+            <CodeBlock label="Python callback contract (not executable yet)" code={PYTHON_TEMPLATE} />
+          </article>
+
+          <article className="content-card">
+            <p className="eyebrow">Local workflow</p>
+            <h2>Evaluate, export, inspect</h2>
+            <ol className="workflow-list">
+              <li><span>1</span><div><strong>Build the C++ example strategy</strong><CodeBlock label="Build" code={CPP_BUILD_COMMAND} /></div></li>
+              <li><span>2</span><div><strong>Evaluate a built-in or C++ strategy</strong><CodeBlock label="Built-in mode" code={BUILTIN_COMMAND} /><CodeBlock label="C++ process mode" code={CPP_EVALUATE_COMMAND} /></div></li>
+              <li><span>3</span><div><strong>Generate result JSON and replay JSONL</strong><p>The evaluator writes both artifacts to the paths above.</p></div></li>
+              <li><span>4</span><div><strong>Open the replay visualiser</strong><CodeBlock label="Viewer" code={VIEWER_COMMAND} /></div></li>
+              <li><span>5</span><div><strong>Import the replay file</strong><p>Open <code>builtin.replay.jsonl</code> or <code>cpp.replay.jsonl</code> in the local viewer.</p><a className="text-link" href="#/replay">Open replay viewer</a></div></li>
+            </ol>
+          </article>
+
+          <article className="content-card limitation-card">
+            <p className="eyebrow">Current limitations</p>
+            <h2>What this website does not do</h2>
+            <ul>
+              <li>No online code execution or submission.</li>
+              <li>No sandboxing, accounts, leaderboard, or hidden hosted seeds.</li>
+              <li>No external Python strategy runner yet.</li>
+              <li>No C++ matching-engine integration yet.</li>
+              <li>Local results are inspectable and unverified.</li>
+            </ul>
+          </article>
+        </div>
+
+        <aside className="detail-sidebar">
+          <div className="content-card sticky-card">
+            <p className="eyebrow">Challenge metadata</p>
+            <dl className="detail-list">
+              <div><dt>Version</dt><dd>{challenge.challenge_version}</dd></div>
+              <div><dt>Score version</dt><dd>{challenge.scoring.version}</dd></div>
+              <div><dt>Result schema</dt><dd>{challenge.outputs.result.schema_version}</dd></div>
+              <div><dt>Replay schema</dt><dd>{challenge.outputs.replay.schema_version}</dd></div>
+              <div><dt>Local seeds</dt><dd>{challenge.episodes.local_evaluation.join(', ')}</dd></div>
+            </dl>
+            <p className="muted">{challenge.episodes.local_evaluation_note}</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+  );
+}
+
+function NotFound() {
+  return (
+    <main className="site-main">
+      <section className="empty-panel">
+        Challenge not found. <a href="#/challenges">Return to challenges.</a>
+      </section>
+    </main>
+  );
+}
+
+export const App: React.FC = () => {
+  const route = useRoute();
+  let page: React.ReactNode;
+  if (route.page === 'replay') {
+    page = <ReplayPage />;
+  } else if (route.page === 'challenge') {
+    const challenge = challenges.find(
+      (item) => item.challenge_id === route.challengeId,
+    );
+    page = challenge ? <ChallengeDetail challenge={challenge} /> : <NotFound />;
+  } else {
+    page = <ChallengeBrowser />;
+  }
+
+  return (
+    <>
+      <SiteHeader />
+      {page}
+    </>
   );
 };

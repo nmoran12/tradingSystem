@@ -63,8 +63,10 @@ npm ci
 npm run dev
 ```
 
-The visualiser loads replay JSONL files from the user's machine. It does not
-run or submit strategy code.
+The site opens on the challenge browser. Use
+`#/challenges/beat_market_order` for the prompt and local workflow, or
+`#/replay` to import a replay JSONL file. It does not run or submit strategy
+code.
 
 ## Project documentation
 
@@ -89,6 +91,7 @@ run or submit strategy code.
 | [docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md](docs/ORDERBOOK_ARENA_LOCAL_EVALUATOR.md) | Deterministic local evaluator usage and limits |
 | [docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md](docs/ORDERBOOK_ARENA_RESULT_SCHEMA.md) | Versioned score, metric, and result JSON contract |
 | [docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md](docs/ORDERBOOK_ARENA_REPLAY_SCHEMA.md) | Versioned Arena replay JSONL contract |
+| [docs/ORDERBOOK_ARENA_WEBSITE.md](docs/ORDERBOOK_ARENA_WEBSITE.md) | Challenge browser, prompt routes, and local-only workflow |
 
 ## Architecture
 

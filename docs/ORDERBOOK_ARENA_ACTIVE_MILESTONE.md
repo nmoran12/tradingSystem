@@ -1,45 +1,53 @@
-# Active Milestone: A6 Replay Export and Replay Visualiser
+# Active Milestone: A7 Website Challenge Browser and Prompt Pages
 
 **Status:** Complete
 
 ## Previous Milestone
 
-A5, Scoring Engine and Result JSON, was committed as `c224c21` with commit
+A6, Replay Export and Replay Visualiser, was committed as `9d161bb` with commit
 message:
 
 ```text
-feat: formalize arena scoring results
+feat: add arena replay visualiser
 ```
 
 ## Goal
 
-Make deterministic Arena runs inspectable through a versioned replay artifact
-and a lightweight local browser visualiser.
+Establish the website as the main surface for finding and understanding Arena
+challenges while execution remains local.
 
 ## Implemented Scope
 
-- [x] Replay JSONL schema `1.0`.
-- [x] Schema version, global record index, episode sequence, seed, event index,
-  and record type on every record.
-- [x] Explicit accepted and rejected action records.
-- [x] Visible book, fills, portfolio updates, errors, and final episode state.
-- [x] Result metadata for replay artifact name, record count, schema, and
-  seeds.
-- [x] Portable replay filename without absolute machine paths.
-- [x] Deterministic built-in and C++ replay fixtures.
-- [x] Replay validation, ordering, compatibility, and byte-stability tests.
-- [x] Existing React/Vite visualiser adapted for Arena JSONL.
-- [x] Local file loading, episode/event controls, book, actions, fills,
-  portfolio, summary metrics, and useful validation errors.
-- [x] Clear UI statement that no hosted Run or Submit behavior exists.
+- [x] Challenge browser at `#/challenges`.
+- [x] Beat the Market Order detail page at
+  `#/challenges/beat_market_order`.
+- [x] Difficulty, tags, challenge type, description, and language display.
+- [x] Prompt, objective, market settings, actions, scoring, and result metrics.
+- [x] C++ starter matching the existing local process interface.
+- [x] Python callback shown as contract-only, not executable.
+- [x] Exact built-in and C++ local evaluator commands.
+- [x] Result/replay generation and replay import workflow.
+- [x] A6 replay visualiser preserved at `#/replay`.
+- [x] Challenge content imported directly from the versioned JSON definition.
+- [x] Local-only status and current limitations visible throughout the site.
+- [x] No hosted Run or Submit controls.
+- [x] Production build, TypeScript, route, content, and scope checks.
+
+## Data Boundary
+
+The frontend imports `arena/challenges/beat_market_order.v1.json` at build
+time. Challenge facts are not maintained in a separate frontend metadata file.
+
+Frontend-owned prose explains the current workflow and implementation status.
+It does not redefine challenge rules.
 
 ## Architecture Boundary
 
-A6 still uses `python_level_book_skeleton_v1`. It does not invoke the C++
-matching engine or add challenge browsing, external Python execution, hosted
-execution, sandboxing, accounts, or leaderboards.
+A7 does not add hosted execution, sandboxing, accounts, leaderboards, online
+submission, new challenge types, external Python execution, or C++ matching
+engine integration.
 
-The visualiser reads local files in the browser. It has no backend.
+The website remains a static local frontend.
 
 ## Checks
 
@@ -58,13 +66,16 @@ python3 arena/tools/evaluate_execution_v1.py \
   --strategy-process ./build/arena-cpp/arena_simple_reference_strategy \
   --results-out arena/results/cpp.result.json \
   --replay-out arena/replays/cpp.replay.jsonl
-cd ui/replay-visualiser && npm ci && npm run build
+cd ui/replay-visualiser
+npx tsc --noEmit
+npm test
+cd ../..
 ./scripts/verify.sh
 git diff --check
 ```
 
 ## Exit Condition
 
-A6 is committed separately. Challenge browsing pages, online strategy
-execution, C++ matching-engine integration, and hosted judging remain outside
-this milestone.
+A7 is committed separately. Result-file import, online editors, strategy
+execution, accounts, leaderboards, and hosted judging remain outside this
+milestone.
